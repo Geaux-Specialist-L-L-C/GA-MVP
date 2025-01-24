@@ -6,6 +6,7 @@ import Features from './pages/Features';
 import Curriculum from './pages/Curriculum';
 import LearningStyles from './pages/LearningStyles';
 import Contact from './pages/Contact';
+import SignUp from './components/auth/SignUp';
 import './App.css';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <Route path="/curriculum" element={<Curriculum />} />
           <Route path="/learning-styles" element={<LearningStyles />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/signup" element={<SignUp />} />
         </Routes>
       </Layout>
     </Router>
