@@ -1,0 +1,57 @@
+.learning-styles-section {
+  padding: 4rem 2rem;
+  background-color: var(--light-bg);
+}
+
+.learning-styles-section h2 {
+  text-align: center;
+  font-size: 2rem;
+  color: var(--primary-color);
+  margin-bottom: 2rem;
+}
+
+.styles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.style-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.style-card:hover {
+  transform: translateY(-5px);
+}
+
+.style-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.style-card h3 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+}
+
+.style-card p {
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .styles-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+  
+  .learning-styles-section {
+    padding: 2rem 1rem;
+  }
+}
