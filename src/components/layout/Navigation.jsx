@@ -5,13 +5,9 @@ import './styles/Navigation.css';
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
-  };
-
   return (
     <nav className="main-nav">
-      <button className="mobile-menu-toggle" onClick={toggleMenu}>
+      <button className="mobile-menu-toggle" onClick={() => setIsOpen(!isOpen)}>
         <span className="hamburger"></span>
       </button>
       
