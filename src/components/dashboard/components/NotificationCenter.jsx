@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export const NotificationCenter = () => {
+const NotificationCenter = () => {
   const [notifications] = useState([
     {
       id: 1,

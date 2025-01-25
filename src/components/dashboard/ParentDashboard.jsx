@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { StudentProgressTracker } from './components/StudentProgressTracker';
-import { LearningStyleInsights } from './components/LearningStyleInsights';
-import { CurriculumApproval } from './components/CurriculumApproval';
-import { NotificationCenter } from './components/NotificationCenter';
+import StudentProgressTracker from './components/StudentProgressTracker';
+import LearningStyleInsights from './components/LearningStyleInsights';
+import CurriculumApproval from './components/CurriculumApproval';
+import NotificationCenter from './components/NotificationCenter';
 import './ParentDashboard.css';
 
 const ParentDashboard = () => {
