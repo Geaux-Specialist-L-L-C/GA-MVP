@@ -1,0 +1,35 @@
+
+.parent-profile {
+  padding: 2rem;
+
+  .students-section {
+    margin-top: 2rem;
+  }
+
+  .student-card {
+    border: 1px solid #ddd;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 8px;
+    
+    .progress-summary {
+      margin-top: 1rem;
+    }
+  }
+
+  .add-student-form {
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px solid #eee;
+    border-radius: 8px;
+
+    input {
+      margin-right: 1rem;
+      padding: 0.5rem;
+    }
+
+    button {
+      margin-right: 0.5rem;
+    }
+  }
+}

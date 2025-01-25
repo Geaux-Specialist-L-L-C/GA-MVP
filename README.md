@@ -1,13 +1,70 @@
-<<<<<<< HEAD
-# GA-MVP
-Geaux Academy MVP
-=======
-# React + Vite
+# Geaux Academy
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Getting Started
 
-Currently, two official plugins are available:
+### Prerequisites
+- Node.js (version 18 or higher)
+- Firebase CLI (`npm install -g firebase-tools`)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
->>>>>>> 1d9ef7a (Initial commit: React education platform setup)
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd GA-MVP
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create a `.env` file in the root directory with your Firebase configuration:
+   ```env
+   VITE_FIREBASE_API_KEY=your_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
+   VITE_FIREBASE_PROJECT_ID=geaux-academy
+   VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   VITE_FIREBASE_APP_ID=your_app_id
+   VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+   ```
+
+### Running the Application
+1. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+2. To run Firebase emulators (optional, for local development):
+   ```bash
+   firebase emulators:start
+   ```
+
+3. To build for production:
+   ```bash
+   npm run build
+   ```
+
+4. To preview the production build:
+   ```bash
+   npm run preview
+   ```
+
+### Accessing the Application
+- Development: `http://localhost:5173`
+- Production preview: `http://localhost:4173`
+
+### Firebase Setup
+1. Login to Firebase:
+   ```bash
+   firebase login
+   ```
+
+2. Initialize Firebase project:
+   ```bash
+   firebase init
+   ```
+
+### Deployment
+To deploy the application to Firebase:
+`
