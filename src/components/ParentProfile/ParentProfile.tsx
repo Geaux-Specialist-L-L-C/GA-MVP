@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { addStudent } from '../../store/slices/profileSlice';
 import { Student } from '../../types/profiles';
 
-export const ParentProfile: React.FC = () => {
+const ParentProfile: React.FC = () => {
   const dispatch = useDispatch();
   const parent = useSelector((state: RootState) => state.profile.parent);
   const [showAddStudent, setShowAddStudent] = useState(false);
@@ -70,3 +69,5 @@ export const ParentProfile: React.FC = () => {
     </div>
   );
 };
+
+export default ParentProfile;

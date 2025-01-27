@@ -12,6 +12,14 @@ import SignUp from './components/auth/SignUp';
 import Dashboard from './components/Dashboard';
 import PrivateRoute from './components/auth/PrivateRoute';
 import { AuthProvider } from './contexts/AuthContext';
+
+import CurriculumApprovalWrapper from './vue-components/CurriculumApprovalWrapper';
+import LearningStyleInsightsWrapper from './vue-components/LearningStyleInsightsWrapper';
+import ProgressTrackerWrapper from './vue-components/ProgressTrackerWrapper';
+import NotificationCenterWrapper from './vue-components/NotificationCenterWrapper';
+import ParentDashboardWrapper from './vue-components/ParentDashboardWrapper';
+import ParentProfile from './components/ParentProfile/ParentProfile';
+import TakeAssessment from './pages/TakeAssessment';
 import './App.css';
 
 function App() {
@@ -27,6 +35,7 @@ function App() {
             <Route path="/features" element={<Features />} />
             <Route path="/curriculum" element={<Curriculum />} />
             <Route path="/learning-styles" element={<LearningStyles />} />
+            <Route path="/take-assessment" element={<TakeAssessment />} />
             <Route path="/contact" element={<Contact />} />
             
             {/* Auth Routes */}
@@ -41,6 +50,22 @@ function App() {
                   <Dashboard />
                 </PrivateRoute>
               } 
+            />
+            <Route 
+              path="/parent-dashboard" 
+              element={
+                <PrivateRoute>
+                  <ParentDashboardWrapper />
+                </PrivateRoute>
+              } 
+            />
+            <Route
+              path="/parent-profile"
+              element={
+                <PrivateRoute>
+                  <ParentProfile />
+                </PrivateRoute>
+              }
             />
           </Routes>
         </main>

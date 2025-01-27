@@ -1,4 +1,7 @@
-// src/components/home/LearningStyles.jsx
+// src/pages/LearningStyles.jsx
+import React from 'react';
+import styled from 'styled-components';
+import InfoCard from '../common/InfoCard'; // Fixed path
 import { motion } from 'framer-motion';
 import Card from '../common/Card';
 import './LearningStyles.css';

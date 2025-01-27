@@ -1,29 +1,13 @@
-// src/pages/Features.jsx
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
+import { FaChartLine, FaChalkboardTeacher, FaGamepad, FaBullseye } from "react-icons/fa";
 
 const Features = () => {
   const features = [
-    {
-      title: "Personalized Learning Paths",
-      description: "AI-driven customization based on your learning style",
-      icon: "🎯"
-    },
-    {
-      title: "Real-time Progress Tracking",
-      description: "Monitor achievements and growth with detailed analytics",
-      icon: "📊"
-    },
-    {
-      title: "Interactive Content",
-      description: "Engage with multimedia lessons and activities",
-      icon: "🎮"
-    },
-    {
-      title: "Expert Support",
-      description: "Access to qualified educators and mentors",
-      icon: "👩‍🏫"
-    }
+    { title: "Personalized Learning Paths", description: "AI-driven customization based on your learning style", icon: <FaBullseye /> },
+    { title: "Real-time Progress Tracking", description: "Monitor achievements and growth with detailed analytics", icon: <FaChartLine /> },
+    { title: "Interactive Content", description: "Engage with multimedia lessons and activities", icon: <FaGamepad /> },
+    { title: "Expert Support", description: "Access to qualified educators and mentors", icon: <FaChalkboardTeacher /> }
   ];
 
   return (
@@ -60,7 +44,11 @@ const Features = () => {
 const FeaturesContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 4rem 2rem;
+
+  @media (max-width: 768px) {
+    padding: 3rem 1.5rem;
+  }
 `;
 
 const Header = styled.header`
@@ -82,7 +70,13 @@ const Header = styled.header`
 const FeatureGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2rem;
+  gap: 2.5rem;
+  margin-top: 3rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
 `;
 
 const FeatureCard = styled(motion.div)`
@@ -91,20 +85,48 @@ const FeatureCard = styled(motion.div)`
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   text-align: center;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+
   h3 {
     color: var(--primary-color);
     margin: 1rem 0;
+    font-size: 1.5rem;
   }
   
   p {
     color: var(--text-color);
+    flex-grow: 1;
+    line-height: 1.6;
   }
 `;
 
 const IconWrapper = styled.div`
   font-size: 3rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  svg {
+    width: 1em;
+    height: 1em;
+    transition: transform 0.3s ease;
+  }
+
+  &:hover svg {
+    transform: scale(1.1);
+  }
 `;
 
 export default Features;

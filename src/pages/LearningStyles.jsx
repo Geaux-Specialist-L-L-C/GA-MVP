@@ -1,149 +1,215 @@
-// src/pages/LearningStyles.jsx
-import { motion } from 'framer-motion';
+import React from 'react';
 import styled from 'styled-components';
+import { motion } from 'framer-motion';
+import { FaEye, FaHeadphones, FaHandPaper, FaBook } from 'react-icons/fa';
+import InfoCard from '../components/common/InfoCard';
+import { Link } from 'react-router-dom';
 
 const LearningStyles = () => {
   const styles = [
     {
-      type: "Visual",
-      description: "Learn best through images, diagrams, and spatial understanding",
-      characteristics: ["Prefer diagrams", "Remember visual details", "Enjoy videos"],
-      icon: "👁️"
+      title: "Visual Learning",
+      description: [
+        'Learn best through images, diagrams, and spatial understanding',
+        'Prefer visual aids and demonstrations',
+        'Remember visual details easily',
+        'Excel with charts and graphs'
+      ],
+      icon: <FaEye />
     },
     {
-      type: "Auditory",
-      description: "Process information effectively through listening and discussion",
-      characteristics: ["Learn by hearing", "Enjoy discussions", "Remember spoken information"],
-      icon: "👂"
+      title: "Auditory Learning",
+      description: [
+        'Process information effectively through listening',
+        'Learn through discussions and lectures',
+        'Remember spoken information well',
+        'Benefit from audio materials'
+      ],
+      icon: <FaHeadphones />
     },
     {
-      type: "Kinesthetic",
-      description: "Learn through hands-on experience and physical activity",
-      characteristics: ["Learn by doing", "Prefer active participation", "Remember physical activities"],
-      icon: "✋"
+      title: "Kinesthetic Learning",
+      description: [
+        'Learn through hands-on experience',
+        'Prefer active participation',
+        'Remember physical activities',
+        'Excel in practical exercises'
+      ],
+      icon: <FaHandPaper />
     },
     {
-      type: "Reading/Writing",
-      description: "Excel through written words and text-based input",
-      characteristics: ["Enjoy reading", "Take detailed notes", "Prefer written instructions"],
-      icon: "📚"
+      title: "Reading/Writing Learning",
+      description: [
+        'Excel through written content',
+        'Take detailed notes',
+        'Prefer text-based learning',
+        'Learn best by writing'
+      ],
+      icon: <FaBook />
     }
   ];
 
   return (
-    <StylesContainer>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Header>
-          <h1>Understanding Learning Styles</h1>
-          <p>Discover how you learn best and optimize your educational journey</p>
-        </Header>
+    <Container>
+      <Header>
+        <h1>Understanding Learning Styles</h1>
+        <p>Discover how you learn best and optimize your educational journey</p>
+      </Header>
 
-        <StylesGrid>
-          {styles.map((style, index) => (
-            <StyleCard
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <IconWrapper>{style.icon}</IconWrapper>
-              <h3>{style.type}</h3>
-              <p>{style.description}</p>
-              <CharacteristicsList>
-                {style.characteristics.map((item, i) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </CharacteristicsList>
-            </StyleCard>
-          ))}
-        </StylesGrid>
+      <StylesGrid>
+        {styles.map((style, index) => (
+          <StyleCard
+            key={index}
+            as={motion.div}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <IconWrapper>{style.icon}</IconWrapper>
+            <h3>{style.title}</h3>
+            <Description>
+              {style.description.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </Description>
+          </StyleCard>
+        ))}
+      </StylesGrid>
 
-        <AssessmentSection>
-          <h2>Find Your Learning Style</h2>
-          <p>Take our comprehensive assessment to discover your unique learning profile</p>
-          <AssessmentButton>Take Assessment</AssessmentButton>
-        </AssessmentSection>
-      </motion.div>
-    </StylesContainer>
+      <CTASection>
+        <p>Ready to discover your learning style?</p>
+        <Button as={Link} to="/take-assessment">Take Assessment</Button>
+      </CTASection>
+    </Container>
   );
 };
 
-const StylesContainer = styled.div`
+const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 4rem 2rem;
 `;
 
 const Header = styled.header`
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 4rem;
   
   h1 {
-    font-size: 2.5rem;
+    font-size: 2.8rem;
     color: var(--primary-color);
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
   }
   
   p {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     color: var(--text-color);
   }
 `;
 
 const StylesGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2.5rem;
   margin-bottom: 4rem;
 `;
 
-const StyleCard = styled(motion.div)`
-  padding: 2rem;
+const StyleCard = styled.div`
+  padding: 2.5rem;
   background: white;
-  border-radius: 8px;
+  border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-`;
-
-const IconWrapper = styled.div`
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
   text-align: center;
-`;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 
-const CharacteristicsList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin-top: 1rem;
-  
-  li {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #eee;
+  &:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  h3 {
+    color: var(--primary-color);
+    margin: 1.2rem 0;
+    font-size: 1.6rem;
+  }
+
+  p {
+    color: var(--text-color);
+    line-height: 1.6;
   }
 `;
 
-const AssessmentSection = styled.section`
-  text-align: center;
-  padding: 3rem;
-  background: var(--light-bg);
-  border-radius: 8px;
+const IconWrapper = styled.div`
+  font-size: 4rem;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  svg {
+    transition: transform 0.3s ease;
+  }
+
+  &:hover svg {
+    transform: scale(1.1);
+  }
 `;
 
-const AssessmentButton = styled.button`
-  padding: 1rem 2rem;
-  background: var(--primary-color);
+const CTASection = styled.div`
+  text-align: center;
+  margin-top: 4rem;
+  padding: 2rem;
+
+  p {
+    font-size: 1.4rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+  }
+`;
+
+const Button = styled(Link)`
+  background-color: var(--primary-color);
   color: white;
+  padding: 1rem 2rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 1rem;
-  
+  text-decoration: none;
+  display: inline-block;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+
   &:hover {
-    background: var(--secondary-color);
+    background-color: var(--secondary-color);
+    transform: scale(1.05);
+    color: white;
+  }
+`;
+
+const Description = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  
+  li {
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+    padding-left: 1.5rem;
+    position: relative;
+    
+    &:before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--primary-color);
+    }
   }
 `;
 
