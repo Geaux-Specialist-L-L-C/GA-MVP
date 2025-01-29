@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   signInWithEmailAndPassword, 
   signInWithPopup,
@@ -14,13 +14,13 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+      setCurrentUser(user);
       setLoading(false);
     }, (error) => {
       console.error("Auth state change error:", error);
@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      setUser(result.user);
+      setCurrentUser(result.user);
       return result;
     } catch (error) {
       setError(error.message);
@@ -68,7 +68,7 @@ export function AuthProvider({ children }) {
   };
 
   const value = {
-    user,
+    currentUser,
     loading,
     error,
     login,

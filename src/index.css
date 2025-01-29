@@ -8,13 +8,53 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  --primary-color: #646cff;
-  --secondary-color: #535bf2;
+  
+  /* Primary Colors */
+  --primary-color: #D4AF37;      /* Rich Gold */
+  --secondary-color: #2C3E50;    /* Dark Blue-Gray */
+  --accent-color: #E67E22;       /* Warm Orange */
+  
+  /* Background Colors */
+  --background-color: #FFFFFF;    /* White */
+  --background-alt: #F8F9FA;     /* Light Gray */
+  --header-bg: #2C3E50;          /* Dark Blue-Gray */
+  
+  /* Text Colors */
+  --text-primary: #2C3E50;       /* Dark Blue-Gray */
+  --text-secondary: #595959;     /* Medium Gray */
+  --text-light: #FFFFFF;         /* White */
+  
+  /* Button Colors */
+  --btn-primary-bg: #D4AF37;     /* Gold */
+  --btn-primary-text: #FFFFFF;   /* White */
+  --btn-secondary-bg: #2C3E50;   /* Dark Blue-Gray */
+  --btn-secondary-text: #FFFFFF; /* White */
+  --btn-hover-bg: #C19B26;       /* Darker Gold */
+  
+  /* Interactive Elements */
+  --hover-color: #B8860B;        /* Darker Gold */
+  --active-color: #DAA520;       /* Lighter Gold */
+  --link-color: #D4AF37;         /* Gold */
+  
+  /* Success/Error States */
+  --success-color: #2ECC71;      /* Green */
+  --warning-color: #F1C40F;      /* Yellow */
+  --error-color: #E74C3C;        /* Red */
+  
+  --max-width: 1200px;
+  --header-height: 80px;
   --text-color: #333;
   --light-bg: #f5f5f5;
-  --success-color: #28a745;
-  --warning-color: #ffc107;
-  --danger-color: #dc3545;
+  --container-padding: 2rem;
+  
+  /* Transitions */
+  --transition-speed: 0.3s;
+  --transition-timing: ease;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
 }
 
 * {
@@ -36,6 +76,11 @@ body {
   min-height: 100vh;
   margin: 0;
   padding: 0;
+  background-color: var(--background-color);
+  color: var(--text-light-color);
+  padding-top: 80px; /* Adjust based on header height */
+  margin-top: var(--header-height);
+  background: var(--background-color);
 }
 
 h1 {
@@ -77,4 +122,24 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Header Specific Styles */
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--header-bg);
+  height: var(--header-height);
+  z-index: 1000;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Container Layout */
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--container-padding);
 }

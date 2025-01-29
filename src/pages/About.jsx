@@ -17,31 +17,24 @@ const About = () => {
 
         <Section>
           <h2>Our Mission</h2>
-          <p>At Geaux Academy, we believe every student has a unique way of learning. Our mission is to provide personalized educational experiences that adapt to individual learning styles, ensuring better understanding and retention.</p>
+          <p>At Geaux Academy, we believe in tailoring education to each student's unique learning style, 
+             ensuring better comprehension and retention through personalized approaches.</p>
         </Section>
 
-        <Section>
-          <h2>Our Approach</h2>
-          <Grid>
-            <Card>
-              <h3>Assessment First</h3>
-              <p>We begin by understanding your learning style through comprehensive assessment.</p>
-            </Card>
-            <Card>
-              <h3>Personalized Learning</h3>
-              <p>Create customized learning paths based on your individual needs.</p>
-            </Card>
-            <Card>
-              <h3>Continuous Support</h3>
-              <p>Provide ongoing guidance and adaptable content to ensure success.</p>
-            </Card>
-          </Grid>
-        </Section>
-
-        <Section>
-          <h2>Our Team</h2>
-          <p>Composed of experienced educators, learning specialists, and technology experts dedicated to transforming education.</p>
-        </Section>
+        <Grid>
+          <Card>
+            <h3>Assessment First</h3>
+            <p>Understanding your learning style through comprehensive evaluation</p>
+          </Card>
+          <Card>
+            <h3>Personalized Learning</h3>
+            <p>Custom learning paths based on your individual needs</p>
+          </Card>
+          <Card>
+            <h3>Continuous Support</h3>
+            <p>Ongoing guidance and adaptable content to ensure success</p>
+          </Card>
+        </Grid>
       </motion.div>
     </AboutContainer>
   );

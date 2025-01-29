@@ -35,7 +35,6 @@ function App() {
             <Route path="/features" element={<Features />} />
             <Route path="/curriculum" element={<Curriculum />} />
             <Route path="/learning-styles" element={<LearningStyles />} />
-            <Route path="/take-assessment" element={<TakeAssessment />} />
             <Route path="/contact" element={<Contact />} />
             
             {/* Auth Routes */}
@@ -66,6 +65,14 @@ function App() {
                   <ParentProfile />
                 </PrivateRoute>
               }
+            />
+            <Route 
+              path="/take-assessment" 
+              element={
+                <PrivateRoute>
+                  <TakeAssessment />
+                </PrivateRoute>
+              } 
             />
           </Routes>
         </main>

@@ -4,7 +4,11 @@ import { FaChartLine, FaChalkboardTeacher, FaGamepad, FaBullseye } from "react-i
 
 const Features = () => {
   const features = [
-    { title: "Personalized Learning Paths", description: "AI-driven customization based on your learning style", icon: <FaBullseye /> },
+    {
+      title: "Personalized Learning Paths",
+      description: "AI-driven customization based on your learning style",
+      icon: <FaBullseye />
+    },
     { title: "Real-time Progress Tracking", description: "Monitor achievements and growth with detailed analytics", icon: <FaChartLine /> },
     { title: "Interactive Content", description: "Engage with multimedia lessons and activities", icon: <FaGamepad /> },
     { title: "Expert Support", description: "Access to qualified educators and mentors", icon: <FaChalkboardTeacher /> }
@@ -21,7 +25,6 @@ const Features = () => {
           <h1>Platform Features</h1>
           <p>Discover the tools that make learning personalized and effective</p>
         </Header>
-
         <FeatureGrid>
           {features.map((feature, index) => (
             <FeatureCard

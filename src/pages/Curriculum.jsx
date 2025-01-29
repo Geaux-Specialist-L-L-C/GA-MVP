@@ -4,7 +4,11 @@ import styled from 'styled-components';
 
 const Curriculum = () => {
   const subjects = [
-    { id: 1, name: 'Mathematics', courses: ['Algebra', 'Geometry', 'Calculus'] },
+    {
+      id: 1,
+      name: 'Mathematics',
+      courses: ['Algebra', 'Geometry', 'Calculus']
+    },
     { id: 2, name: 'Science', courses: ['Biology', 'Chemistry', 'Physics'] },
     { id: 3, name: 'Languages', courses: ['English', 'Spanish', 'French'] }
   ];

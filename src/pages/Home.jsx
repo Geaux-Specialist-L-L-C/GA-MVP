@@ -1,5 +1,6 @@
 // src/pages/Home.jsx
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import Hero from '../components/home/Hero';
 import Features from '../components/home/Features';
 import LearningStyles from '../components/home/LearningStyles';
@@ -20,7 +21,7 @@ const Home = () => {
         <CallToAction>
           <h2>Ready to Start Your Learning Journey?</h2>
           <p>Join Geaux Academy today and discover your unique learning style</p>
-          <Button to="/signup">Get Started</Button>
+          <CTAButton to="/signup">Get Started Now</CTAButton>
         </CallToAction>
       </motion.div>
     </HomeContainer>
@@ -29,42 +30,52 @@ const Home = () => {
 
 const HomeContainer = styled.div`
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 2rem;
+  min-height: calc(100vh - var(--header-height));
+  display: flex;
+  flex-direction: column;
 `;
 
 const CallToAction = styled.section`
   text-align: center;
-  padding: 4rem 0;
-  background: var(--light-bg);
-  margin: 2rem 0;
+  padding: 4rem 2rem;
+  background: var(--background-alt);
   border-radius: 8px;
+  margin: 4rem 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
   h2 {
-    font-size: 2rem;
+    font-size: 2.5rem;
     color: var(--primary-color);
     margin-bottom: 1rem;
+    font-weight: 600;
   }
 
   p {
+    font-size: 1.2rem;
     color: var(--text-color);
     margin-bottom: 2rem;
+    line-height: 1.5;
   }
 `;
 
-const Button = styled.button`
+const CTAButton = styled(Link)`
+  display: inline-block;
   padding: 1rem 2rem;
   background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
+  color: var(--text-light);
   font-size: 1.1rem;
-  cursor: pointer;
-  transition: background 0.2s;
+  font-weight: 600;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.3s ease;
 
   &:hover {
-    background: var(--secondary-color);
+    background: var(--hover-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
 `;
 
