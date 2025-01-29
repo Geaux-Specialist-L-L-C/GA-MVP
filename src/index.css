@@ -15,14 +15,14 @@
   --accent-color: #E67E22;       /* Warm Orange */
   
   /* Background Colors */
-  --background-color: #FFFFFF;    /* White */
+  --background-color: #ffffff;    /* White */
   --background-alt: #F8F9FA;     /* Light Gray */
   --header-bg: #2C3E50;          /* Dark Blue-Gray */
   
   /* Text Colors */
   --text-primary: #2C3E50;       /* Dark Blue-Gray */
   --text-secondary: #595959;     /* Medium Gray */
-  --text-light: #FFFFFF;         /* White */
+  --text-light: #ffffff;         /* White */
   
   /* Button Colors */
   --btn-primary-bg: #D4AF37;     /* Gold */
@@ -54,7 +54,6 @@
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
 }
 
 * {

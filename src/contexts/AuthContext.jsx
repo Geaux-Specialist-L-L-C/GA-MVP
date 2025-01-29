@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
-  signInWithEmailAndPassword, 
   signInWithPopup,
   signOut,
   onAuthStateChanged
@@ -20,7 +19,17 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
+      console.log("Auth State Changed: ", user);  // Debugging log
+      if (user) {
+        setCurrentUser({
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+        });
+      } else {
+        setCurrentUser(null);
+      }
       setLoading(false);
     }, (error) => {
       console.error("Auth state change error:", error);
@@ -31,49 +40,45 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
-  const login = async (email, password) => {
+  async function loginWithGoogle() {
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      setCurrentUser(result.user);
-      return result;
-    } catch (error) {
-      setError(error.message);
-      throw error;
-    }
-  };
+      googleProvider.setCustomParameters({
+        prompt: 'select_account'
+      });
 
-  const googleLogin = async () => {
-    try {
-      setError(null);
       const result = await signInWithPopup(auth, googleProvider);
-      return result;
+      const user = result.user;
+      console.log("✅ Google Login Successful: ", user); // Debugging log
+      setCurrentUser({
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+      });
+      return user;
     } catch (error) {
-      console.error("Google login error:", error);
-      if (error.code === 'auth/popup-closed-by-user') {
-        throw error;
-      }
-      setError(error.message);
-      throw new Error('Failed to login with Google');
+      console.error("❌ Google Login Error:", error);
+      const errorMessage = error.code === 'auth/popup-blocked' 
+        ? "Login popup was blocked. Please allow popups for this site."
+        : "Failed to log in. Please try again.";
+      throw new Error(errorMessage);
     }
-  };
+  }
 
-  const logout = async () => {
+  async function logout() {
     try {
       await signOut(auth);
+      setCurrentUser(null);
     } catch (error) {
-      console.error("Logout error:", error);
-      setError(error.message);
-      throw error;
+      console.error("Logout Error:", error);
+      throw new Error("Failed to log out.");
     }
-  };
+  }
 
   const value = {
     currentUser,
-    loading,
-    error,
-    login,
-    googleLogin,
-    logout
+    loginWithGoogle,
+    logout,
   };
 
   return (

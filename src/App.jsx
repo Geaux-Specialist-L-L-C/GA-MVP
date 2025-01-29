@@ -13,13 +13,9 @@ import Dashboard from './components/Dashboard';
 import PrivateRoute from './components/auth/PrivateRoute';
 import { AuthProvider } from './contexts/AuthContext';
 
-import CurriculumApprovalWrapper from './vue-components/CurriculumApprovalWrapper';
-import LearningStyleInsightsWrapper from './vue-components/LearningStyleInsightsWrapper';
-import ProgressTrackerWrapper from './vue-components/ProgressTrackerWrapper';
-import NotificationCenterWrapper from './vue-components/NotificationCenterWrapper';
-import ParentDashboardWrapper from './vue-components/ParentDashboardWrapper';
 import ParentProfile from './components/ParentProfile/ParentProfile';
 import TakeAssessment from './pages/TakeAssessment';
+import StudentDashboard from './pages/StudentDashboard';
 import './App.css';
 
 function App() {
@@ -36,44 +32,16 @@ function App() {
             <Route path="/curriculum" element={<Curriculum />} />
             <Route path="/learning-styles" element={<LearningStyles />} />
             <Route path="/contact" element={<Contact />} />
-            
+
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             
             {/* Protected Routes */}
-            <Route 
-              path="/dashboard" 
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              } 
-            />
-            <Route 
-              path="/parent-dashboard" 
-              element={
-                <PrivateRoute>
-                  <ParentDashboardWrapper />
-                </PrivateRoute>
-              } 
-            />
-            <Route
-              path="/parent-profile"
-              element={
-                <PrivateRoute>
-                  <ParentProfile />
-                </PrivateRoute>
-              }
-            />
-            <Route 
-              path="/take-assessment" 
-              element={
-                <PrivateRoute>
-                  <TakeAssessment />
-                </PrivateRoute>
-              } 
-            />
+            <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+            <Route path="/parent-profile" element={<PrivateRoute><ParentProfile /></PrivateRoute>} />
+            <Route path="/take-assessment" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
+            <Route path="/student-dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
           </Routes>
         </main>
         <Footer />

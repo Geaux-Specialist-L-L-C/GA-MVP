@@ -31,8 +31,8 @@ const About = () => {
             <p>Custom learning paths based on your individual needs</p>
           </Card>
           <Card>
-            <h3>Continuous Support</h3>
-            <p>Ongoing guidance and adaptable content to ensure success</p>
+            <h3>Progress Tracking</h3>
+            <p>Monitor your educational journey with detailed analytics</p>
           </Card>
         </Grid>
       </motion.div>
@@ -79,7 +79,7 @@ const Section = styled.section`
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
   margin-top: 2rem;
 `;
