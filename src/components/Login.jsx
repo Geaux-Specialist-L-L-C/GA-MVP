@@ -1,51 +1,61 @@
-
-import React, { useState } from 'react';
-import { signInWithPopup } from 'firebase/auth';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, provider } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
+import './Login.css';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const navigate = useNavigate();
+  const { user, googleLogin } = useAuth();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const handleGoogleSignIn = async () => {
+    if (loading) return;
+    
+    setError('');
+    setLoading(true);
+    
     try {
-      const result = await signInWithPopup(auth, provider);
-      navigate('/dashboard');
-    } catch (error) {
-      console.error(error);
+      await googleLogin();
+    } catch (err) {
+      if (err.code !== 'auth/popup-closed-by-user') {
+        setError('Failed to sign in with Google. Please try again.');
+        console.error('Google sign in error:', err);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    // ...existing login logic...
-  };
-
   return (
-    <div>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div>
-          <label>Password:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <button type="submit">Login</button>
-      </form>
-      <button onClick={handleGoogleSignIn}>Sign in with Google</button>
+    <div className="login-container">
+      <div className="login-form">
+        <h2>Welcome Back</h2>
+        {error && <div className="error-message">{error}</div>}
+        <button 
+          onClick={handleGoogleSignIn}
+          className="google-button"
+          disabled={loading}
+        >
+          {loading ? (
+            <span>Signing in...</span>
+          ) : (
+            <>
+              <img 
+                src="/google-icon.svg" 
+                alt="Google" 
+              />
+              Sign in with Google
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 };
