@@ -1,11 +1,12 @@
 import React, { Suspense } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import styled, { ThemeProvider } from 'styled-components';
 import Layout from './components/layout/Layout';
 import { AuthProvider } from './contexts/AuthContext';
 import AuthRoute from './components/auth/AuthRoute';
-import ErrorBoundary from './components/shared/ErrorBoundary';
 import LoadingSpinner from './components/shared/LoadingSpinner';
+import theme from './styles/theme';
 
 // Public pages
 const Home = React.lazy(() => import('./pages/Home'));
@@ -27,11 +28,9 @@ const StudentDashboard = React.lazy(() => import('./pages/StudentDashboard'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
 function AppRoutes() {
-  const location = useLocation();
-
   return (
     <AnimatePresence mode="wait" initial={false}>
-      <Routes location={location} key={location.pathname}>
+      <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
@@ -39,17 +38,14 @@ function AppRoutes() {
         <Route path="/curriculum" element={<Curriculum />} />
         <Route path="/learning-styles" element={<LearningStyles />} />
         <Route path="/contact" element={<Contact />} />
-
-        {/* Auth Routes */}
-        <Route element={<AuthRoute requiresAuth={false} />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-        </Route>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
 
         {/* Protected Routes */}
-        <Route element={<AuthRoute requiresAuth={true} />}>
+        <Route element={<AuthRoute />}>
+          <Route path="/create-profile" element={<ParentProfile />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/parent-profile" element={<ParentProfile />} />
+          <Route path="/parent-dashboard" element={<ParentDashboard />} />
           <Route path="/take-assessment" element={<TakeAssessment />} />
           <Route path="/student-dashboard" element={<StudentDashboard />} />
         </Route>
@@ -62,9 +58,17 @@ function AppRoutes() {
   );
 }
 
+const MainContent = styled.main`
+  margin-top: 70px;
+  min-height: calc(100vh - 70px);
+  flex: 1;
+  position: relative;
+  z-index: 1;
+`;
+
 function App() {
   return (
-    <ErrorBoundary>
+    <ThemeProvider theme={theme}>
       <AuthProvider>
         <Layout>
           <Suspense 
@@ -74,11 +78,13 @@ function App() {
               return <div>Error loading module. Please refresh.</div>;
             }}
           >
-            <AppRoutes />
+            <MainContent>
+              <AppRoutes />
+            </MainContent>
           </Suspense>
         </Layout>
       </AuthProvider>
-    </ErrorBoundary>
+    </ThemeProvider>
   );
 }
 

@@ -1,18 +1,20 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { FcGoogle } from "react-icons/fc";
 
 const Login = () => {
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState("");
 
   const handleGoogleLogin = async () => {
     try {
       setError("");
       await loginWithGoogle();
-      navigate("/dashboard");
+      const destination = location.state?.from?.pathname || "/dashboard";
+      navigate(destination, { replace: true });
     } catch (error) {
       setError(error.message);
       console.error("Login error:", error);

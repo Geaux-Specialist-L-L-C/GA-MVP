@@ -1,7 +1,6 @@
-// src/pages/Home.jsx
 import React from "react";
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from "../contexts/AuthContext";
 import styled from 'styled-components';
 import { FaGraduationCap, FaChartLine, FaLightbulb, FaRocket } from 'react-icons/fa';
@@ -23,8 +22,27 @@ const itemVariants = {
   hover: { scale: 1.05 }
 };
 
+const features = [
+  {
+    icon: <FaGraduationCap />,
+    title: "Expert Instruction",
+    description: "Learn from industry professionals"
+  },
+  {
+    icon: <FaChartLine />,
+    title: "Track Progress",
+    description: "Monitor your growth with analytics"
+  },
+  {
+    icon: <FaLightbulb />,
+    title: "Interactive Learning",
+    description: "Engage with hands-on exercises"
+  }
+];
+
 const Home = () => {
   const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
@@ -43,31 +61,31 @@ const Home = () => {
       exit="exit"
     >
       <HeroSection>
-        <HeroContent>
-          <motion.h1 variants={itemVariants}>
-            Welcome to Geaux Academy
-          </motion.h1>
-          <motion.p variants={itemVariants}>
-            Your journey to excellence starts here
-          </motion.p>
-          <ButtonGroup>
-            <PrimaryButton
-              as={motion.button}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <HeroContent>
+            <h1>Welcome to Geaux Academy</h1>
+            <p>Personalized learning paths for every student</p>
+            <CTAButton 
+              onClick={() => navigate('/signup')}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <FaRocket /> Get Started
-            </PrimaryButton>
-            <SecondaryButton
-              as={motion.button}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Learn More
-            </SecondaryButton>
-          </ButtonGroup>
-        </HeroContent>
-        <HeroImage src={heroImage} alt="Learning illustration" />
+              Get Started
+            </CTAButton>
+          </HeroContent>
+        </motion.div>
+        <HeroImage 
+          src={heroImage} 
+          alt="Learning illustration"
+          as={motion.img}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        />
       </HeroSection>
 
       <FeaturesGrid>
@@ -88,27 +106,9 @@ const Home = () => {
   );
 };
 
-const features = [
-  {
-    icon: <FaGraduationCap />,
-    title: "Expert Instruction",
-    description: "Learn from industry professionals"
-  },
-  {
-    icon: <FaChartLine />,
-    title: "Track Progress",
-    description: "Monitor your growth with analytics"
-  },
-  {
-    icon: <FaLightbulb />,
-    title: "Interactive Learning",
-    description: "Engage with hands-on exercises"
-  }
-];
-
 const HomeContainer = styled.div`
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 80px auto 0; // Added top margin to account for fixed header
   padding: 2rem;
 `;
 
@@ -149,7 +149,7 @@ const ButtonGroup = styled.div`
   }
 `;
 
-const Button = styled(motion.button)`
+const CTAButton = styled(motion.button)`
   padding: 1rem 2rem;
   border-radius: 8px;
   font-size: 1.1rem;
@@ -158,18 +158,9 @@ const Button = styled(motion.button)`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-`;
-
-const PrimaryButton = styled(Button)`
   background: var(--primary-color);
   color: white;
   border: none;
-`;
-
-const SecondaryButton = styled(Button)`
-  background: transparent;
-  border: 2px solid var(--primary-color);
-  color: var(--primary-color);
 `;
 
 const HeroImage = styled(motion.img)`

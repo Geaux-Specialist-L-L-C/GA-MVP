@@ -2,23 +2,29 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
-const Sidebar = ({ isSidebarOpen, setSidebarOpen }) => {
+const Sidebar = ({ isOpen, onClose }) => {
   return (
-    <SidebarContainer isOpen={isSidebarOpen}>
-      <CloseButton onClick={() => setSidebarOpen(false)}>×</CloseButton>
+    <SidebarContainer
+      as={motion.div}
+      initial={{ x: '-100%' }}
+      animate={{ x: isOpen ? 0 : '-100%' }}
+      transition={{ duration: 0.3 }}
+    >
+      <CloseButton onClick={onClose}>×</CloseButton>
       <Nav>
         <NavItem to="/">
-          <Icon>🏠</Icon> {isSidebarOpen && "Dashboard"}
+          <Icon>🏠</Icon> {isOpen && "Dashboard"}
         </NavItem>
         <NavItem to="/curriculum">
-          <Icon>📖</Icon> {isSidebarOpen && "Curriculum"}
+          <Icon>📖</Icon> {isOpen && "Curriculum"}
         </NavItem>
         <NavItem to="/progress">
-          <Icon>📊</Icon> {isSidebarOpen && "Progress"}
+          <Icon>📊</Icon> {isOpen && "Progress"}
         </NavItem>
         <NavItem to="/profile">
-          <Icon>👤</Icon> {isSidebarOpen && "Profile"}
+          <Icon>👤</Icon> {isOpen && "Profile"}
         </NavItem>
       </Nav>
     </SidebarContainer>
@@ -34,10 +40,6 @@ const SidebarContainer = styled.div`
   width: 250px;
   background: #f8f9fa;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease-in-out;
-  transform: ${(props) => (props.isOpen ? "translateX(0)" : "translateX(-250px)")};
-  display: flex;
-  flex-direction: column;
   border-right: 2px solid #ddd;
   z-index: 900;
 `;

@@ -1,33 +1,47 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import Sidebar from './Sidebar';
 
 const Layout = ({ children }) => {
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { currentUser } = useAuth();
+  const location = useLocation();
+  const isAuthPage = ['/login', '/signup'].includes(location.pathname);
 
   return (
     <LayoutContainer>
-      {/* Global Header */}
-      <Header>
-        <HeaderLeft>
-          <MenuButton onClick={() => setSidebarOpen(!isSidebarOpen)}>
-            ☰
-          </MenuButton>
-          <Logo>Geaux Academy</Logo>
-        </HeaderLeft>
-        <NavLinks>
-          <NavLink to="/">Home</NavLink>
-          <NavLink to="/about">About</NavLink>
-          <NavLink to="/features">Features</NavLink>
-          <NavLink to="/curriculum">Curriculum</NavLink>
-          <NavLink to="/contact">Contact</NavLink>
-        </NavLinks>
-      </Header>
+      {!isAuthPage && (
+        <Header>
+          <HeaderLeft>
+            {currentUser && (
+              <MenuButton onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+                ☰
+              </MenuButton>
+            )}
+            <Logo>Geaux Academy</Logo>
+          </HeaderLeft>
+          <NavLinks>
+            <NavLink to="/">Home</NavLink>
+            <NavLink to="/about">About</NavLink>
+            <NavLink to="/features">Features</NavLink>
+            <NavLink to="/curriculum">Curriculum</NavLink>
+            <NavLink to="/contact">Contact</NavLink>
+          </NavLinks>
+        </Header>
+      )}
 
       <Content>
-        <Sidebar isSidebarOpen={isSidebarOpen} setSidebarOpen={setSidebarOpen} />
-        <MainContent isSidebarOpen={isSidebarOpen}>{children}</MainContent>
+        {currentUser && (
+          <Sidebar 
+            isOpen={isSidebarOpen} 
+            onClose={() => setIsSidebarOpen(false)} 
+          />
+        )}
+        <MainContent $isSidebarOpen={isSidebarOpen && currentUser}>
+          {children}
+        </MainContent>
       </Content>
     </LayoutContainer>
   );
@@ -104,7 +118,7 @@ const MainContent = styled.main`
   flex: 1;
   padding: 2rem;
   transition: margin-left 0.3s ease-in-out;
-  margin-left: ${(props) => (props.isSidebarOpen ? "250px" : "0px")};
+  margin-left: ${({ $isSidebarOpen }) => ($isSidebarOpen ? "250px" : "0px")};
 
   @media (max-width: 768px) {
     margin-left: 0;
