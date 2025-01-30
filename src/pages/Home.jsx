@@ -3,12 +3,8 @@ import React from "react";
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from "../contexts/AuthContext";
-import Hero from '../components/home/Hero';
-import Features from '../components/home/Features';
-import LearningStyles from '../components/home/LearningStyles';
 import styled from 'styled-components';
-import heroImage from "../assets/hero-image.png"; // Fixed path
-import '../styles/Home.css'; // Fixed path
+import heroImage from "/public/images/hero-learning.svg";
 
 const Home = () => {
   const { currentUser, logout } = useAuth();

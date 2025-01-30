@@ -1,5 +1,7 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 from typing import List, Dict
 import openai
@@ -21,6 +23,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add security middleware
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+security = HTTPBearer()
+
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Request: {request.method} {request.url}")
+    response = await call_next(request)
+    return response
+
 # Azure OpenAI Configuration
 openai.api_type = "azure"
 openai.api_base = os.getenv("VITE_AZUREAI_ENDPOINT_URL")
@@ -33,6 +46,11 @@ class ChatMessage(BaseModel):
 @app.post("/chat")
 async def get_chat_response(chat: ChatMessage):
     try:
+        if not openai.api_key:
+            raise HTTPException(
+                status_code=500,
+                detail="OpenAI API key not configured"
+            )
         response = openai.ChatCompletion.create(
             engine=os.getenv("VITE_AZURE_DEPLOYMENT_NAME", "gpt-35-turbo"),
             messages=chat.messages,
@@ -45,6 +63,12 @@ async def get_chat_response(chat: ChatMessage):
             "response": response.choices[0].message.content,
             "usage": response.usage
         }
+    except openai.error.OpenAIError as e:
+        logger.error(f"OpenAI API error: {str(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail="Service temporarily unavailable"
+        )
     except Exception as e:
         logger.error(f"Error in chat completion: {str(e)}")
         raise HTTPException(

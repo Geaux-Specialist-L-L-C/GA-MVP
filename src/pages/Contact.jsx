@@ -2,6 +2,8 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import styled from 'styled-components';
+import React from 'react';
+import './styles/Contact.css';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -102,14 +104,29 @@ const Contact = () => {
           </SuccessMessage>
         )}
       </motion.div>
+      <div className="social-media">
+        <h2>Follow Us</h2>
+        {/* Social media links */}
+      </div>
+      <div className="office-info">
+        <h2>Our Office</h2>
+        <p>Location: 123 Main St, Anytown, USA</p>
+        <p>Hours: Mon-Fri, 9am-5pm</p>
+      </div>
+      <div className="support-info">
+        <h2>Support</h2>
+        <p>Email: support@geauxacademy.com</p>
+        <p>Phone: (123) 456-7890</p>
+      </div>
     </ContactContainer>
   );
 };
 
 const ContactContainer = styled.div`
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 60px auto 0; // Add top margin to match header height
   padding: 2rem;
+  min-height: calc(100vh - 60px); // Ensure full viewport height minus header
 `;
 
 const Header = styled.header`

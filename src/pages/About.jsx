@@ -1,4 +1,5 @@
 // src/pages/About.jsx
+import React from 'react';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
 
@@ -19,6 +20,30 @@ const About = () => {
           <h2>Our Mission</h2>
           <p>At Geaux Academy, we believe in tailoring education to each student's unique learning style, 
              ensuring better comprehension and retention through personalized approaches.</p>
+        </Section>
+
+        <Section>
+          <h2>Core Values</h2>
+          <ul>
+            <li>Integrity</li>
+            <li>Excellence</li>
+            <li>Innovation</li>
+            <li>Collaboration</li>
+          </ul>
+        </Section>
+
+        <Section>
+          <h2>Meet Our Team</h2>
+          <div className="team-grid">
+            {/* Team member cards */}
+          </div>
+        </Section>
+
+        <Section>
+          <h2>Why Choose Us</h2>
+          <div className="benefits-grid">
+            {/* Feature/benefit cards */}
+          </div>
         </Section>
 
         <Grid>
@@ -42,8 +67,9 @@ const About = () => {
 
 const AboutContainer = styled.div`
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 60px auto 0; // Add top margin to match header height
   padding: 2rem;
+  min-height: calc(100vh - 60px); // Ensure full viewport height minus header
 `;
 
 const Header = styled.header`

@@ -2,7 +2,6 @@ import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FaEye, FaHeadphones, FaHandPaper, FaBook } from 'react-icons/fa';
-import InfoCard from '../components/common/InfoCard';
 import { Link } from 'react-router-dom';
 
 const LearningStyles = () => {
@@ -52,10 +51,8 @@ const LearningStyles = () => {
   return (
     <Container>
       <Header>
-        <h1>Understanding Learning Styles</h1>
-        <p>Discover how you learn best and optimize your educational journey</p>
+        <h1>Learning Styles</h1>
       </Header>
-
       <StylesGrid>
         {styles.map((style, index) => (
           <StyleCard
@@ -75,10 +72,9 @@ const LearningStyles = () => {
           </StyleCard>
         ))}
       </StylesGrid>
-
       <CTASection>
-        <p>Ready to discover your learning style?</p>
-        <Button as={Link} to="/take-assessment">Take Assessment</Button>
+        <p>Discover your learning style by taking the assessment.</p>
+        <Button to="/assessment">Take the Assessment</Button>
       </CTASection>
     </Container>
   );
