@@ -8,27 +8,37 @@ const Sidebar = ({ isSidebarOpen, setSidebarOpen }) => {
     <SidebarContainer isOpen={isSidebarOpen}>
       <CloseButton onClick={() => setSidebarOpen(false)}>×</CloseButton>
       <Nav>
-        <NavItem to="/">🏠 Dashboard</NavItem>
-        <NavItem to="/curriculum">📖 Curriculum</NavItem>
-        <NavItem to="/progress">📊 Progress</NavItem>
-        <NavItem to="/profile">👤 Profile</NavItem>
+        <NavItem to="/">
+          <Icon>🏠</Icon> {isSidebarOpen && "Dashboard"}
+        </NavItem>
+        <NavItem to="/curriculum">
+          <Icon>📖</Icon> {isSidebarOpen && "Curriculum"}
+        </NavItem>
+        <NavItem to="/progress">
+          <Icon>📊</Icon> {isSidebarOpen && "Progress"}
+        </NavItem>
+        <NavItem to="/profile">
+          <Icon>👤</Icon> {isSidebarOpen && "Profile"}
+        </NavItem>
       </Nav>
     </SidebarContainer>
   );
 };
 
+/* Styled Components */
 const SidebarContainer = styled.div`
-  width: ${(props) => (props.isOpen ? '250px' : '0px')};
-  transition: width 0.3s ease-in-out;
-  background: #f8f9fa;
+  position: fixed;
+  top: 60px; // Below header
+  left: 0;
   height: 100vh;
-  overflow: hidden;
+  width: 250px;
+  background: #f8f9fa;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease-in-out;
+  transform: ${(props) => (props.isOpen ? "translateX(0)" : "translateX(-250px)")};
   display: flex;
   flex-direction: column;
   border-right: 2px solid #ddd;
-  position: fixed;
-  top: 60px;
-  left: 0;
   z-index: 900;
 `;
 
@@ -48,16 +58,23 @@ const Nav = styled.nav`
 `;
 
 const NavItem = styled(Link)`
-  padding: 10px;
+  display: flex;
+  align-items: center;
+  padding: 12px;
   font-weight: 600;
   text-decoration: none;
   color: #333;
-  display: block;
-
+  transition: background 0.3s ease-in-out, padding 0.3s ease-in-out;
+  
   &:hover {
     background: #007bff;
     color: white;
+    padding-left: ${(props) => (props.isOpen ? "20px" : "10px")};
   }
+`;
+
+const Icon = styled.span`
+  margin-right: 10px;
 `;
 
 export default Sidebar;

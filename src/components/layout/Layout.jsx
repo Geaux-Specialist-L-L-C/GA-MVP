@@ -8,9 +8,12 @@ const Layout = ({ children }) => {
 
   return (
     <LayoutContainer>
+      {/* Global Header */}
       <Header>
         <HeaderLeft>
-          <MenuButton onClick={() => setSidebarOpen(!isSidebarOpen)}>☰</MenuButton>
+          <MenuButton onClick={() => setSidebarOpen(!isSidebarOpen)}>
+            ☰
+          </MenuButton>
           <Logo>Geaux Academy</Logo>
         </HeaderLeft>
         <NavLinks>
@@ -30,6 +33,7 @@ const Layout = ({ children }) => {
   );
 };
 
+/* Styled Components */
 const LayoutContainer = styled.div`
   min-height: 100vh;
   display: flex;
@@ -100,7 +104,7 @@ const MainContent = styled.main`
   flex: 1;
   padding: 2rem;
   transition: margin-left 0.3s ease-in-out;
-  margin-left: ${(props) => (props.isSidebarOpen ? '250px' : '0px')};
+  margin-left: ${(props) => (props.isSidebarOpen ? "250px" : "0px")};
 
   @media (max-width: 768px) {
     margin-left: 0;
