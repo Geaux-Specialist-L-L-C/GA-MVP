@@ -7,6 +7,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import AuthRoute from './components/auth/AuthRoute';
 import LoadingSpinner from './components/shared/LoadingSpinner';
 import theme from './styles/theme';
+import ErrorBoundary from './components/shared/ErrorBoundary';
 
 // Public pages
 const Home = React.lazy(() => import('./pages/Home'));
@@ -15,14 +16,22 @@ const Contact = React.lazy(() => import('./pages/Contact'));
 const Curriculum = React.lazy(() => import('./pages/Curriculum'));
 const Features = React.lazy(() => import('./pages/Features'));
 const LearningStyles = React.lazy(() => import('./pages/LearningStyles'));
+const VarkStyles = React.lazy(() => import('./pages/VarkStyles'));
+
+// Value pages
+const Integrity = React.lazy(() => import('./pages/values/Integrity'));
+const Excellence = React.lazy(() => import('./pages/values/Excellence'));
+const Innovation = React.lazy(() => import('./pages/values/Innovation'));
+const Collaboration = React.lazy(() => import('./pages/values/Collaboration'));
 
 // Auth components
 const Login = React.lazy(() => import('./components/auth/LoginForm'));
-const SignUp = React.lazy(() => import('./components/auth/SignUp'));
+const SignUpForm = React.lazy(() => import('./components/auth/SignUpForm'));
 
 // Protected pages
 const Dashboard = React.lazy(() => import('./components/Dashboard'));
-const ParentProfile = React.lazy(() => import('./components/ParentProfile/ParentProfile'));
+const ParentDashboard = React.lazy(() => import('./components/ParentDashboard'));
+const ParentProfile = React.lazy(() => import('./components/profile/ParentProfile'));
 const TakeAssessment = React.lazy(() => import('./pages/TakeAssessment'));
 const StudentDashboard = React.lazy(() => import('./pages/StudentDashboard'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
@@ -37,9 +46,16 @@ function AppRoutes() {
         <Route path="/features" element={<Features />} />
         <Route path="/curriculum" element={<Curriculum />} />
         <Route path="/learning-styles" element={<LearningStyles />} />
+        <Route path="/vark-styles" element={<VarkStyles />} /> {/* Fix the route path */}
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
+        <Route path="/signup" element={<SignUpForm />} />
+
+        {/* Values Routes */}
+        <Route path="/values/integrity" element={<Integrity />} />
+        <Route path="/values/excellence" element={<Excellence />} />
+        <Route path="/values/innovation" element={<Innovation />} />
+        <Route path="/values/collaboration" element={<Collaboration />} />
 
         {/* Protected Routes */}
         <Route element={<AuthRoute />}>
@@ -68,23 +84,21 @@ const MainContent = styled.main`
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <AuthProvider>
-        <Layout>
-          <Suspense 
-            fallback={<LoadingSpinner />}
-            onError={(error) => {
-              console.error('Chunk loading error:', error);
-              return <div>Error loading module. Please refresh.</div>;
-            }}
-          >
-            <MainContent>
-              <AppRoutes />
-            </MainContent>
-          </Suspense>
-        </Layout>
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider theme={theme}>
+        <AuthProvider>
+          <Layout>
+            <Suspense 
+              fallback={<LoadingSpinner />}
+            >
+              <MainContent>
+                <AppRoutes />
+              </MainContent>
+            </Suspense>
+          </Layout>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
