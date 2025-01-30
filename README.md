@@ -67,4 +67,23 @@
 
 ### Deployment
 To deploy the application to Firebase:
-`
+   ```bash
+   npm run deploy
+   ```
+
+### Creating Issues for Next Steps in Development
+1. Navigate to the repository on GitHub.
+2. Click on the "Issues" tab.
+3. Click on the "New issue" button.
+4. Choose the appropriate issue template (e.g., Bug report, Feature request, Custom issue).
+5. Fill out the issue template with the necessary information.
+6. Click "Submit new issue" to create the issue.
+
+### Contributing
+Please refer to the [CONTRIBUTING.md](./.github/CONTRIBUTING.md) file for guidelines on how to contribute to this project.
+
+### Code of Conduct
+Please refer to the [CODE_OF_CONDUCT.md](./.github/CODE_OF_CONDUCT.md) file for the code of conduct for this project.
+
+### License
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.

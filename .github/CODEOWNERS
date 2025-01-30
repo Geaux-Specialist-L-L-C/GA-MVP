@@ -1,0 +1,13 @@
+# These owners will be the default owners for everything in the repo
+*       @project-lead @tech-lead
+
+# Frontend specific files
+/src/components/  @frontend-team
+/src/styles/      @frontend-team
+
+# Backend specific files
+/server/          @backend-team
+
+# Configuration files
+/*.config.js      @tech-lead
+/*.json           @tech-lead
