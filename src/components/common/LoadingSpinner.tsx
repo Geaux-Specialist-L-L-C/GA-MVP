@@ -1,5 +1,3 @@
-/src/components/common/LoadingSpinner.tsx
-
 import React from 'react';
 import styled from 'styled-components';
 
