@@ -79,3 +79,44 @@ async def get_chat_response(chat: ChatMessage):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+class StudentCreate(BaseModel):
+    name: str
+
+class StudentUpdate(BaseModel):
+    name: str
+
+class Student(StudentCreate):
+    id: int
+
+students_db = {}
+
+@app.post("/students", response_model=Student)
+async def create_student(student: StudentCreate):
+    new_id = len(students_db) + 1
+    new_student = Student(id=new_id, name=student.name)
+    students_db[new_id] = new_student
+    return new_student
+
+@app.get("/students/{student_id}", response_model=Student)
+async def get_student(student_id: int):
+    student = students_db.get(student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student
+
+@app.put("/students/{student_id}", response_model=Student)
+async def update_student(student_id: int, student_update: StudentUpdate):
+    student = students_db.get(student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    updated_student = Student(id=student_id, name=student_update.name)
+    students_db[student_id] = updated_student
+    return updated_student
+
+@app.delete("/students/{student_id}")
+async def delete_student(student_id: int):
+    student = students_db.pop(student_id, None)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return {"detail": "Student deleted successfully"}
