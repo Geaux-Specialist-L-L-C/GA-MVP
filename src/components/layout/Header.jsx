@@ -1,8 +1,10 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 
 const Header = () => {
+  const location = useLocation();
+
   return (
     <HeaderContainer>
       <HeaderContent>
@@ -16,25 +18,25 @@ const Header = () => {
         <Navigation>
           <NavList>
             <NavItem>
-              <NavLink to="/">Home</NavLink>
+              <NavLink to="/" $isActive={location.pathname === "/"}>Home</NavLink>
             </NavItem>
             <NavItem>
-              <NavLink to="/about">About</NavLink>
+              <NavLink to="/about" $isActive={location.pathname === "/about"}>About</NavLink>
             </NavItem>
             <NavItem>
-              <NavLink to="/features">Features</NavLink>
+              <NavLink to="/vark-styles" $isActive={location.pathname === "/vark-styles"}>VARK Styles</NavLink>
             </NavItem>
             <NavItem>
-              <NavLink to="/curriculum">Curriculum</NavLink>
+              <NavLink to="/learning-plan" $isActive={location.pathname === "/learning-plan"}>Learning Plan</NavLink>
             </NavItem>
             <NavItem>
-              <NavLink to="/contact">Contact</NavLink>
+              <NavLink to="/contact" $isActive={location.pathname === "/contact"}>Contact</NavLink>
             </NavItem>
           </NavList>
         </Navigation>
 
         <AuthSection>
-          <AuthLink to="/login">Login</AuthLink>
+          <AuthLink to="/login" $isActive={location.pathname === "/login"}>Login</AuthLink>
           <AuthButton to="/signup">Sign Up</AuthButton>
         </AuthSection>
       </HeaderContent>
@@ -105,12 +107,19 @@ const NavLink = styled(Link)`
   color: var(--text-color);
   text-decoration: none;
   font-weight: 500;
-  padding: 0.5rem;
-  transition: color 0.2s ease;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 
   &:hover {
     color: var(--primary-color);
+    background: rgba(100, 108, 255, 0.08);
   }
+
+  ${props => props.$isActive && `
+    color: var(--primary-color);
+    background: rgba(100, 108, 255, 0.08);
+  `}
 `;
 
 const AuthSection = styled.div`
@@ -119,7 +128,7 @@ const AuthSection = styled.div`
   gap: 1rem;
 `;
 
-const AuthLink = styled(Link)`
+const AuthLink = styled(NavLink)`
   color: var(--text-color);
   text-decoration: none;
   font-weight: 500;

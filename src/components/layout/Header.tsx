@@ -1,30 +1,34 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 
 const Header: React.FC = () => {
+  const location = useLocation();
+  
   return (
     <StyledHeaderContainer>
       <StyledLogoSection>
-        <StyledLogoImage src="/images/logo.png" alt="Geaux Academy Logo" />
-        <h1>Geaux Academy</h1>
+        <Link to="/">
+          <StyledLogoImage src="/images/logo.png" alt="Geaux Academy Logo" />
+          <h1>Geaux Academy</h1>
+        </Link>
       </StyledLogoSection>
       <StyledNavSection>
         <StyledNavLinks>
           <StyledNavItem>
-            <StyledNavLink to="/">Home</StyledNavLink>
+            <StyledNavLink to="/" $isActive={location.pathname === "/"}>Home</StyledNavLink>
           </StyledNavItem>
           <StyledNavItem>
-            <StyledNavLink to="/about">About</StyledNavLink>
+            <StyledNavLink to="/about" $isActive={location.pathname === "/about"}>About</StyledNavLink>
           </StyledNavItem>
           <StyledNavItem>
-            <StyledNavLink to="/features">Features</StyledNavLink>
+            <StyledNavLink to="/features" $isActive={location.pathname === "/features"}>Features</StyledNavLink>
           </StyledNavItem>
           <StyledNavItem>
-            <StyledNavLink to="/curriculum">Curriculum</StyledNavLink>
+            <StyledNavLink to="/vark-styles" $isActive={location.pathname === "/vark-styles"}>VARK Styles</StyledNavLink>
           </StyledNavItem>
           <StyledNavItem>
-            <StyledNavLink to="/contact">Contact</StyledNavLink>
+            <StyledNavLink to="/contact" $isActive={location.pathname === "/contact"}>Contact</StyledNavLink>
           </StyledNavItem>
         </StyledNavLinks>
       </StyledNavSection>
@@ -81,15 +85,23 @@ const StyledNavItem = styled.li`
   position: relative;
 `;
 
-const StyledNavLink = styled(Link)`
+const StyledNavLink = styled(Link)<{ $isActive: boolean }>`
   color: var(--text-color, #333);
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s ease;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
 
   &:hover {
     color: var(--primary-color, #646cff);
+    background: rgba(100, 108, 255, 0.08);
   }
+
+  ${props => props.$isActive && `
+    color: var(--primary-color, #646cff);
+    background: rgba(100, 108, 255, 0.08);
+  `}
 `;
 
 const StyledAuthButtons = styled.div`
