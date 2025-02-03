@@ -330,4 +330,12 @@ const ErrorMessage = styled.div`
   text-align: center;
 `;
 
+const styles = {
+  container: {
+    padding: '0 0.5rem', // Ensure this line is correct
+    // Other styles...
+  },
+  // Other style objects...
+};
+
 export default Home;
