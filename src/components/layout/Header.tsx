@@ -3,43 +3,42 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import Header from '../../../public/JSX/Header';
 
 const Header: React.FC = () => {
   return (
-    <HeaderContainer>
-      <LogoSection>
-        <LogoImage src="/images/logo.png" alt="Geaux Academy Logo" />
+    <StyledHeaderContainer>
+      <StyledLogoSection>
+        <StyledLogoImage src="/images/logo.png" alt="Geaux Academy Logo" />
         <h1>Geaux Academy</h1>
-      </LogoSection>
-      <NavSection>
-        <NavLinks>
-          <NavItem>
-            <NavLink to="/">Home</NavLink>
-          </NavItem>
-          <NavItem>
-            <NavLink to="/about">About</NavLink>
-          </NavItem>
-          <NavItem>
-            <NavLink to="/features">Features</NavLink>
-          </NavItem>
-          <NavItem>
-            <NavLink to="/curriculum">Curriculum</NavLink>
-          </NavItem>
-          <NavItem>
-            <NavLink to="/contact">Contact</NavLink>
-          </NavItem>
-        </NavLinks>
-      </NavSection>
-      <AuthButtons>
+      </StyledLogoSection>
+      <StyledNavSection>
+        <StyledNavLinks>
+          <StyledNavItem>
+            <StyledNavLink to="/">Home</StyledNavLink>
+          </StyledNavItem>
+          <StyledNavItem>
+            <StyledNavLink to="/about">About</StyledNavLink>
+          </StyledNavItem>
+          <StyledNavItem>
+            <StyledNavLink to="/features">Features</StyledNavLink>
+          </StyledNavItem>
+          <StyledNavItem>
+            <StyledNavLink to="/curriculum">Curriculum</StyledNavLink>
+          </StyledNavItem>
+          <StyledNavItem>
+            <StyledNavLink to="/contact">Contact</StyledNavLink>
+          </StyledNavItem>
+        </StyledNavLinks>
+      </StyledNavSection>
+      <StyledAuthButtons>
         <Link to="/login" className="btn btn-login">Login</Link>
         <Link to="/signup" className="btn btn-signup">Sign Up</Link>
-      </AuthButtons>
-    </HeaderContainer>
+      </StyledAuthButtons>
+    </StyledHeaderContainer>
   );
 };
 
-const HeaderContainer = styled.header`
+const StyledHeaderContainer = styled.header`
   position: fixed;
   top: 0;
   left: 0;
@@ -54,24 +53,24 @@ const HeaderContainer = styled.header`
   padding: 0 2rem;
 `;
 
-const LogoSection = styled.div`
+const StyledLogoSection = styled.div`
   display: flex;
   align-items: center;
   gap: 1rem;
 `;
 
-const LogoImage = styled.img`
+const StyledLogoImage = styled.img`
   height: 40px;
   width: auto;
 `;
 
-const NavSection = styled.nav`
+const StyledNavSection = styled.nav`
   flex: 1;
   display: flex;
   justify-content: center;
 `;
 
-const NavLinks = styled.ul`
+const StyledNavLinks = styled.ul`
   display: flex;
   gap: 2rem;
   list-style: none;
@@ -80,11 +79,11 @@ const NavLinks = styled.ul`
   align-items: center;
 `;
 
-const NavItem = styled.li`
+const StyledNavItem = styled.li`
   position: relative;
 `;
 
-const NavLink = styled(Link)`
+const StyledNavLink = styled(Link)`
   color: var(--text-color, #333);
   text-decoration: none;
   font-weight: 500;
@@ -95,7 +94,7 @@ const NavLink = styled(Link)`
   }
 `;
 
-const AuthButtons = styled.div`
+const StyledAuthButtons = styled.div`
   display: flex;
   gap: 1rem;
 `;

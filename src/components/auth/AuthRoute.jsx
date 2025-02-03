@@ -1,7 +1,7 @@
 /src/components/auth/AuthRoute.jsx
 
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from 'src/contexts/AuthContext';
 
 const AuthRoute = () => {
   const { currentUser } = useAuth();

@@ -2,11 +2,17 @@
 
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from 'src/contexts/AuthContext';
 import styled from 'styled-components';
 
-interface SignUpProps {}
-
+/**
+ * SignUp component for user registration
+ * @component
+ * @example
+ * return (
+ *   <SignUp />
+ * )
+ */
 const SignUp: React.FC<SignUpProps> = () => {
   const navigate = useNavigate();
   const { createUser, googleLogin } = useAuth();
