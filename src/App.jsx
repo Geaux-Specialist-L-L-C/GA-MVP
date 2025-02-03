@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import styled, { ThemeProvider } from 'styled-components';
 import Layout from './components/layout/Layout';
@@ -8,6 +8,8 @@ import AuthRoute from './components/auth/AuthRoute';
 import LoadingSpinner from './components/shared/LoadingSpinner';
 import theme from './styles/theme';
 import ErrorBoundary from './components/shared/ErrorBoundary';
+import Header from './components/layout/Header';
+import Footer from './components/layout/Footer';
 
 // Public pages
 const Home = React.lazy(() => import('./pages/Home'));
@@ -87,15 +89,19 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider theme={theme}>
         <AuthProvider>
-          <Layout>
-            <Suspense 
-              fallback={<LoadingSpinner />}
-            >
-              <MainContent>
-                <AppRoutes />
-              </MainContent>
-            </Suspense>
-          </Layout>
+          <Router>
+            <Header />
+            <Layout>
+              <Suspense 
+                fallback={<LoadingSpinner />}
+              >
+                <MainContent>
+                  <AppRoutes />
+                </MainContent>
+              </Suspense>
+            </Layout>
+            <Footer />
+          </Router>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
