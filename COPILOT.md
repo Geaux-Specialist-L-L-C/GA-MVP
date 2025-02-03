@@ -219,3 +219,12 @@ export default NewFeature;
     margin-bottom: 1.5rem;
   `;
   ```
+
+# GitHub Copilot Documentation
+
+// ...existing content from COPILOT.md...
+
+// Add content from Copilot.md if not already present
+// Add content from .github/COPILOT.md if not already present
+
+// Ensure no duplicate sections
