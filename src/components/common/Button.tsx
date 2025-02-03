@@ -1,5 +1,4 @@
-
-// src/components/SomeComponent.tsx
+/src/components/common/Button.tsx
 
 import React from 'react';
 

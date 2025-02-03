@@ -1,3 +1,5 @@
+/src/components/Dashboard.jsx
+
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';

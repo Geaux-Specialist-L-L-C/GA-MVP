@@ -1,3 +1,4 @@
+/src/components/Chat.js
 
 import { useState } from 'react';
 import Message from './Message';

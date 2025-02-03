@@ -1,3 +1,5 @@
+/src/components/features/learning/LearningStyleInsightsWrapper.tsx
+
 import React, { useEffect, useRef } from 'react';
 import { createApp } from 'vue';
 import LearningStyleInsights from './LearningStyleInsights.vue';

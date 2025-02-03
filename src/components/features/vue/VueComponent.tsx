@@ -1,3 +1,5 @@
+/src/components/features/vue/VueComponent.tsx
+
 import React from 'react';
 import VueComponentWrapper from './VueComponentWrapper';
 

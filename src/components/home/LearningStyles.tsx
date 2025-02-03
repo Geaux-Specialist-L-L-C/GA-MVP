@@ -1,5 +1,4 @@
-
-// src/components/SomeComponent.tsx
+/src/components/home/LearningStyles.tsx
 
 import React from 'react';
 

@@ -1,3 +1,5 @@
+/src/components/CourseCard.jsx
+
 import React from "react";
 import { FaVideo, FaListAlt, FaBrain } from "react-icons/fa";
 
