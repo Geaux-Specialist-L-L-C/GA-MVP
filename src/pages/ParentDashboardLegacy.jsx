@@ -4,15 +4,13 @@ import { useAuth } from "../../contexts/AuthContext";
 import { FcGoogle } from "react-icons/fc";
 import styled from "styled-components";
 
-interface LoginProps {}
-
-const Login: React.FC<LoginProps> = () => {
+const ParentDashboardLegacy = () => {
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState("");
 
-  const handleGoogleLogin = async (): Promise<void> => {
+  const handleGoogleLogin = async () => {
     try {
       setError("");
       await loginWithGoogle();
@@ -27,7 +25,7 @@ const Login: React.FC<LoginProps> = () => {
   return (
     <Container>
       <LoginBox>
-        <Title>Welcome Back</Title>
+        <Title>Parent Dashboard Legacy</Title>
         
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
@@ -103,4 +101,4 @@ const GoogleButton = styled.button`
   }
 `;
 
-export default Login;
+export default ParentDashboardLegacy;

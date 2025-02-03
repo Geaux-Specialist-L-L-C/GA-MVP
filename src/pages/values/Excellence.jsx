@@ -1,10 +1,24 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FaTrophy } from 'react-icons/fa';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Excellence = () => {
+  const { loginWithGoogle } = useAuth();
+  const [error, setError] = useState('');
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError('');
+      await loginWithGoogle();
+      // Handle navigation to /dashboard after successful login
+    } catch (err) {
+      setError(err.message);
+      console.error('Login error:', err);
+    }
+  };
+
   return (
     <ValueContainer
       initial={{ opacity: 0 }}
@@ -23,6 +37,10 @@ const Excellence = () => {
           <li>Providing top-quality educational resources</li>
           <li>Measuring and celebrating student achievements</li>
         </ValuePoints>
+        <GoogleButton onClick={handleGoogleLogin}>
+          Sign in with Google
+        </GoogleButton>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
       </ValueContent>
     </ValueContainer>
   );
@@ -79,6 +97,27 @@ const ValuePoints = styled.ul`
       left: 0;
     }
   }
+`;
+
+const GoogleButton = styled.button`
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+
+  &:hover {
+    background-color: #357ae8;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  margin-top: 1rem;
+  color: red;
+  font-size: 0.875rem;
 `;
 
 export default Excellence;

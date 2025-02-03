@@ -1,9 +1,11 @@
-// src/pages/Contact.jsx
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import styled from 'styled-components';
 import React from 'react';
 import './styles/Contact.css';
+import { FcGoogle } from 'react-icons/fc';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +14,9 @@ const Contact = () => {
     message: ''
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const { loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -30,6 +35,17 @@ const Contact = () => {
       setFormData({ name: '', email: '', message: '' });
     } catch (error) {
       console.error('Error submitting form:', error);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError('');
+      await loginWithGoogle();
+      navigate('/dashboard');
+    } catch (error) {
+      setError(error.message);
+      console.error('Login error:', error);
     }
   };
 
@@ -118,6 +134,13 @@ const Contact = () => {
         <p>Email: support@geauxacademy.com</p>
         <p>Phone: (123) 456-7890</p>
       </div>
+      <GoogleLoginContainer>
+        <GoogleLoginButton onClick={handleGoogleLogin}>
+          <FcGoogle className="text-xl" />
+          Sign in with Google
+        </GoogleLoginButton>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+      </GoogleLoginContainer>
     </ContactContainer>
   );
 };
@@ -231,6 +254,37 @@ const SuccessMessage = styled.div`
   background-color: var(--success-color);
   color: white;
   border-radius: 4px;
+`;
+
+const GoogleLoginContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2rem;
+`;
+
+const GoogleLoginButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: #f8f8f8;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  margin-top: 1rem;
+  color: red;
+  font-size: 0.875rem;
 `;
 
 export default Contact;

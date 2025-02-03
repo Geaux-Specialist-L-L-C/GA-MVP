@@ -13,8 +13,9 @@ const TakeAssessment = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [token, setToken] = useState(null);
   const messagesEndRef = useRef(null);
-  const { currentUser } = useAuth();
+  const { currentUser, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const [error, setError] = useState('');
 
   // Initial system prompt for CheshireCat
   const systemPrompt = `You are an educational assessment expert helping students discover their learning style. 
@@ -86,6 +87,17 @@ const TakeAssessment = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      setError('');
+      await loginWithGoogle();
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message);
+      console.error('Login error:', err);
+    }
+  };
+
   return (
     <Container>
       <motion.div
@@ -121,6 +133,14 @@ const TakeAssessment = () => {
             </button>
           </ChatInput>
         </AssessmentContainer>
+
+        {error && (
+          <ErrorMessage>{error}</ErrorMessage>
+        )}
+
+        <GoogleButton onClick={handleGoogleLogin}>
+          Sign in with Google
+        </GoogleButton>
       </motion.div>
     </Container>
   );
@@ -208,6 +228,43 @@ const ChatInput = styled.form`
     &:hover:not(:disabled) {
       background: var(--secondary-color);
     }
+  }
+`;
+
+const ErrorMessage = styled.div`
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  text-align: center;
+`;
+
+const GoogleButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background-color: white;
+  color: #333;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f8fafc;
+  }
+
+  &:focus {
+    outline: none;
+    ring: 2px;
+    ring-offset: 2px;
+    ring-blue-500;
   }
 `;
 

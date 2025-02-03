@@ -2,9 +2,14 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
 import { FaChartLine, FaChalkboardTeacher, FaGamepad, FaBullseye } from "react-icons/fa";
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Features = () => {
   const [selectedFeature, setSelectedFeature] = useState(null);
+  const { loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState("");
 
   const features = [
     {
@@ -17,6 +22,17 @@ const Features = () => {
     { title: "Interactive Content", description: "Engage with multimedia lessons and activities", details: "Detailed information about Interactive Content", icon: <FaGamepad /> },
     { title: "Expert Support", description: "Access to qualified educators and mentors", details: "Detailed information about Expert Support", icon: <FaChalkboardTeacher /> }
   ];
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError("");
+      await loginWithGoogle();
+      navigate("/dashboard");
+    } catch (error) {
+      setError(error.message);
+      console.error("Login error:", error);
+    }
+  };
 
   return (
     <FeaturesContainer>
@@ -53,6 +69,12 @@ const Features = () => {
             <button onClick={() => setSelectedFeature(null)}>Close</button>
           </div>
         )}
+        <div className="google-login">
+          <button onClick={handleGoogleLogin} className="google-login-button">
+            Sign in with Google
+          </button>
+          {error && <p className="error-message">{error}</p>}
+        </div>
       </motion.div>
     </FeaturesContainer>
   );

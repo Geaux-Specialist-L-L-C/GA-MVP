@@ -1,13 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { FcGoogle } from 'react-icons/fc';
 
 const NotFound = () => {
+  const { loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError('');
+      await loginWithGoogle();
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message);
+      console.error('Login error:', err);
+    }
+  };
+
   return (
     <NotFoundContainer>
       <h1>404 - Page Not Found</h1>
       <p>The page you are looking for might have been removed or doesn't exist.</p>
       <StyledLink to="/">Return to Home</StyledLink>
+      <GoogleButton onClick={handleGoogleLogin}>
+        <FcGoogle className="text-xl" />
+        Sign in with Google
+      </GoogleButton>
+      {error && <ErrorMessage>{error}</ErrorMessage>}
     </NotFoundContainer>
   );
 };
@@ -43,6 +65,29 @@ const StyledLink = styled(Link)`
   &:hover {
     background-color: var(--secondary-color);
   }
+`;
+
+const GoogleButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: white;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f0f0f0;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  margin-top: 1rem;
+  color: red;
 `;
 
 export default NotFound;

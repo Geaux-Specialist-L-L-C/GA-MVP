@@ -1,10 +1,23 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FaUsers } from 'react-icons/fa';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Collaboration = () => {
+  const { loginWithGoogle } = useAuth();
+  const [error, setError] = useState('');
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError('');
+      await loginWithGoogle();
+      // Handle navigation to /dashboard after successful login
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <ValueContainer
       initial={{ opacity: 0 }}
@@ -23,6 +36,8 @@ const Collaboration = () => {
           <li>Encouraging peer-to-peer learning</li>
           <li>Building strong educational networks</li>
         </ValuePoints>
+        <button onClick={handleGoogleLogin}>Sign in with Google</button>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
       </ValueContent>
     </ValueContainer>
   );
@@ -78,6 +93,11 @@ const ValuePoints = styled.ul`
       left: 0;
     }
   }
+`;
+
+const ErrorMessage = styled.div`
+  color: red;
+  margin-top: 1rem;
 `;
 
 export default Collaboration;
