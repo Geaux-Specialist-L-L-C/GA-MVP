@@ -47,7 +47,10 @@ export const AuthProvider = ({ children }) => {
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      if (typeof result.user !== 'function') {
+        throw new Error('loginWithGoogle did not return a callable function');
+      }
     } catch (error) {
       console.error("Google login error:", error);
     }
@@ -55,7 +58,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      const result = await signOut(auth);
+      if (typeof result !== 'function') {
+        throw new Error('logout did not return a callable function');
+      }
     } catch (error) {
       console.error("Logout error:", error);
     }
