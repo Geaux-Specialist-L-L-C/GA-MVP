@@ -1,85 +1,78 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { FaEye, FaHeadphones, FaHandPaper, FaBook } from 'react-icons/fa';
-import InfoCard from '../components/common/InfoCard';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaBook, FaHeadphones, FaEye, FaRunning } from 'react-icons/fa';
+import { useAuth } from '../contexts/AuthContext';
 
 const LearningStyles = () => {
-  const styles = [
-    {
-      title: "Visual Learning",
-      description: [
-        'Learn best through images, diagrams, and spatial understanding',
-        'Prefer visual aids and demonstrations',
-        'Remember visual details easily',
-        'Excel with charts and graphs'
-      ],
-      icon: <FaEye />
-    },
-    {
-      title: "Auditory Learning",
-      description: [
-        'Process information effectively through listening',
-        'Learn through discussions and lectures',
-        'Remember spoken information well',
-        'Benefit from audio materials'
-      ],
-      icon: <FaHeadphones />
-    },
-    {
-      title: "Kinesthetic Learning",
-      description: [
-        'Learn through hands-on experience',
-        'Prefer active participation',
-        'Remember physical activities',
-        'Excel in practical exercises'
-      ],
-      icon: <FaHandPaper />
-    },
-    {
-      title: "Reading/Writing Learning",
-      description: [
-        'Excel through written content',
-        'Take detailed notes',
-        'Prefer text-based learning',
-        'Learn best by writing'
-      ],
-      icon: <FaBook />
+  const { loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError('');
+      await loginWithGoogle();
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message);
+      console.error('Login error:', err);
     }
-  ];
+  };
 
   return (
     <Container>
       <Header>
-        <h1>Understanding Learning Styles</h1>
-        <p>Discover how you learn best and optimize your educational journey</p>
+        <h1>Learning Styles</h1>
+        <p>Discover how you learn best</p>
       </Header>
 
       <StylesGrid>
-        {styles.map((style, index) => (
-          <StyleCard
-            key={index}
-            as={motion.div}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <IconWrapper>{style.icon}</IconWrapper>
-            <h3>{style.title}</h3>
-            <Description>
-              {style.description.map((item, i) => (
-                <li key={i}>{item}</li>
-              ))}
-            </Description>
-          </StyleCard>
-        ))}
+        <StyleCard>
+          <IconWrapper>
+            <FaEye />
+          </IconWrapper>
+          <h3>Visual</h3>
+          <p>Learn through seeing, watching, and reading</p>
+        </StyleCard>
+
+        <StyleCard>
+          <IconWrapper>
+            <FaHeadphones />
+          </IconWrapper>
+          <h3>Auditory</h3>
+          <p>Learn through listening and speaking</p>
+        </StyleCard>
+
+        <StyleCard>
+          <IconWrapper>
+            <FaBook />
+          </IconWrapper>
+          <h3>Reading/Writing</h3>
+          <p>Learn through reading and writing text</p>
+        </StyleCard>
+
+        <StyleCard>
+          <IconWrapper>
+            <FaRunning />
+          </IconWrapper>
+          <h3>Kinesthetic</h3>
+          <p>Learn through doing and moving</p>
+        </StyleCard>
       </StylesGrid>
 
       <CTASection>
-        <p>Ready to discover your learning style?</p>
-        <Button as={Link} to="/take-assessment">Take Assessment</Button>
+        <h2>Want to know your learning style?</h2>
+        <StyledLink to="/take-assessment">Take the Assessment</StyledLink>
       </CTASection>
+
+      <GoogleLoginSection>
+        <GoogleLoginButton onClick={handleGoogleLogin}>
+          Sign in with Google
+        </GoogleLoginButton>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+      </GoogleLoginSection>
     </Container>
   );
 };
@@ -87,130 +80,101 @@ const LearningStyles = () => {
 const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 4rem 2rem;
+  padding: 2rem;
 `;
 
-const Header = styled.header`
+const Header = styled.div`
   text-align: center;
-  margin-bottom: 4rem;
+  margin-bottom: 3rem;
   
   h1 {
-    font-size: 2.8rem;
     color: var(--primary-color);
-    margin-bottom: 1.5rem;
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
   }
   
   p {
-    font-size: 1.3rem;
     color: var(--text-color);
+    font-size: 1.2rem;
   }
 `;
 
 const StylesGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2.5rem;
-  margin-bottom: 4rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
 `;
 
-const StyleCard = styled.div`
-  padding: 2.5rem;
+const StyleCard = styled(motion.div)`
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   text-align: center;
-  min-height: 280px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-
-  &:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  }
-
+  
   h3 {
     color: var(--primary-color);
-    margin: 1.2rem 0;
-    font-size: 1.6rem;
+    margin: 1rem 0;
   }
-
+  
   p {
     color: var(--text-color);
-    line-height: 1.6;
   }
 `;
 
 const IconWrapper = styled.div`
-  font-size: 4rem;
+  font-size: 2.5rem;
   color: var(--primary-color);
-  margin-bottom: 1.5rem;
-  height: 4rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  svg {
-    transition: transform 0.3s ease;
-  }
-
-  &:hover svg {
-    transform: scale(1.1);
-  }
 `;
 
 const CTASection = styled.div`
   text-align: center;
   margin-top: 4rem;
-  padding: 2rem;
-
-  p {
-    font-size: 1.4rem;
-    margin-bottom: 1.5rem;
-    color: var(--text-color);
+  
+  h2 {
+    color: var(--primary-color);
+    margin-bottom: 2rem;
   }
 `;
 
-const Button = styled(Link)`
-  background-color: var(--primary-color);
+const StyledLink = styled(Link)`
+  background: var(--primary-color);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background: var(--secondary-color);
+  }
+`;
+
+const GoogleLoginSection = styled.div`
+  text-align: center;
+  margin-top: 2rem;
+`;
+
+const GoogleLoginButton = styled.button`
+  background: var(--primary-color);
   color: white;
   padding: 1rem 2rem;
   border: none;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  border-radius: 4px;
   cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  font-weight: bold;
+  transition: background-color 0.2s;
 
   &:hover {
-    background-color: var(--secondary-color);
-    transform: scale(1.05);
-    color: white;
+    background: var(--secondary-color);
   }
 `;
 
-const Description = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  text-align: left;
-  
-  li {
-    color: var(--text-color);
-    margin-bottom: 0.5rem;
-    padding-left: 1.5rem;
-    position: relative;
-    
-    &:before {
-      content: "•";
-      position: absolute;
-      left: 0;
-      color: var(--primary-color);
-    }
-  }
+const ErrorMessage = styled.div`
+  color: red;
+  margin-top: 1rem;
 `;
 
 export default LearningStyles;

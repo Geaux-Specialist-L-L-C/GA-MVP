@@ -1,26 +1,51 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
-import './styles/Navigation.css';
+import { useAuth } from '../../contexts/AuthContext';
+import styled from 'styled-components';
 
 const Navigation = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const { currentUser } = useAuth();
 
   return (
-    <nav className="main-nav">
-      <button className="mobile-menu-toggle" onClick={() => setIsOpen(!isOpen)}>
-        <span className="hamburger"></span>
-      </button>
-      
-      <ul className={`nav-links ${isOpen ? 'active' : ''}`}>
-        <li><Link to="/">Home</Link></li>
-        <li><Link to="/about">About Us</Link></li>
-        <li><Link to="/features">Features</Link></li>
-        <li><Link to="/curriculum">Curriculum</Link></li>
-        <li><Link to="/learning-styles">Learning Styles</Link></li>
-        <li><Link to="/contact">Contact Us</Link></li>
-      </ul>
-    </nav>
+    <Nav>
+      <NavBrand to="/">LearnStyle</NavBrand>
+      <NavLinks>
+        <NavLink to="/about">About</NavLink>
+        <NavLink to="/features">Features</NavLink>
+        <NavLink to="/learning-styles">Learning Styles</NavLink>
+        {/* Existing nav links */}
+        {/* Auth links */}
+        {currentUser ? (
+          <NavLink to="/dashboard">Dashboard</NavLink>
+        ) : (
+          <>
+            <AuthLink to="/login">Login</AuthLink>
+            <SignUpButton to="/signup">Sign Up</SignUpButton>
+          </>
+        )}
+      </NavLinks>
+    </Nav>
   );
 };
+
+// ...existing styled components...
+
+const AuthLink = styled(NavLink)`
+  &:hover {
+    color: var(--primary-color);
+  }
+`;
+
+const SignUpButton = styled(Link)`
+  background: var(--primary-color);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background: var(--secondary-color);
+  }
+`;
 
 export default Navigation;
