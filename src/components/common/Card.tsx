@@ -1,13 +1,19 @@
-/src/components/common/Card.tsx
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import './Card.css';
 
-import React from 'react';
-
-const SomeComponent: React.FC = () => {
+const Card = ({ icon, title, description, children, className }) => {
   return (
-    <div>
-      <h1>Hello, World!</h1>
+    <div className={`card ${className || ''}`}>
+      {icon && (
+        <div className="card-icon">
+          <FontAwesomeIcon icon={icon} />
+        </div>
+      )}
+      {title && <h3 className="card-title">{title}</h3>}
+      {description && <p className="card-description">{description}</p>}
+      {children}
     </div>
   );
 };
 
-export default SomeComponent;
+export default Card;

@@ -1,9 +1,8 @@
-/src/components/home/Features.tsx
-
 import React from 'react';
-import Card from '../../../public/JSX/Card';
+import Card from '../common/Card';
+import './Features.css';
 
-const Features: React.FC = () => {
+const Features = () => {
   const features = [
     {
       title: "Personalized Learning",

@@ -4,28 +4,55 @@
 
 All files should be referenced with their complete paths:
 
-```
+```plaintext
 /src/
-  ├── components/
-  │   ├── layout/
-  │   │   ├── Header.jsx
-  │   │   ├── Footer.jsx
-  │   │   ├── Navigation.jsx
-  │   │   └── Sidebar.jsx
-  │   ├── home/
-  │   │   ├── Hero.jsx
-  │   │   ├── Features.jsx
-  │   │   └── LearningStyles.jsx
-  │   └── common/
-  │       ├── Button.jsx
-  │       └── Card.jsx
-  └── pages/
-      ├── Home.jsx
-      ├── About.jsx
-      ├── Features.jsx
-      ├── Curriculum.jsx
-      ├── LearningStyles.jsx
-      └── Contact.jsx
+├── components/                    # /src/components/* - Reusable components
+│   ├── auth/                     # /src/components/auth/* - Authentication components
+│   │   ├── LoginForm.tsx
+│   │   └── SignUpForm.tsx
+│   ├── common/                   # /src/components/common/* - Shared UI components
+│   │   ├── Button/
+│   │   │   ├── Button.tsx
+│   │   │   ├── Button.test.tsx
+│   │   │   └── Button.styles.ts
+│   │   └── Card/
+│   │       ├── Card.tsx
+│   │       └── Card.styles.ts
+│   ├── layout/                   # /src/components/layout/* - Layout components
+│   │   ├── Header/
+│   │   ├── Footer/
+│   │   ├── Navigation/
+│   │   └── Sidebar/
+│   └── features/                 # /src/components/features/* - Feature-specific components
+│       ├── home/
+│       ├── profile/
+│       └── dashboard/
+├── pages/                        # /src/pages/* - Page components
+│   ├── Home/
+│   │   ├── index.tsx
+│   │   └── Home.styles.ts
+│   └── Dashboard/
+│       ├── index.tsx
+│       └── Dashboard.styles.ts
+├── hooks/                        # /src/hooks/* - Custom React hooks
+│   └── useAuth.ts
+├── services/                     # /src/services/* - API and external services
+│   ├── api/
+│   │   └── index.ts
+│   └── firebase/
+│       └── config.ts
+├── store/                        # /src/store/* - State management
+│   ├── slices/
+│   └── index.ts
+├── types/                        # /src/types/* - TypeScript types/interfaces
+│   └── index.ts
+├── utils/                        # /src/utils/* - Utility functions
+│   └── helpers.ts
+├── styles/                       # /src/styles/* - Global styles
+│   ├── theme.ts
+│   └── global.ts
+└── config/                       # /src/config/* - Configuration files
+    └── env.ts
 ```
 
 ## Styling Convention
@@ -50,11 +77,11 @@ When working with files, always reference the complete path from the project roo
 
 ```jsx
 // Good
-// filepath: /src/components/layout/Header.jsx
+// filepath: /src/components/layout/Header.tsx
 import React from 'react';
 
 // Bad
-// Header.jsx
+// Header.tsx
 import React from 'react';
 ```
 
@@ -63,7 +90,7 @@ import React from 'react';
 Each component should be organized as follows:
 
 ```jsx
-// filepath: /src/components/Example.jsx
+// filepath: /src/components/Example.tsx
 import React from 'react';
 import styled from 'styled-components';
 
@@ -85,7 +112,7 @@ export default Example;
 Styles should be organized using styled-components following this pattern:
 
 ```jsx
-// filepath: /src/components/StyledComponent.jsx
+// filepath: /src/components/StyledComponent.tsx
 import styled from 'styled-components';
 
 const StyledComponent = styled.div`
@@ -108,7 +135,7 @@ const StyledComponent = styled.div`
 Test files should be placed next to their components with the following convention:
 
 ```jsx
-// filepath: /src/components/Component.test.jsx
+// filepath: /src/components/Component.test.tsx
 import { render } from '@testing-library/react';
 import Component from './Component';
 
@@ -130,7 +157,7 @@ When working with GitHub Copilot, always:
 Example usage:
 
 ```jsx
-// filepath: /src/components/NewFeature.jsx
+// filepath: /src/components/NewFeature.tsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -144,3 +171,51 @@ const NewFeature = ({ title }) => {
 };
 
 export default NewFeature;
+```
+
+## Enhancements
+
+### Include React Icons Library
+- Utilize `react-icons` for adding scalable vector icons.
+- Example: `<FaRocket />` for a rocket icon.
+
+### Structure Content with Styled-Components
+- Use `styled-components` for defining component styles.
+- Example:
+  ```jsx
+  const Button = styled.button`
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    font-size: 1.1rem;
+  `;
+  ```
+
+### Add Hover Effects and Transitions
+- Implement hover effects using `framer-motion`.
+- Example:
+  ```jsx
+  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+    Hover Me
+  </motion.button>
+  ```
+
+### Implement Responsive Design
+- Use media queries within `styled-components` for responsiveness.
+- Example:
+  ```jsx
+  const Container = styled.div`
+    @media (max-width: 768px) {
+      text-align: center;
+    }
+  `;
+  ```
+
+### Add Proper Typography and Spacing
+- Ensure consistent typography and spacing using CSS variables and `styled-components`.
+- Example:
+  ```jsx
+  const Title = styled.h1`
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    margin-bottom: 1.5rem;
+  `;
+  ```

@@ -1,13 +1,18 @@
-/src/components/common/Button.tsx
-
 import React from 'react';
+import PropTypes from 'prop-types';
 
-const SomeComponent: React.FC = () => {
+const Button = ({ label, onClick, style }) => {
   return (
-    <div>
-      <h1>Hello, World!</h1>
-    </div>
+    <button onClick={onClick} style={style}>
+      {label}
+    </button>
   );
 };
 
-export default SomeComponent;
+Button.propTypes = {
+  label: PropTypes.string.isRequired,
+  onClick: PropTypes.func.isRequired,
+  style: PropTypes.object,
+};
+
+export default Button;
