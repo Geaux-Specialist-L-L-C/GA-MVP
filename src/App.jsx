@@ -1,113 +1,76 @@
-/src/App.jsx
-
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
-import styled, { ThemeProvider } from 'styled-components';
-import Layout from './components/layout/Layout';
-import { AuthProvider } from './contexts/AuthContext';
-import AuthRoute from './components/auth/AuthRoute';
-import LoadingSpinner from './components/shared/LoadingSpinner';
-import theme from './styles/theme';
+import { useAuth } from './contexts/AuthContext';
 import ErrorBoundary from './components/shared/ErrorBoundary';
-import Header from './components/layout/Header';
-import Footer from './components/layout/Footer';
 
-// Public pages
+// Lazy load components
 const Home = React.lazy(() => import('./pages/Home'));
-const About = React.lazy(() => import('./pages/About'));
-const Contact = React.lazy(() => import('./pages/Contact'));
-const Curriculum = React.lazy(() => import('./pages/Curriculum'));
-const Features = React.lazy(() => import('./pages/Features'));
-const LearningStyles = React.lazy(() => import('./pages/LearningStyles'));
-const VarkStyles = React.lazy(() => import('./pages/VarkStyles'));
+const Login = React.lazy(() => import('./components/Login'));
+const StudentProfileLegacy = React.lazy(() => import('./pages/StudentProfileLegacy'));
+const StudentDashboardFormLegacy = React.lazy(() => import('./pages/StudentDashboardFormLegacy'));
+const ParentProfileLegacy = React.lazy(() => import('./pages/ParentProfileLegacy'));
+const ParentProfileFormLegacy = React.lazy(() => import('./pages/ParentProfileFormLegacy'));
+const ParentDashboardFormLegacy = React.lazy(() => import('./pages/ParentDashboardFormLegacy'));
 
-// Value pages
-const Integrity = React.lazy(() => import('./pages/values/Integrity'));
-const Excellence = React.lazy(() => import('./pages/values/Excellence'));
-const Innovation = React.lazy(() => import('./pages/values/Innovation'));
-const Collaboration = React.lazy(() => import('./pages/values/Collaboration'));
+// Loading component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+  </div>
+);
 
-// Auth components
-const Login = React.lazy(() => import('./components/auth/LoginForm'));
-const SignUpForm = React.lazy(() => import('./components/auth/SignUpForm'));
+const App = () => {
+  const { currentUser } = useAuth();
 
-// Protected pages
-const Dashboard = React.lazy(() => import('./components/Dashboard'));
-const ParentDashboard = React.lazy(() => import('./components/ParentDashboard'));
-const ParentProfile = React.lazy(() => import('./components/profile/ParentProfile'));
-const TakeAssessment = React.lazy(() => import('./pages/TakeAssessment'));
-const StudentDashboard = React.lazy(() => import('./pages/StudentDashboard'));
-const NotFound = React.lazy(() => import('./pages/NotFound'));
+  const ProtectedRoute = ({ children }) => {
+    if (!currentUser) {
+      return <Navigate to="/login" />;
+    }
+    return children;
+  };
 
-function AppRoutes() {
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/features" element={<Features />} />
-        <Route path="/curriculum" element={<Curriculum />} />
-        <Route path="/learning-styles" element={<LearningStyles />} />
-        <Route path="/vark-styles" element={<VarkStyles />} /> {/* Fix the route path */}
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUpForm />} />
+    <Router>
+      <ErrorBoundary>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            
+            {/* Protected Routes */}
+            <Route path="/student-profile" element={
+              <ProtectedRoute>
+                <StudentProfileLegacy />
+              </ProtectedRoute>
+            } />
+            <Route path="/student-dashboard" element={
+              <ProtectedRoute>
+                <StudentDashboardFormLegacy />
+              </ProtectedRoute>
+            } />
+            <Route path="/parent-profile" element={
+              <ProtectedRoute>
+                <ParentProfileLegacy />
+              </ProtectedRoute>
+            } />
+            <Route path="/parent-profile-form" element={
+              <ProtectedRoute>
+                <ParentProfileFormLegacy />
+              </ProtectedRoute>
+            } />
+            <Route path="/parent-dashboard" element={
+              <ProtectedRoute>
+                <ParentDashboardFormLegacy />
+              </ProtectedRoute>
+            } />
 
-        {/* Values Routes */}
-        <Route path="/values/integrity" element={<Integrity />} />
-        <Route path="/values/excellence" element={<Excellence />} />
-        <Route path="/values/innovation" element={<Innovation />} />
-        <Route path="/values/collaboration" element={<Collaboration />} />
-
-        {/* Protected Routes */}
-        <Route element={<AuthRoute />}>
-          <Route path="/create-profile" element={<ParentProfile />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/parent-dashboard" element={<ParentDashboard />} />
-          <Route path="/take-assessment" element={<TakeAssessment />} />
-          <Route path="/student-dashboard" element={<StudentDashboard />} />
-        </Route>
-
-        {/* Error Routes */}
-        <Route path="/404" element={<NotFound />} />
-        <Route path="*" element={<Navigate to="/404" replace />} />
-      </Routes>
-    </AnimatePresence>
+            {/* Fallback route for unmatched paths */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
+    </Router>
   );
-}
-
-const MainContent = styled.main`
-  margin-top: 70px;
-  min-height: calc(100vh - 70px);
-  flex: 1;
-  position: relative;
-  z-index: 1;
-`;
-
-function App() {
-  return (
-    <ErrorBoundary>
-      <ThemeProvider theme={theme}>
-        <AuthProvider>
-          <Router>
-            <Header />
-            <Layout>
-              <Suspense 
-                fallback={<LoadingSpinner />}
-              >
-                <MainContent>
-                  <AppRoutes />
-                </MainContent>
-              </Suspense>
-            </Layout>
-            <Footer />
-          </Router>
-        </AuthProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
-  );
-}
+};
 
 export default App;
