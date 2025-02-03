@@ -1,4 +1,3 @@
-/src/pages/About.jsx
 import React from 'react';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
@@ -6,7 +5,7 @@ import { FaGraduationCap, FaChartLine, FaUsers, FaLightbulb } from 'react-icons/
 import { BiTargetLock } from 'react-icons/bi';
 import { MdPersonalVideo } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
-import Header from '../components/layout/Header';  // Add import
+import Header from '../components/layout/Header';
 
 const CTAButton = styled.button`
   background: var(--primary-color);
@@ -32,7 +31,7 @@ const About = () => {
 
   return (
     <>
-      <Header />  {/* Add Header component */}
+      <Header />
       <AboutContainer>
         <motion.div
           initial={{ opacity: 0, y: 20 }}

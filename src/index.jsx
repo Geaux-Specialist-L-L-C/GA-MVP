@@ -13,13 +13,11 @@ root.render(
   <React.StrictMode>
     <ErrorBoundary>
       <BrowserRouter>
-        <ProfileProvider>
-          <ErrorBoundary>
-            <AuthProvider>
-              <App />
-            </AuthProvider>
-          </ErrorBoundary>
-        </ProfileProvider>
+        <AuthProvider>
+          <ProfileProvider>
+            <App />
+          </ProfileProvider>
+        </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>

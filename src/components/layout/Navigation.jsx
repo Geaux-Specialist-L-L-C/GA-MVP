@@ -12,8 +12,6 @@ const Navigation = () => {
         <NavLink to="/about">About</NavLink>
         <NavLink to="/features">Features</NavLink>
         <NavLink to="/learning-styles">Learning Styles</NavLink>
-        {/* Existing nav links */}
-        {/* Auth links */}
         {currentUser ? (
           <NavLink to="/dashboard">Dashboard</NavLink>
         ) : (
@@ -27,7 +25,35 @@ const Navigation = () => {
   );
 };
 
-// ...existing styled components...
+const Nav = styled.nav`
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+`;
+
+const NavBrand = styled(Link)`
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary-color);
+  text-decoration: none;
+`;
+
+const NavLinks = styled.div`
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+`;
+
+const NavLink = styled(Link)`
+  color: var(--text-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--primary-color);
+  }
+`;
 
 const AuthLink = styled(NavLink)`
   &:hover {

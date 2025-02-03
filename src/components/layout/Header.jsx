@@ -1,43 +1,40 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import styled from 'styled-components';
+import Navigation from './Navigation';
 
 const Header = () => {
-  const location = useLocation();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Failed to log out:', error);
+    }
+  };
 
   return (
     <HeaderContainer>
       <HeaderContent>
         <LogoSection>
           <Link to="/">
-            <LogoImage src="/images/logo.png" alt="Geaux Academy Logo" />
             <LogoText>Geaux Academy</LogoText>
           </Link>
         </LogoSection>
-
-        <Navigation>
-          <NavList>
-            <NavItem>
-              <NavLink to="/" $isActive={location.pathname === "/"}>Home</NavLink>
-            </NavItem>
-            <NavItem>
-              <NavLink to="/about" $isActive={location.pathname === "/about"}>About</NavLink>
-            </NavItem>
-            <NavItem>
-              <NavLink to="/vark-styles" $isActive={location.pathname === "/vark-styles"}>VARK Styles</NavLink>
-            </NavItem>
-            <NavItem>
-              <NavLink to="/learning-plan" $isActive={location.pathname === "/learning-plan"}>Learning Plan</NavLink>
-            </NavItem>
-            <NavItem>
-              <NavLink to="/contact" $isActive={location.pathname === "/contact"}>Contact</NavLink>
-            </NavItem>
-          </NavList>
-        </Navigation>
-
+        <Navigation />
         <AuthSection>
-          <AuthLink to="/login" $isActive={location.pathname === "/login"}>Login</AuthLink>
-          <AuthButton to="/signup">Sign Up</AuthButton>
+          {user ? (
+            <>
+              <UserInfo>{user.email}</UserInfo>
+              <Button onClick={handleLogout}>Logout</Button>
+            </>
+          ) : (
+            <LoginButton to="/login">Login</LoginButton>
+          )}
         </AuthSection>
       </HeaderContent>
     </HeaderContainer>
@@ -74,52 +71,23 @@ const LogoSection = styled.div`
   }
 `;
 
-const LogoImage = styled.img`
-  height: 40px;
-  width: auto;
-`;
-
 const LogoText = styled.h1`
   font-size: 1.5rem;
   color: var(--primary-color);
   margin: 0;
 `;
 
-const Navigation = styled.nav`
-  flex: 1;
-  display: flex;
-  justify-content: center;
-`;
-
-const NavList = styled.ul`
-  display: flex;
-  gap: 2rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-`;
-
-const NavItem = styled.li`
-  padding: 0;
-`;
-
-const NavLink = styled(Link)`
-  color: var(--text-color);
-  text-decoration: none;
-  font-weight: 500;
+const LoginButton = styled(Link)`
   padding: 0.5rem 1rem;
+  background: var(--primary-color);
+  color: white;
   border-radius: 4px;
-  transition: all 0.2s ease;
+  text-decoration: none;
+  transition: background 0.2s;
 
   &:hover {
-    color: var(--primary-color);
-    background: rgba(100, 108, 255, 0.08);
+    background: var(--secondary-color);
   }
-
-  ${props => props.$isActive && `
-    color: var(--primary-color);
-    background: rgba(100, 108, 255, 0.08);
-  `}
 `;
 
 const AuthSection = styled.div`
@@ -128,30 +96,12 @@ const AuthSection = styled.div`
   gap: 1rem;
 `;
 
-const AuthLink = styled(NavLink)`
+const UserInfo = styled.span`
   color: var(--text-color);
-  text-decoration: none;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: var(--primary-color);
-  }
 `;
 
-const AuthButton = styled(Link)`
-  background: var(--primary-color);
-  color: white;
-  text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background: var(--secondary-color);
-  }
+const Button = styled.button`
+  // ...existing styles...
 `;
 
 export default Header;

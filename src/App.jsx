@@ -6,6 +6,9 @@ import ErrorBoundary from './components/shared/ErrorBoundary';
 import AuthRoute from './components/auth/AuthRoute.tsx';
 import { ThemeProvider } from 'styled-components';
 import { theme } from './theme/theme';
+import PrivateRoute from './components/PrivateRoute';
+import Header from './components/layout/Header';
+import Dashboard from './components/dashboard/Dashboard';  // Updated import path
 
 // Lazy load components
 const Home = React.lazy(() => import('./pages/Home'));
@@ -15,6 +18,10 @@ const StudentDashboardFormLegacy = React.lazy(() => import('./pages/StudentDashb
 const ParentProfileLegacy = React.lazy(() => import('./pages/ParentProfileLegacy'));
 const ParentProfileFormLegacy = React.lazy(() => import('./pages/ParentProfileFormLegacy'));
 const ParentDashboardFormLegacy = React.lazy(() => import('./pages/ParentDashboardFormLegacy'));
+const About = React.lazy(() => import('./pages/About'));
+const Curriculum = React.lazy(() => import('./pages/Curriculum')); 
+const LearningStyles = React.lazy(() => import('./pages/LearningStyles'));
+const Contact = React.lazy(() => import('./pages/Contact'));
 
 // Loading component
 const LoadingFallback = () => (
@@ -29,10 +36,15 @@ const App = () => {
       <ThemeProvider theme={theme}>
         <AuthProvider>
           <ProfileProvider>
+            <Header />
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/curriculum" element={<Curriculum />} />
+                <Route path="/learning-styles" element={<LearningStyles />} />
+                <Route path="/contact" element={<Contact />} />
                 
                 {/* Protected Routes */}
                 <Route path="/student-profile" element={
@@ -59,6 +71,11 @@ const App = () => {
                   <AuthRoute>
                     <ParentDashboardFormLegacy />
                   </AuthRoute>
+                } />
+                <Route path="/dashboard" element={
+                  <PrivateRoute>
+                    <Dashboard />
+                  </PrivateRoute>
                 } />
 
                 {/* Fallback route for unmatched paths */}
