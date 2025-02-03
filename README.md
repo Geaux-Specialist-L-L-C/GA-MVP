@@ -82,3 +82,7 @@ To deploy the application to Firebase:
      Description: "Set up the database schema and models."
    - Title: "API setup"
      Description: "Develop the API endpoints."
+
+## React Setup
+
+This section provides guidelines for setting up and using React in this project.
