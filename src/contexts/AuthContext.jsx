@@ -43,11 +43,28 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, [updateProfile]);
 
+  const loginWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Google login error:", error);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   const value = {
     currentUser,
     loading,
-    loginWithGoogle: () => signInWithPopup(auth, new GoogleAuthProvider()),
-    logout: () => signOut(auth),
+    loginWithGoogle,
+    logout,
   };
 
   return (

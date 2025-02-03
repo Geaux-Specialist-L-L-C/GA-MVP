@@ -1,11 +1,27 @@
-// src/pages/Curriculum.jsx
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
+import { useAuth } from '../contexts/AuthContext';
+import { FcGoogle } from 'react-icons/fc';
+import { useNavigate } from 'react-router-dom';
 
 const Curriculum = () => {
   const [selectedGrade, setSelectedGrade] = useState('middle');
-  
+  const { loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError('');
+      await loginWithGoogle();
+      navigate('/dashboard');
+    } catch (error) {
+      setError(error.message);
+      console.error('Login error:', error);
+    }
+  };
+
   const subjects = [
     {
       id: 1,
@@ -66,6 +82,15 @@ const Curriculum = () => {
           {/* Course details based on selected grade */}
         </CourseDetails>
       </CourseListing>
+
+      <LoginSection>
+        <h2>Login to Access More Features</h2>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+        <GoogleButton onClick={handleGoogleLogin}>
+          <FcGoogle className="text-xl" />
+          Sign in with Google
+        </GoogleButton>
+      </LoginSection>
     </CurriculumContainer>
   );
 };
@@ -154,6 +179,48 @@ const GradeButton = styled.button`
 
 const CourseDetails = styled.div`
   text-align: center;
+`;
+
+const LoginSection = styled.div`
+  text-align: center;
+  margin-top: 3rem;
+`;
+
+const ErrorMessage = styled.div`
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  text-align: center;
+`;
+
+const GoogleButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background-color: white;
+  color: #333;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f8fafc;
+  }
+
+  &:focus {
+    outline: none;
+    ring: 2px;
+    ring-offset: 2px;
+    ring-blue-500;
+  }
 `;
 
 export default Curriculum;

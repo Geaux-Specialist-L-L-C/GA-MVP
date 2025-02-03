@@ -4,15 +4,13 @@ import { useAuth } from "../../contexts/AuthContext";
 import { FcGoogle } from "react-icons/fc";
 import styled from "styled-components";
 
-interface LoginProps {}
-
-const Login: React.FC<LoginProps> = () => {
+const ParentProfileForm = () => {
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState("");
 
-  const handleGoogleLogin = async (): Promise<void> => {
+  const handleGoogleLogin = async () => {
     try {
       setError("");
       await loginWithGoogle();
@@ -26,8 +24,8 @@ const Login: React.FC<LoginProps> = () => {
 
   return (
     <Container>
-      <LoginBox>
-        <Title>Welcome Back</Title>
+      <FormBox>
+        <Title>Parent Profile Form</Title>
         
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
@@ -35,7 +33,7 @@ const Login: React.FC<LoginProps> = () => {
           <FcGoogle className="text-xl" />
           Sign in with Google
         </GoogleButton>
-      </LoginBox>
+      </FormBox>
     </Container>
   );
 };
@@ -50,7 +48,7 @@ const Container = styled.div`
   background-color: #f5f5f5;
 `;
 
-const LoginBox = styled.div`
+const FormBox = styled.div`
   width: 100%;
   max-width: 400px;
   background: white;
@@ -103,4 +101,4 @@ const GoogleButton = styled.button`
   }
 `;
 
-export default Login;
+export default ParentProfileForm;

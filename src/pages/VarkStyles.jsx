@@ -1,10 +1,26 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FaEye, FaHeadphones, FaBookReader, FaRunning } from 'react-icons/fa';
+import { useAuth } from '../contexts/AuthContext';
 
 const VarkStyles = () => {
+  const { loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState("");
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError("");
+      await loginWithGoogle();
+      navigate("/dashboard");
+    } catch (error) {
+      setError(error.message);
+      console.error("Login error:", error);
+    }
+  };
+
   const styles = [
     {
       icon: <FaEye />,
@@ -100,6 +116,13 @@ const VarkStyles = () => {
           <SecondaryButton to="/about">Learn More</SecondaryButton>
         </ButtonGroup>
       </CTASection>
+
+      <GoogleLoginSection>
+        <GoogleButton onClick={handleGoogleLogin}>
+          Sign in with Google
+        </GoogleButton>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+      </GoogleLoginSection>
     </Container>
   );
 };
@@ -110,7 +133,20 @@ const Container = styled.div`
   padding: 4rem 2rem;
 `;
 
-// ... existing styled components ...
+const Header = styled.header`
+  text-align: center;
+  margin-bottom: 3rem;
+
+  h1 {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+  }
+
+  p {
+    font-size: 1.25rem;
+    color: var(--text-color);
+  }
+`;
 
 const StylesGrid = styled.div`
   display: grid;
@@ -201,6 +237,31 @@ const SecondaryButton = styled(Button)`
   background-color: transparent;
   color: var(--primary-color);
   border: 2px solid var(--primary-color);
+`;
+
+const GoogleLoginSection = styled.div`
+  text-align: center;
+  margin-top: 2rem;
+`;
+
+const GoogleButton = styled.button`
+  background-color: #4285f4;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #357ae8;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: red;
+  margin-top: 1rem;
 `;
 
 export default VarkStyles;

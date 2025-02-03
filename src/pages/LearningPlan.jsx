@@ -3,11 +3,12 @@ import { db } from "../config/firebase";
 import { getDoc, doc, updateDoc } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
 import LoadingSpinner from "../components/common/LoadingSpinner";
+import { FcGoogle } from "react-icons/fc";
 
 const API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
 const LearningPlan = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, loginWithGoogle } = useAuth();
   const [learningStyle, setLearningStyle] = useState("");
   const [grade, setGrade] = useState("");
   const [subjects, setSubjects] = useState([]);
@@ -89,6 +90,17 @@ const LearningPlan = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      setError("");
+      await loginWithGoogle();
+      navigate("/dashboard");
+    } catch (error) {
+      setError(error.message);
+      console.error("Login error:", error);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Personalized Learning Plan</h1>
@@ -113,6 +125,14 @@ const LearningPlan = () => {
           {loading ? "Generating..." : "Generate Learning Plan"}
         </button>
       </div>
+
+      <button
+        onClick={handleGoogleLogin}
+        className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg px-6 py-3 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+      >
+        <FcGoogle className="text-xl" />
+        Sign in with Google
+      </button>
 
       {loading ? (
         <LoadingSpinner />

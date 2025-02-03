@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useState, memo } from "react";
 import { motion, useReducedMotion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import React, { memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from "../contexts/AuthContext";
 import styled from 'styled-components';
 import { containerVariants } from '../utils/animations';
+import { FaGraduationCap, FaChartLine, FaLightbulb, FaRocket } from 'react-icons/fa';
+import heroImage from "/public/images/hero-learning.svg";
+import { FcGoogle } from "react-icons/fc";
 
 const MemoizedHero = memo(Hero);
 const MemoizedFeatures = memo(Features);
@@ -18,8 +19,6 @@ const reducedMotionVariant = {
     transition: { duration: 0.1 }
   }
 };
-import { FaGraduationCap, FaChartLine, FaLightbulb, FaRocket } from 'react-icons/fa';
-import heroImage from "/public/images/hero-learning.svg";
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -59,14 +58,26 @@ const Home = () => {
   const prefersReducedMotion = useReducedMotion();
   const currentVariants = prefersReducedMotion ? reducedMotionVariant : containerVariants;
 
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const [error, setError] = useState("");
 
   const handleLogout = async () => {
     try {
       await logout();
     } catch (error) {
       console.error("Logout failed:", error);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError("");
+      await loginWithGoogle();
+      navigate("/dashboard");
+    } catch (error) {
+      setError(error.message);
+      console.error("Login error:", error);
     }
   };
 
@@ -141,6 +152,14 @@ const Home = () => {
           </FeatureCard>
         ))}
       </FeaturesGrid>
+
+      <ButtonGroup>
+        <GoogleButton onClick={handleGoogleLogin}>
+          <FcGoogle className="text-xl" />
+          Sign in with Google
+        </GoogleButton>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+      </ButtonGroup>
     </HomeContainer>
   );
 };
@@ -272,6 +291,43 @@ const IconWrapper = styled.div`
   font-size: 2.5rem;
   color: var(--primary-color);
   margin-bottom: 1rem;
+`;
+
+const GoogleButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background-color: white;
+  color: #333;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f8fafc;
+  }
+
+  &:focus {
+    outline: none;
+    ring: 2px;
+    ring-offset: 2px;
+    ring-blue-500;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  text-align: center;
 `;
 
 export default Home;
