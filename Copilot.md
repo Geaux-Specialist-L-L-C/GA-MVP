@@ -4,7 +4,7 @@
 
 All files should be referenced with their complete paths:
 
-```
+```plaintext
 /src/
   ├── components/
   │   ├── layout/
@@ -33,14 +33,13 @@ All files should be referenced with their complete paths:
 The application uses styled-components exclusively for styling. No separate CSS files are needed as all styles are encapsulated within their respective components.
 
 ```jsx
-// Good
+```jsx
 import styled from 'styled-components';
 
 const StyledComponent = styled.div`
   // Component styles here
 `;
 
-// Bad
 import './styles.css';
 ```
 
@@ -49,12 +48,8 @@ import './styles.css';
 When working with files, always reference the complete path from the project root. For example:
 
 ```jsx
-// Good
-// filepath: /src/components/layout/Header.jsx
 import React from 'react';
 
-// Bad
-// Header.jsx
 import React from 'react';
 ```
 
@@ -63,7 +58,6 @@ import React from 'react';
 Each component should be organized as follows:
 
 ```jsx
-// filepath: /src/components/Example.jsx
 import React from 'react';
 import styled from 'styled-components';
 
@@ -85,7 +79,6 @@ export default Example;
 Styles should be organized using styled-components following this pattern:
 
 ```jsx
-// filepath: /src/components/StyledComponent.jsx
 import styled from 'styled-components';
 
 const StyledComponent = styled.div`
@@ -108,7 +101,6 @@ const StyledComponent = styled.div`
 Test files should be placed next to their components with the following convention:
 
 ```jsx
-// filepath: /src/components/Component.test.jsx
 import { render } from '@testing-library/react';
 import Component from './Component';
 
@@ -130,7 +122,6 @@ When working with GitHub Copilot, always:
 Example usage:
 
 ```jsx
-// filepath: /src/components/NewFeature.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
