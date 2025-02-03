@@ -13,6 +13,6 @@ Develop the API endpoints.
 
 ## Tasks
 
-- [ ] Design the API endpoints
-- [ ] Implement the API endpoints
-- [ ] Test the API endpoints
+- [x] Design the API endpoints
+- [x] Implement the API endpoints
+- [x] Test the API endpoints
