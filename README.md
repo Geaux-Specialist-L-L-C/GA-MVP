@@ -67,4 +67,18 @@
 
 ### Deployment
 To deploy the application to Firebase:
-`
+   ```bash
+   npm run deploy
+   ```
+
+### Creating GitHub Issues
+1. Go to the GitHub repository and click on the "Issues" tab.
+2. Create the following issues and assign them to GitHub Copilot:
+   - Title: "Setup Authentication"
+     Description: "Implement Firebase authentication with Google login."
+   - Title: "UI setup"
+     Description: "Design and implement the user interface."
+   - Title: "Database setup"
+     Description: "Set up the database schema and models."
+   - Title: "API setup"
+     Description: "Develop the API endpoints."

@@ -1,19 +1,15 @@
-import './styles/Button.css';
+import React from "react";
+import "./styles/Button.css";
 
-const Button = ({ 
-  children, 
-  variant = 'primary', 
-  size = 'medium', 
-  loading = false, 
-  ...props 
-}) => (
-  <button 
-    className={`btn btn-${variant} btn-${size} ${loading ? 'btn-loading' : ''}`}
-    disabled={loading}
-    {...props}
-  >
-    {loading ? <span className="btn-spinner"></span> : children}
-  </button>
-);
+const Button = ({ text, onClick }) => {
+  return (
+    <button
+      onClick={onClick}
+      className="btn btn-primary"
+    >
+      {text}
+    </button>
+  );
+};
 
 export default Button;

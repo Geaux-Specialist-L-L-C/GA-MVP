@@ -47,8 +47,8 @@ const Dashboard = () => {
             <ActionButton onClick={() => navigate('/edit-profile')}>
               Edit Profile
             </ActionButton>
-            <ActionButton onClick={() => navigate('/change-password')}>
-              Change Password
+            <ActionButton onClick={() => navigate('/billing-settings')}>
+              Billing Settings
             </ActionButton>
             <ActionButton onClick={() => navigate('/notifications')}>
               Notification Settings
@@ -60,10 +60,26 @@ const Dashboard = () => {
   );
 };
 
+const Header = styled.header`
+  margin-bottom: 2rem;
+  
+  h1 {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    color: var(--text-color);
+  }
+`;
+
 const DashboardContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  background: var(--background-color);
+  min-height: calc(100vh - 70px); // Account for header
 `;
 
 const DashboardHeader = styled.div`

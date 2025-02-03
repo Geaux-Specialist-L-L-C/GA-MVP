@@ -1,77 +1,104 @@
-import { Routes, Route } from 'react-router-dom';
-import Header from './components/layout/Header';
-import Footer from './components/layout/Footer';
-import Home from './pages/Home';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import Curriculum from './pages/Curriculum';
-import Features from './pages/Features';
-import LearningStyles from './pages/LearningStyles';
-import Login from './components/auth/Login';
-import SignUp from './components/auth/SignUp';
-import Dashboard from './components/Dashboard';
-import PrivateRoute from './components/auth/PrivateRoute';
+import React, { Suspense } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+import styled, { ThemeProvider } from 'styled-components';
+import Layout from './components/layout/Layout';
 import { AuthProvider } from './contexts/AuthContext';
+import AuthRoute from './components/auth/AuthRoute';
+import LoadingSpinner from './components/shared/LoadingSpinner';
+import theme from './styles/theme';
+import ErrorBoundary from './components/shared/ErrorBoundary';
 
-import CurriculumApprovalWrapper from './vue-components/CurriculumApprovalWrapper';
-import LearningStyleInsightsWrapper from './vue-components/LearningStyleInsightsWrapper';
-import ProgressTrackerWrapper from './vue-components/ProgressTrackerWrapper';
-import NotificationCenterWrapper from './vue-components/NotificationCenterWrapper';
-import ParentDashboardWrapper from './vue-components/ParentDashboardWrapper';
-import ParentProfile from './components/ParentProfile/ParentProfile';
-import TakeAssessment from './pages/TakeAssessment';
-import './App.css';
+// Public pages
+const Home = React.lazy(() => import('./pages/Home'));
+const About = React.lazy(() => import('./pages/About'));
+const Contact = React.lazy(() => import('./pages/Contact'));
+const Curriculum = React.lazy(() => import('./pages/Curriculum'));
+const Features = React.lazy(() => import('./pages/Features'));
+const LearningStyles = React.lazy(() => import('./pages/LearningStyles'));
+const VarkStyles = React.lazy(() => import('./pages/VarkStyles'));
+
+// Value pages
+const Integrity = React.lazy(() => import('./pages/values/Integrity'));
+const Excellence = React.lazy(() => import('./pages/values/Excellence'));
+const Innovation = React.lazy(() => import('./pages/values/Innovation'));
+const Collaboration = React.lazy(() => import('./pages/values/Collaboration'));
+
+// Auth components
+const Login = React.lazy(() => import('./components/auth/LoginForm'));
+const SignUpForm = React.lazy(() => import('./components/auth/SignUpForm'));
+
+// Protected pages
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const ParentDashboard = React.lazy(() => import('./components/ParentDashboard'));
+const ParentProfile = React.lazy(() => import('./components/profile/ParentProfile'));
+const TakeAssessment = React.lazy(() => import('./pages/TakeAssessment'));
+const StudentDashboard = React.lazy(() => import('./pages/StudentDashboard'));
+const NotFound = React.lazy(() => import('./pages/NotFound'));
+
+function AppRoutes() {
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/curriculum" element={<Curriculum />} />
+        <Route path="/learning-styles" element={<LearningStyles />} />
+        <Route path="/vark-styles" element={<VarkStyles />} /> {/* Fix the route path */}
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUpForm />} />
+
+        {/* Values Routes */}
+        <Route path="/values/integrity" element={<Integrity />} />
+        <Route path="/values/excellence" element={<Excellence />} />
+        <Route path="/values/innovation" element={<Innovation />} />
+        <Route path="/values/collaboration" element={<Collaboration />} />
+
+        {/* Protected Routes */}
+        <Route element={<AuthRoute />}>
+          <Route path="/create-profile" element={<ParentProfile />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/parent-dashboard" element={<ParentDashboard />} />
+          <Route path="/take-assessment" element={<TakeAssessment />} />
+          <Route path="/student-dashboard" element={<StudentDashboard />} />
+        </Route>
+
+        {/* Error Routes */}
+        <Route path="/404" element={<NotFound />} />
+        <Route path="*" element={<Navigate to="/404" replace />} />
+      </Routes>
+    </AnimatePresence>
+  );
+}
+
+const MainContent = styled.main`
+  margin-top: 70px;
+  min-height: calc(100vh - 70px);
+  flex: 1;
+  position: relative;
+  z-index: 1;
+`;
 
 function App() {
   return (
-    <AuthProvider>
-      <div className="app">
-        <Header />
-        <main className="main-content">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/features" element={<Features />} />
-            <Route path="/curriculum" element={<Curriculum />} />
-            <Route path="/learning-styles" element={<LearningStyles />} />
-            <Route path="/take-assessment" element={<TakeAssessment />} />
-            <Route path="/contact" element={<Contact />} />
-            
-            {/* Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
-            
-            {/* Protected Routes */}
-            <Route 
-              path="/dashboard" 
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              } 
-            />
-            <Route 
-              path="/parent-dashboard" 
-              element={
-                <PrivateRoute>
-                  <ParentDashboardWrapper />
-                </PrivateRoute>
-              } 
-            />
-            <Route
-              path="/parent-profile"
-              element={
-                <PrivateRoute>
-                  <ParentProfile />
-                </PrivateRoute>
-              }
-            />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
-    </AuthProvider>
+    <ErrorBoundary>
+      <ThemeProvider theme={theme}>
+        <AuthProvider>
+          <Layout>
+            <Suspense 
+              fallback={<LoadingSpinner />}
+            >
+              <MainContent>
+                <AppRoutes />
+              </MainContent>
+            </Suspense>
+          </Layout>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

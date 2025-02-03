@@ -1,13 +1,21 @@
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
 import { FaChartLine, FaChalkboardTeacher, FaGamepad, FaBullseye } from "react-icons/fa";
 
 const Features = () => {
+  const [selectedFeature, setSelectedFeature] = useState(null);
+
   const features = [
-    { title: "Personalized Learning Paths", description: "AI-driven customization based on your learning style", icon: <FaBullseye /> },
-    { title: "Real-time Progress Tracking", description: "Monitor achievements and growth with detailed analytics", icon: <FaChartLine /> },
-    { title: "Interactive Content", description: "Engage with multimedia lessons and activities", icon: <FaGamepad /> },
-    { title: "Expert Support", description: "Access to qualified educators and mentors", icon: <FaChalkboardTeacher /> }
+    {
+      title: "Personalized Learning Paths",
+      description: "AI-driven customization based on your learning style",
+      details: "Detailed information about Personalized Learning Paths",
+      icon: <FaBullseye />
+    },
+    { title: "Real-time Progress Tracking", description: "Monitor achievements and growth with detailed analytics", details: "Detailed information about Real-time Progress Tracking", icon: <FaChartLine /> },
+    { title: "Interactive Content", description: "Engage with multimedia lessons and activities", details: "Detailed information about Interactive Content", icon: <FaGamepad /> },
+    { title: "Expert Support", description: "Access to qualified educators and mentors", details: "Detailed information about Expert Support", icon: <FaChalkboardTeacher /> }
   ];
 
   return (
@@ -21,21 +29,30 @@ const Features = () => {
           <h1>Platform Features</h1>
           <p>Discover the tools that make learning personalized and effective</p>
         </Header>
-
-        <FeatureGrid>
+        <div className="features-grid">
           {features.map((feature, index) => (
-            <FeatureCard
+            <motion.div
               key={index}
+              className="feature-card"
+              onClick={() => setSelectedFeature(feature)}
+              whileHover={{ scale: 1.05 }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
               <IconWrapper>{feature.icon}</IconWrapper>
-              <h3>{feature.title}</h3>
+              <h2>{feature.title}</h2>
               <p>{feature.description}</p>
-            </FeatureCard>
+            </motion.div>
           ))}
-        </FeatureGrid>
+        </div>
+        {selectedFeature && (
+          <div className="feature-modal">
+            <h2>{selectedFeature.title}</h2>
+            <p>{selectedFeature.details}</p>
+            <button onClick={() => setSelectedFeature(null)}>Close</button>
+          </div>
+        )}
       </motion.div>
     </FeaturesContainer>
   );
@@ -43,12 +60,9 @@ const Features = () => {
 
 const FeaturesContainer = styled.div`
   max-width: 1200px;
-  margin: 0 auto;
-  padding: 4rem 2rem;
-
-  @media (max-width: 768px) {
-    padding: 3rem 1.5rem;
-  }
+  margin: 60px auto 0; // Add top margin to match header height
+  padding: 2rem;
+  min-height: calc(100vh - 60px); // Ensure full viewport height minus header
 `;
 
 const Header = styled.header`
@@ -64,48 +78,6 @@ const Header = styled.header`
   p {
     font-size: 1.2rem;
     color: var(--text-color);
-  }
-`;
-
-const FeatureGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2.5rem;
-  margin-top: 3rem;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
-`;
-
-const FeatureCard = styled(motion.div)`
-  padding: 2rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  min-height: 260px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  }
-
-  h3 {
-    color: var(--primary-color);
-    margin: 1rem 0;
-    font-size: 1.5rem;
-  }
-  
-  p {
-    color: var(--text-color);
-    flex-grow: 1;
-    line-height: 1.6;
   }
 `;
 

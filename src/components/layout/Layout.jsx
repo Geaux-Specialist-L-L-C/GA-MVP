@@ -1,17 +1,20 @@
-import Header from './Header';
-import Footer from './Footer';
-import './styles/Layout.css';
+import React from 'react';
+import styled from 'styled-components';
+import Navbar from './Navbar';
 
 const Layout = ({ children }) => {
   return (
-    <div className="layout">
-      <Header />
-      <main className="main-content">
-        {children}
-      </main>
-      <Footer />
-    </div>
+    <LayoutContainer>
+      <Navbar />
+      <main>{children}</main>
+    </LayoutContainer>
   );
 };
+
+const LayoutContainer = styled.div`
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+`;
 
 export default Layout;
