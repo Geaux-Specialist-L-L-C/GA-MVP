@@ -1,9 +1,6 @@
-/src/components/layout/Header.tsx
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import Header from '../../../public/JSX/Header';
 
 const Header: React.FC = () => {
   return (
@@ -98,6 +95,21 @@ const NavLink = styled(Link)`
 const AuthButtons = styled.div`
   display: flex;
   gap: 1rem;
+`;
+
+const Nav = styled.nav`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: white;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  padding: 0 2rem;
+  z-index: 200;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 `;
 
 export default Header;
