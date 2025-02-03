@@ -8,6 +8,9 @@ interface AuthRouteProps {}
 const AuthRoute: React.FC<AuthRouteProps> = () => {
   const { currentUser, loading } = useAuth();
 
+  console.log('AuthRoute - currentUser:', currentUser);
+  console.log('AuthRoute - loading:', loading);
+
   if (loading) {
     return <LoadingSpinner />;
   }

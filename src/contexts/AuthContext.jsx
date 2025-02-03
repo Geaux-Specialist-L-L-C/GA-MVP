@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('Auth state changed, user:', user); // P0ef7
       setCurrentUser(user);
       if (user) {
         // Update profile context when user is authenticated
