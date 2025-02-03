@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "serve": "firebase emulators:start",
-    "deploy": "firebase deploy"
+    "deploy": "firebase deploy",
+    "ci": "npm run lint && npm test && npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
