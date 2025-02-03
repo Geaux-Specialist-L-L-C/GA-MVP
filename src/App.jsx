@@ -23,6 +23,8 @@ const LoadingFallback = () => (
 const App = () => {
   const { currentUser } = useAuth();
 
+  console.log('App - currentUser:', currentUser);
+
   return (
     <Router>
       <ErrorBoundary>
