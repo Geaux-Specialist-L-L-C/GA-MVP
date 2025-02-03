@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { FcGoogle } from "react-icons/fc";
+import GoogleLoginButton from '../components/GoogleLoginButton';
 
 const ParentDashboardFormLegacy = () => {
   const { loginWithGoogle } = useAuth();
@@ -34,13 +35,7 @@ const ParentDashboardFormLegacy = () => {
           </div>
         )}
 
-        <button
-          onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg px-6 py-3 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <FcGoogle className="text-xl" />
-          Sign in with Google
-        </button>
+        <GoogleLoginButton handleGoogleLogin={handleGoogleLogin} error={error} />
       </div>
     </div>
   );
