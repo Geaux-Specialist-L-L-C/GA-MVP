@@ -1,5 +1,4 @@
-
-// src/components/SomeComponent.tsx
+/src/components/layout/Footer.tsx
 
 import React from 'react';
 import './styles/Footer.css';
