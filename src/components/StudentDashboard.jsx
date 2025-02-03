@@ -4,9 +4,24 @@ import { motion } from 'framer-motion';
 import { FaGraduationCap, FaChartLine, FaBook } from 'react-icons/fa';
 import LearningStyleInsights from '../vue-components/LearningStyleInsights.jsx';
 import LearningStyleInsightsWrapper from "../vue-components/LearningStyleInsightsWrapper";
+import { useAuth } from '../contexts/AuthContext';
+import { FcGoogle } from 'react-icons/fc';
 
 const StudentDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const { loginWithGoogle } = useAuth();
+  const [error, setError] = useState('');
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError('');
+      await loginWithGoogle();
+      // Handle navigation to /dashboard after successful login
+    } catch (error) {
+      setError(error.message);
+      console.error('Login error:', error);
+    }
+  };
 
   return (
     <DashboardContainer>
@@ -40,6 +55,12 @@ const StudentDashboard = () => {
             </ActivityList>
           </Card>
         </DashboardGrid>
+
+        <GoogleLoginButton onClick={handleGoogleLogin}>
+          <FcGoogle className="text-xl" />
+          Sign in with Google
+        </GoogleLoginButton>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
       </motion.div>
     </DashboardContainer>
   );
@@ -103,6 +124,43 @@ const ActivityList = styled.div`
   background: var(--background-light);
   border-radius: 8px;
   padding: 1rem;
+`;
+
+const GoogleLoginButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background-color: white;
+  color: #333;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f8fafc;
+  }
+
+  &:focus {
+    outline: none;
+    ring: 2px;
+    ring-offset: 2px;
+    ring-blue-500;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  text-align: center;
 `;
 
 export default StudentDashboard;

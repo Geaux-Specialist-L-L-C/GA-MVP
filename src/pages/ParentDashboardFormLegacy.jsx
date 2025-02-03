@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { FcGoogle } from "react-icons/fc";
 
-const Login = () => {
+const ParentDashboardFormLegacy = () => {
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,4 +46,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default ParentDashboardFormLegacy;

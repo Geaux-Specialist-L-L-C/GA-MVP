@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('Auth state changed, user:', user); // P0ef7
       setCurrentUser(user);
       if (user) {
         // Update profile context when user is authenticated
@@ -43,16 +44,43 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, [updateProfile]);
 
+  const loginWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      if (typeof result.user !== 'function') {
+        throw new Error('loginWithGoogle did not return a callable function');
+      }
+    } catch (error) {
+      console.error("Google login error:", error);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      const result = await signOut(auth);
+      if (typeof result !== 'function') {
+        throw new Error('logout did not return a callable function');
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   const value = {
     currentUser,
     loading,
-    loginWithGoogle: () => signInWithPopup(auth, new GoogleAuthProvider()),
-    logout: () => signOut(auth),
+    loginWithGoogle,
+    logout,
   };
+
+  if (loading) {
+    return null; // or a loading spinner component
+  }
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

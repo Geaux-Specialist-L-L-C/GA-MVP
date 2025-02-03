@@ -1,10 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaBook, FaHeadphones, FaEye, FaRunning } from 'react-icons/fa';
+import { useAuth } from '../contexts/AuthContext';
 
 const LearningStyles = () => {
+  const { loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError('');
+      await loginWithGoogle();
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message);
+      console.error('Login error:', err);
+    }
+  };
+
   return (
     <Container>
       <Header>
@@ -50,6 +66,13 @@ const LearningStyles = () => {
         <h2>Want to know your learning style?</h2>
         <StyledLink to="/take-assessment">Take the Assessment</StyledLink>
       </CTASection>
+
+      <GoogleLoginSection>
+        <GoogleLoginButton onClick={handleGoogleLogin}>
+          Sign in with Google
+        </GoogleLoginButton>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+      </GoogleLoginSection>
     </Container>
   );
 };
@@ -127,6 +150,31 @@ const StyledLink = styled(Link)`
   &:hover {
     background: var(--secondary-color);
   }
+`;
+
+const GoogleLoginSection = styled.div`
+  text-align: center;
+  margin-top: 2rem;
+`;
+
+const GoogleLoginButton = styled.button`
+  background: var(--primary-color);
+  color: white;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background: var(--secondary-color);
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: red;
+  margin-top: 1rem;
 `;
 
 export default LearningStyles;

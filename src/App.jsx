@@ -1,52 +1,72 @@
 import React, { Suspense } from 'react';
-import PropTypes from 'prop-types';
-import { ThemeProvider } from 'styled-components';
-import styled from 'styled-components';
-import { ErrorBoundary } from 'react-error-boundary';
-import { AuthProvider } from './contexts/AuthContext';
-import { LoadingSpinner } from './components/LoadingSpinner';
-import { Layout } from './components/Layout';
-import { AppRoutes } from './routes';
-import { theme } from './theme';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
+import ErrorBoundary from './components/shared/ErrorBoundary';
+import AuthRoute from './components/auth/AuthRoute.tsx';
 
-const MainContent = styled.main`
-  min-height: calc(100vh - 70px);
-  flex: 1;
-  position: relative;
-  z-index: 1;
-`;
+// Lazy load components
+const Home = React.lazy(() => import('./pages/Home'));
+const Login = React.lazy(() => import('./components/Login'));
+const StudentProfileLegacy = React.lazy(() => import('./pages/StudentProfileLegacy'));
+const StudentDashboardFormLegacy = React.lazy(() => import('./pages/StudentDashboardFormLegacy'));
+const ParentProfileLegacy = React.lazy(() => import('./pages/ParentProfileLegacy'));
+const ParentProfileFormLegacy = React.lazy(() => import('./pages/ParentProfileFormLegacy'));
+const ParentDashboardFormLegacy = React.lazy(() => import('./pages/ParentDashboardFormLegacy'));
 
-const ErrorFallback = ({ error }) => (
-  <div role="alert">
-    <h2>Something went wrong:</h2>
-    <pre>{error.message}</pre>
+// Loading component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
   </div>
 );
 
-ErrorFallback.propTypes = {
-  error: PropTypes.shape({
-    message: PropTypes.string.isRequired
-  }).isRequired
-};
+const App = () => {
+  const { currentUser } = useAuth();
 
-function App() {
+  console.log('App - currentUser:', currentUser);
+
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <ThemeProvider theme={theme}>
-        <AuthProvider>
-          <Layout>
-            <Suspense 
-              fallback={<LoadingSpinner />}
-            >
-              <MainContent>
-                <AppRoutes />
-              </MainContent>
-            </Suspense>
-          </Layout>
-        </AuthProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+    <Router>
+      <ErrorBoundary>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            
+            {/* Protected Routes */}
+            <Route path="/student-profile" element={
+              <AuthRoute>
+                <StudentProfileLegacy />
+              </AuthRoute>
+            } />
+            <Route path="/student-dashboard" element={
+              <AuthRoute>
+                <StudentDashboardFormLegacy />
+              </AuthRoute>
+            } />
+            <Route path="/parent-profile" element={
+              <AuthRoute>
+                <ParentProfileLegacy />
+              </AuthRoute>
+            } />
+            <Route path="/parent-profile-form" element={
+              <AuthRoute>
+                <ParentProfileFormLegacy />
+              </AuthRoute>
+            } />
+            <Route path="/parent-dashboard" element={
+              <AuthRoute>
+                <ParentDashboardFormLegacy />
+              </AuthRoute>
+            } />
+
+            {/* Fallback route for unmatched paths */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
+    </Router>
   );
-}
+};
 
 export default App;

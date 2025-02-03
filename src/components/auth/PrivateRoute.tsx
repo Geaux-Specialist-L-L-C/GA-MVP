@@ -1,11 +1,8 @@
-import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../common/LoadingSpinner';
 
-interface PrivateRouteProps {}
-
-const PrivateRoute: React.FC<PrivateRouteProps> = () => {
+const PrivateRoute = () => {
   const { currentUser, loading } = useAuth();
   const location = useLocation();
 

@@ -1,10 +1,24 @@
-import React from "react";
-import { motion } from 'framer-motion';
+import React, { useState, memo } from "react";
+import { motion, useReducedMotion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from "../contexts/AuthContext";
 import styled from 'styled-components';
+import { containerVariants } from '../utils/animations';
 import { FaGraduationCap, FaChartLine, FaLightbulb, FaRocket } from 'react-icons/fa';
 import heroImage from "/public/images/hero-learning.svg";
+import { FcGoogle } from "react-icons/fc";
+
+const MemoizedHero = memo(Hero);
+const MemoizedFeatures = memo(Features);
+const MemoizedLearningStyles = memo(LearningStyles);
+
+const reducedMotionVariant = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { duration: 0.1 }
+  }
+};
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -41,8 +55,12 @@ const features = [
 ];
 
 const Home = () => {
-  const { currentUser, logout } = useAuth();
+  const prefersReducedMotion = useReducedMotion();
+  const currentVariants = prefersReducedMotion ? reducedMotionVariant : containerVariants;
+
+  const { currentUser, logout, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const [error, setError] = useState("");
 
   const handleLogout = async () => {
     try {
@@ -52,7 +70,39 @@ const Home = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      setError("");
+      await loginWithGoogle();
+      navigate("/dashboard");
+    } catch (error) {
+      setError(error.message);
+      console.error("Login error:", error);
+    }
+  };
+
   return (
+    <HomeContainer role="main">
+      <motion.div
+        variants={currentVariants}
+        initial="hidden"
+        animate="show"
+      >
+        <MemoizedHero />
+        <MemoizedFeatures />
+        <MemoizedLearningStyles />
+        
+        <CallToAction>
+          <h2>Ready to Start Your Learning Journey?</h2>
+          <p>Join Geaux Academy today and discover your unique learning style</p>
+          <StyledLink 
+            to="/signup" 
+            aria-label="Get Started with Geaux Academy"
+          >
+            Get Started
+          </StyledLink>
+        </CallToAction>
+      </motion.div>
     <HomeContainer
       as={motion.div}
       variants={pageVariants}
@@ -102,14 +152,33 @@ const Home = () => {
           </FeatureCard>
         ))}
       </FeaturesGrid>
+
+      <ButtonGroup>
+        <GoogleButton onClick={handleGoogleLogin}>
+          <FcGoogle className="text-xl" />
+          Sign in with Google
+        </GoogleButton>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+      </ButtonGroup>
     </HomeContainer>
   );
 };
+
+export default memo(Home);
 
 const HomeContainer = styled.div`
   max-width: 1200px;
   margin: 80px auto 0; // Added top margin to account for fixed header
   padding: 2rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+
+  @media (max-width: 768px) {
+    padding: 0 0.5rem;
+    h2 { 
+      font-size: 1.5rem; 
+    }
+  }
 `;
 
 const HeroSection = styled.section`
@@ -140,6 +209,8 @@ const HeroContent = styled.div`
   }
 `;
 
+const StyledLink = styled(Link)`
+  display: inline-block;
 const ButtonGroup = styled.div`
   display: flex;
   gap: 1rem;
@@ -160,6 +231,27 @@ const CTAButton = styled(motion.button)`
   gap: 0.5rem;
   background: var(--primary-color);
   color: white;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: var(--secondary-color);
+  }
+
+  &:focus-visible {
+    outline: 2px dashed var(--secondary-color);
+    outline-offset: 4px;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
   border: none;
 `;
 
@@ -200,5 +292,50 @@ const IconWrapper = styled.div`
   color: var(--primary-color);
   margin-bottom: 1rem;
 `;
+
+const GoogleButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background-color: white;
+  color: #333;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f8fafc;
+  }
+
+  &:focus {
+    outline: none;
+    ring: 2px;
+    ring-offset: 2px;
+    ring-blue-500;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  text-align: center;
+`;
+
+const styles = {
+  container: {
+    padding: '0 0.5rem', // Ensure this line is correct
+    // Other styles...
+  },
+  // Other style objects...
+};
 
 export default Home;
