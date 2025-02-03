@@ -1,86 +1,61 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth } from '../firebase/config';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { 
-  signInWithPopup, 
-  GoogleAuthProvider,
-  signOut,
-  onAuthStateChanged 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  signOut
 } from 'firebase/auth';
-import { useProfile } from './ProfileContext';
+import { auth, googleProvider } from '../firebase/config';
 
 const AuthContext = createContext();
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(null);
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { updateProfile } = useProfile();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('Auth state changed, user:', user); // P0ef7
-      setCurrentUser(user);
-      if (user) {
-        // Update profile context when user is authenticated
-        updateProfile({
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-        });
-      } else {
-        updateProfile(null);
-      }
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      setUser(user);
       setLoading(false);
     });
-
     return unsubscribe;
-  }, [updateProfile]);
+  }, []);
+
+  const login = (email, password) => {
+    return signInWithEmailAndPassword(auth, email, password);
+  };
 
   const loginWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
     try {
-      const result = await signInWithPopup(auth, provider);
-      if (typeof result.user !== 'function') {
-        throw new Error('loginWithGoogle did not return a callable function');
-      }
+      const result = await signInWithPopup(auth, googleProvider);
+      return result;
     } catch (error) {
       console.error("Google login error:", error);
+      throw error;
     }
   };
 
-  const logout = async () => {
-    try {
-      const result = await signOut(auth);
-      if (typeof result !== 'function') {
-        throw new Error('logout did not return a callable function');
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
+  const signup = (email, password) => {
+    return createUserWithEmailAndPassword(auth, email, password);
+  };
+
+  const logout = () => {
+    return signOut(auth);
   };
 
   const value = {
-    currentUser,
-    loading,
+    user,
+    login,
     loginWithGoogle,
-    logout,
+    signup,
+    logout
   };
-
-  if (loading) {
-    return null; // or a loading spinner component
-  }
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
-};
+}

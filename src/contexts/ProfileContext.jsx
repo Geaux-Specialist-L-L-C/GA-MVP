@@ -2,19 +2,24 @@ import React, { createContext, useContext, useState } from 'react';
 
 const ProfileContext = createContext();
 
-export function useProfile() {
-  return useContext(ProfileContext);
-}
+export const useProfile = () => {
+  const context = useContext(ProfileContext);
+  if (!context) {
+    throw new Error('useProfile must be used within a ProfileProvider');
+  }
+  return context;
+};
 
-export function ProfileProvider({ children }) {
-  const [parentProfile, setParentProfile] = useState(null);
-  const [studentProfile, setStudentProfile] = useState(null);
+export const ProfileProvider = ({ children }) => {
+  const [profile, setProfile] = useState(null);
+
+  const updateProfile = (newProfile) => {
+    setProfile(newProfile);
+  };
 
   const value = {
-    parentProfile,
-    setParentProfile,
-    studentProfile,
-    setStudentProfile,
+    profile,
+    updateProfile,
   };
 
   return (
@@ -22,4 +27,4 @@ export function ProfileProvider({ children }) {
       {children}
     </ProfileContext.Provider>
   );
-}
+};

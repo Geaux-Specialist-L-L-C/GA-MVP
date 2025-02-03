@@ -6,6 +6,7 @@ import { FaGraduationCap, FaChartLine, FaUsers, FaLightbulb } from 'react-icons/
 import { BiTargetLock } from 'react-icons/bi';
 import { MdPersonalVideo } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
+import Header from '../components/layout/Header';  // Add import
 
 const CTAButton = styled.button`
   background: var(--primary-color);
@@ -30,181 +31,184 @@ const About = () => {
   const navigate = useNavigate();
 
   return (
-    <AboutContainer>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Section>
-          <SectionHeader>
-            <FaGraduationCap size={50} />
-            <h2>Core Values</h2>
-          </SectionHeader>
-          <ValuesList>
-            <ValueItem to="/values/integrity">
-              <span>Integrity</span>
-            </ValueItem>
-            <ValueItem to="/values/excellence">
-              <span>Excellence</span>
-            </ValueItem>
-            <ValueItem to="/values/innovation">
-              <span>Innovation</span>
-            </ValueItem>
-            <ValueItem to="/values/collaboration">
-              <span>Collaboration</span>
-            </ValueItem>
-          </ValuesList>
-        </Section>
-
-        <MissionSection>
-          <SectionHeader>
-            <FaLightbulb size={30} />
-            <h2>Our Mission</h2>
-          </SectionHeader>
-          <MissionText>
-            At Geaux Academy, we believe in tailoring education to each student's unique learning style, 
-            ensuring better comprehension and retention through personalized approaches.
-          </MissionText>
-          <CTAButton onClick={() => navigate('/signup')}>
-            Start Your Learning Journey
-          </CTAButton>
-        </MissionSection>
-
-        <Grid>
-          <FeatureCard>
-            <BiTargetLock size={40} />
-            <h3>Assessment First</h3>
-            <p>Understanding your learning style through comprehensive evaluation</p>
-          </FeatureCard>
-          <FeatureCard>
-            <MdPersonalVideo size={40} />
-            <h3>Personalized Learning</h3>
-            <p>Custom learning paths based on your individual needs</p>
-          </FeatureCard>
-          <FeatureCard>
-            <FaChartLine size={40} />
-            <h3>Progress Tracking</h3>
-            <p>Monitor your educational journey with detailed analytics</p>
-          </FeatureCard>
-        </Grid>
-
-        <FlipSection>
-          <div>
+    <>
+      <Header />  {/* Add Header component */}
+      <AboutContainer>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Section>
             <SectionHeader>
-              <h2>Why Choose Us</h2>
+              <FaGraduationCap size={50} />
+              <h2>Core Values</h2>
             </SectionHeader>
-            <FlipCardsGrid>
-              <FlipCard>
-                <FlipCardInner>
-                  <FlipCardFront>
-                    <h3>Personalized Learning</h3>
-                    <p>Click to learn more</p>
-                  </FlipCardFront>
-                  <FlipCardBack>
-                    <p>Custom-tailored curriculum designed to match your unique learning style and pace.</p>
-                  </FlipCardBack>
-                </FlipCardInner>
-              </FlipCard>
-              <FlipCard>
-                <FlipCardInner>
-                  <FlipCardFront>
-                    <h3>Flexible Schedule</h3>
-                    <p>Click to learn more</p>
-                  </FlipCardFront>
-                  <FlipCardBack>
-                    <p>Learn at your own pace with 24/7 access to educational resources.</p>
-                  </FlipCardBack>
-                </FlipCardInner>
-              </FlipCard>
-              <FlipCard>
-                <FlipCardInner>
-                  <FlipCardFront>
-                    <h3>Expert Support</h3>
-                    <p>Click to learn more</p>
-                  </FlipCardFront>
-                  <FlipCardBack>
-                    <p>Access to qualified instructors and mentors throughout your learning journey.</p>
-                  </FlipCardBack>
-                </FlipCardInner>
-              </FlipCard>
-              <FlipCard>
-                <FlipCardInner>
-                  <FlipCardFront>
-                    <h3>Proven Results</h3>
-                    <p>Click to learn more</p>
-                  </FlipCardFront>
-                  <FlipCardBack>
-                    <p>Track record of student success and measurable learning outcomes.</p>
-                  </FlipCardBack>
-                </FlipCardInner>
-              </FlipCard>
-            </FlipCardsGrid>
-            <CTAButton onClick={() => navigate('/signup')}>
-              Join Geaux Academy Today
-            </CTAButton>
-          </div>
+            <ValuesList>
+              <ValueItem to="/values/integrity">
+                <span>Integrity</span>
+              </ValueItem>
+              <ValueItem to="/values/excellence">
+                <span>Excellence</span>
+              </ValueItem>
+              <ValueItem to="/values/innovation">
+                <span>Innovation</span>
+              </ValueItem>
+              <ValueItem to="/values/collaboration">
+                <span>Collaboration</span>
+              </ValueItem>
+            </ValuesList>
+          </Section>
 
-          <div>
+          <MissionSection>
             <SectionHeader>
-              <h2>Our Family</h2>
+              <FaLightbulb size={30} />
+              <h2>Our Mission</h2>
             </SectionHeader>
-            <MissionText style={{ marginBottom: '2rem' }}>
-              Meet the dedicated specialists at Geaux Academy who are passionate about transforming education through personalized learning.
+            <MissionText>
+              At Geaux Academy, we believe in tailoring education to each student's unique learning style, 
+              ensuring better comprehension and retention through personalized approaches.
             </MissionText>
-            <FlipCardsGrid>
-              <FlipCard>
-                <FlipCardInner>
-                  <FlipCardFront>
-                    <h3>Daniel Hopkins</h3>
-                    <p>CEO</p>
-                  </FlipCardFront>
-                  <FlipCardBack>
-                    <p>Visionary leader with 15+ years in educational technology</p>
-                  </FlipCardBack>
-                </FlipCardInner>
-              </FlipCard>
-              <FlipCard>
-                <FlipCardInner>
-                  <FlipCardFront>
-                    <h3>Samantha Gordon</h3>
-                    <p>CMO</p>
-                  </FlipCardFront>
-                  <FlipCardBack>
-                    <p>Marketing strategist with expertise in educational outreach</p>
-                  </FlipCardBack>
-                </FlipCardInner>
-              </FlipCard>
-              <FlipCard>
-                <FlipCardInner>
-                  <FlipCardFront>
-                    <h3>Sean Hopkins</h3>
-                    <p>CTO</p>
-                  </FlipCardFront>
-                  <FlipCardBack>
-                    <p>Tech innovator specializing in educational platforms</p>
-                  </FlipCardBack>
-                </FlipCardInner>
-              </FlipCard>
-              <FlipCard>
-                <FlipCardInner>
-                  <FlipCardFront>
-                    <h3>Cathy Smith</h3>
-                    <p>CFO</p>
-                  </FlipCardFront>
-                  <FlipCardBack>
-                    <p>Financial expert with focus on educational investments</p>
-                  </FlipCardBack>
-                </FlipCardInner>
-              </FlipCard>
-            </FlipCardsGrid>
             <CTAButton onClick={() => navigate('/signup')}>
-              Become Part of Our Family
+              Start Your Learning Journey
             </CTAButton>
-          </div>
-        </FlipSection>
-      </motion.div>
-    </AboutContainer>
+          </MissionSection>
+
+          <Grid>
+            <FeatureCard>
+              <BiTargetLock size={40} />
+              <h3>Assessment First</h3>
+              <p>Understanding your learning style through comprehensive evaluation</p>
+            </FeatureCard>
+            <FeatureCard>
+              <MdPersonalVideo size={40} />
+              <h3>Personalized Learning</h3>
+              <p>Custom learning paths based on your individual needs</p>
+            </FeatureCard>
+            <FeatureCard>
+              <FaChartLine size={40} />
+              <h3>Progress Tracking</h3>
+              <p>Monitor your educational journey with detailed analytics</p>
+            </FeatureCard>
+          </Grid>
+
+          <FlipSection>
+            <div>
+              <SectionHeader>
+                <h2>Why Choose Us</h2>
+              </SectionHeader>
+              <FlipCardsGrid>
+                <FlipCard>
+                  <FlipCardInner>
+                    <FlipCardFront>
+                      <h3>Personalized Learning</h3>
+                      <p>Click to learn more</p>
+                    </FlipCardFront>
+                    <FlipCardBack>
+                      <p>Custom-tailored curriculum designed to match your unique learning style and pace.</p>
+                    </FlipCardBack>
+                  </FlipCardInner>
+                </FlipCard>
+                <FlipCard>
+                  <FlipCardInner>
+                    <FlipCardFront>
+                      <h3>Flexible Schedule</h3>
+                      <p>Click to learn more</p>
+                    </FlipCardFront>
+                    <FlipCardBack>
+                      <p>Learn at your own pace with 24/7 access to educational resources.</p>
+                    </FlipCardBack>
+                  </FlipCardInner>
+                </FlipCard>
+                <FlipCard>
+                  <FlipCardInner>
+                    <FlipCardFront>
+                      <h3>Expert Support</h3>
+                      <p>Click to learn more</p>
+                    </FlipCardFront>
+                    <FlipCardBack>
+                      <p>Access to qualified instructors and mentors throughout your learning journey.</p>
+                    </FlipCardBack>
+                  </FlipCardInner>
+                </FlipCard>
+                <FlipCard>
+                  <FlipCardInner>
+                    <FlipCardFront>
+                      <h3>Proven Results</h3>
+                      <p>Click to learn more</p>
+                    </FlipCardFront>
+                    <FlipCardBack>
+                      <p>Track record of student success and measurable learning outcomes.</p>
+                    </FlipCardBack>
+                  </FlipCardInner>
+                </FlipCard>
+              </FlipCardsGrid>
+              <CTAButton onClick={() => navigate('/signup')}>
+                Join Geaux Academy Today
+              </CTAButton>
+            </div>
+
+            <div>
+              <SectionHeader>
+                <h2>Our Family</h2>
+              </SectionHeader>
+              <MissionText style={{ marginBottom: '2rem' }}>
+                Meet the dedicated specialists at Geaux Academy who are passionate about transforming education through personalized learning.
+              </MissionText>
+              <FlipCardsGrid>
+                <FlipCard>
+                  <FlipCardInner>
+                    <FlipCardFront>
+                      <h3>Daniel Hopkins</h3>
+                      <p>CEO</p>
+                    </FlipCardFront>
+                    <FlipCardBack>
+                      <p>Visionary leader with 15+ years in educational technology</p>
+                    </FlipCardBack>
+                  </FlipCardInner>
+                </FlipCard>
+                <FlipCard>
+                  <FlipCardInner>
+                    <FlipCardFront>
+                      <h3>Samantha Gordon</h3>
+                      <p>CMO</p>
+                    </FlipCardFront>
+                    <FlipCardBack>
+                      <p>Marketing strategist with expertise in educational outreach</p>
+                    </FlipCardBack>
+                  </FlipCardInner>
+                </FlipCard>
+                <FlipCard>
+                  <FlipCardInner>
+                    <FlipCardFront>
+                      <h3>Sean Hopkins</h3>
+                      <p>CTO</p>
+                    </FlipCardFront>
+                    <FlipCardBack>
+                      <p>Tech innovator specializing in educational platforms</p>
+                    </FlipCardBack>
+                  </FlipCardInner>
+                </FlipCard>
+                <FlipCard>
+                  <FlipCardInner>
+                    <FlipCardFront>
+                      <h3>Cathy Smith</h3>
+                      <p>CFO</p>
+                    </FlipCardFront>
+                    <FlipCardBack>
+                      <p>Financial expert with focus on educational investments</p>
+                    </FlipCardBack>
+                  </FlipCardInner>
+                </FlipCard>
+              </FlipCardsGrid>
+              <CTAButton onClick={() => navigate('/signup')}>
+                Become Part of Our Family
+              </CTAButton>
+            </div>
+          </FlipSection>
+        </motion.div>
+      </AboutContainer>
+    </>
   );
 };
 

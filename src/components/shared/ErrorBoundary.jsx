@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError(error) {
@@ -13,21 +13,25 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+    this.setState({
+      error: error,
+      errorInfo: errorInfo
+    });
+    // You can also log the error to an error reporting service here
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
       return (
         <ErrorContainer>
-          <h1>Something went wrong</h1>
-          <p>We apologize for the inconvenience. Please try refreshing the page.</p>
-          <ButtonGroup>
-            <RetryButton onClick={() => window.location.reload()}>
-              Refresh Page
-            </RetryButton>
-            <HomeButton to="/">Return Home</HomeButton>
-          </ButtonGroup>
+          <ErrorTitle>Something went wrong</ErrorTitle>
+          <ErrorMessage>
+            We apologize for the inconvenience. Please try refreshing the page.
+          </ErrorMessage>
+          <RetryButton onClick={() => window.location.reload()}>
+            Retry
+          </RetryButton>
         </ErrorContainer>
       );
     }
@@ -41,40 +45,33 @@ const ErrorContainer = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 60vh;
-  padding: 2rem;
+  min-height: 100vh;
+  padding: 20px;
   text-align: center;
 `;
 
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
+const ErrorTitle = styled.h1`
+  color: #e53e3e;
+  font-size: 24px;
+  margin-bottom: 16px;
+`;
+
+const ErrorMessage = styled.p`
+  color: #4a5568;
+  margin-bottom: 24px;
 `;
 
 const RetryButton = styled.button`
-  padding: 0.75rem 1.5rem;
-  background-color: var(--primary-color);
+  background-color: #3182ce;
   color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
-  
-  &:hover {
-    background-color: var(--secondary-color);
-  }
-`;
+  font-size: 16px;
 
-const HomeButton = styled(Link)`
-  padding: 0.75rem 1.5rem;
-  background-color: transparent;
-  color: var(--primary-color);
-  border: 1px solid var(--primary-color);
-  border-radius: 4px;
-  text-decoration: none;
-  
   &:hover {
-    background-color: var(--light-bg);
+    background-color: #2c5282;
   }
 `;
 

@@ -3,11 +3,48 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from "../contexts/AuthContext";
 import styled from 'styled-components';
-import { containerVariants } from '../utils/animations';
-import { FaGraduationCap, FaChartLine, FaLightbulb, FaRocket } from 'react-icons/fa';
-import heroImage from "/public/images/hero-learning.svg";
+import { containerVariants, itemVariants } from '../utils/animations';
+import { FaGraduationCap, FaChartLine, FaLightbulb } from 'react-icons/fa';
 import { FcGoogle } from "react-icons/fc";
+import Header from '../components/layout/Header';  // Updated import path
 
+// Component definitions first
+const Features = () => (
+  <FeaturesGrid>
+    {features.map((feature, index) => (
+      <FeatureCard
+        key={index}
+        as={motion.div}
+        variants={itemVariants}
+        whileHover="hover"
+      >
+        <IconWrapper>{feature.icon}</IconWrapper>
+        <h3>{feature.title}</h3>
+        <p>{feature.description}</p>
+      </FeatureCard>
+    ))}
+  </FeaturesGrid>
+);
+
+const LearningStyles = () => (
+  <section>
+    {/* Add your learning styles content here */}
+  </section>
+);
+
+const Hero = () => {
+  return (
+    <HeroSection>
+      <HeroContent>
+        <HeroTitle>Welcome to Geaux Academy</HeroTitle>
+        <HeroSubtitle>Your Journey to Learning Excellence Starts Here</HeroSubtitle>
+        <HeroImage src="/images/hero-learning.svg" alt="hero" />
+      </HeroContent>
+    </HeroSection>
+  );
+};
+
+// Memoization after component definitions
 const MemoizedHero = memo(Hero);
 const MemoizedFeatures = memo(Features);
 const MemoizedLearningStyles = memo(LearningStyles);
@@ -20,21 +57,8 @@ const reducedMotionVariant = {
   }
 };
 
-const pageVariants = {
-  initial: { opacity: 0, y: 20 },
-  animate: { 
-    opacity: 1, 
-    y: 0,
-    transition: { staggerChildren: 0.1 }
-  },
-  exit: { opacity: 0, y: -20 }
-};
-
-const itemVariants = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  hover: { scale: 1.05 }
-};
+// Remove duplicate itemVariants definition since we're importing it
+// Remove duplicate pageVariants since we're using containerVariants
 
 const features = [
   {
@@ -57,7 +81,6 @@ const features = [
 const Home = () => {
   const prefersReducedMotion = useReducedMotion();
   const currentVariants = prefersReducedMotion ? reducedMotionVariant : containerVariants;
-
   const { currentUser, logout, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
@@ -82,7 +105,14 @@ const Home = () => {
   };
 
   return (
-    <HomeContainer role="main">
+    <Container
+      as={motion.div}
+      variants={containerVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+    >
+      <Header />  {/* Add header component */}
       <motion.div
         variants={currentVariants}
         initial="hidden"
@@ -95,86 +125,32 @@ const Home = () => {
         <CallToAction>
           <h2>Ready to Start Your Learning Journey?</h2>
           <p>Join Geaux Academy today and discover your unique learning style</p>
-          <StyledLink 
-            to="/signup" 
-            aria-label="Get Started with Geaux Academy"
-          >
+          <StyledLink to="/signup">
             Get Started
           </StyledLink>
         </CallToAction>
+
+        <ButtonGroup>
+          <GoogleButton onClick={handleGoogleLogin}>
+            <FcGoogle className="text-xl" />
+            Sign in with Google
+          </GoogleButton>
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+        </ButtonGroup>
       </motion.div>
-    <HomeContainer
-      as={motion.div}
-      variants={pageVariants}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-    >
-      <HeroSection>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <HeroContent>
-            <h1>Welcome to Geaux Academy</h1>
-            <p>Personalized learning paths for every student</p>
-            <CTAButton 
-              onClick={() => navigate('/signup')}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Get Started
-            </CTAButton>
-          </HeroContent>
-        </motion.div>
-        <HeroImage 
-          src={heroImage} 
-          alt="Learning illustration"
-          as={motion.img}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-        />
-      </HeroSection>
-
-      <FeaturesGrid>
-        {features.map((feature, index) => (
-          <FeatureCard
-            key={index}
-            as={motion.div}
-            variants={itemVariants}
-            whileHover="hover"
-          >
-            <IconWrapper>{feature.icon}</IconWrapper>
-            <h3>{feature.title}</h3>
-            <p>{feature.description}</p>
-          </FeatureCard>
-        ))}
-      </FeaturesGrid>
-
-      <ButtonGroup>
-        <GoogleButton onClick={handleGoogleLogin}>
-          <FcGoogle className="text-xl" />
-          Sign in with Google
-        </GoogleButton>
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-      </ButtonGroup>
-    </HomeContainer>
+    </Container>
   );
 };
 
 export default memo(Home);
 
-const HomeContainer = styled.div`
+const Container = styled.div`
   max-width: 1200px;
-  margin: 80px auto 0; // Added top margin to account for fixed header
-  padding: 2rem;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 2rem;
 
   @media (max-width: 768px) {
-    padding: 0 0.5rem;
+    padding: 0.5rem;
     h2 { 
       font-size: 1.5rem; 
     }
@@ -182,55 +158,41 @@ const HomeContainer = styled.div`
 `;
 
 const HeroSection = styled.section`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  display: flex;
+  justify-content: center;
   align-items: center;
-  min-height: 80vh;
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
+  min-height: 60vh;
+  padding: 2rem;
 `;
 
 const HeroContent = styled.div`
-  h1 {
-    font-size: clamp(2.5rem, 5vw, 4rem);
-    color: var(--primary-color);
-    margin-bottom: 1.5rem;
-    font-weight: bold;
-  }
+  text-align: center;
+  max-width: 800px;
+`;
 
-  p {
-    font-size: clamp(1.1rem, 2vw, 1.5rem);
-    color: var(--text-color);
-    margin-bottom: 2rem;
-  }
+const HeroTitle = styled.h1`
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  color: ${props => props.theme.colors.primary};
+`;
+
+const HeroSubtitle = styled.p`
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+  color: ${props => props.theme.colors.text};
+`;
+
+const HeroImage = styled.img`
+  max-width: 100%;
+  height: auto;
+  margin-top: 2rem;
 `;
 
 const StyledLink = styled(Link)`
   display: inline-block;
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 1rem;
-  
-  @media (max-width: 768px) {
-    justify-content: center;
-  }
-`;
-
-const CTAButton = styled(motion.button)`
-  padding: 1rem 2rem;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   background: var(--primary-color);
   color: white;
+  padding: 1rem 2rem;
   border-radius: 4px;
   font-size: 1.1rem;
   text-decoration: none;
@@ -252,13 +214,28 @@ const CTAButton = styled(motion.button)`
     cursor: not-allowed;
   }
 `;
-  border: none;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 1rem;
+  
+  @media (max-width: 768px) {
+    justify-content: center;
+  }
 `;
 
-const HeroImage = styled(motion.img)`
-  width: 100%;
-  max-width: 500px;
-  height: auto;
+const CTAButton = styled(motion.button)`
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
 `;
 
 const FeaturesGrid = styled.div`
@@ -330,6 +307,20 @@ const ErrorMessage = styled.div`
   text-align: center;
 `;
 
+const CallToAction = styled.section`
+  text-align: center;
+  padding: 4rem 2rem;
+  
+  h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    margin-bottom: 2rem;
+  }
+`;
+
 const styles = {
   container: {
     padding: '0 0.5rem', // Ensure this line is correct
@@ -337,5 +328,3 @@ const styles = {
   },
   // Other style objects...
 };
-
-export default Home;

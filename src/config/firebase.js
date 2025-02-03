@@ -4,6 +4,7 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
+import { initializeApp as initializeAdminApp, cert } from "firebase-admin/app";
 
 const client = new SecretManagerServiceClient();
 
@@ -11,6 +12,8 @@ async function accessSecretVersion(name) {
   const [version] = await client.accessSecretVersion({ name });
   return version.payload.data.toString();
 }
+
+const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
 const firebaseConfig = {
   apiKey: await accessSecretVersion('projects/YOUR_PROJECT_ID/secrets/FIREBASE_API_KEY/versions/latest'),
@@ -20,7 +23,8 @@ const firebaseConfig = {
   storageBucket: await accessSecretVersion('projects/YOUR_PROJECT_ID/secrets/FIREBASE_STORAGE_BUCKET/versions/latest'),
   messagingSenderId: await accessSecretVersion('projects/YOUR_PROJECT_ID/secrets/FIREBASE_MESSAGING_SENDER_ID/versions/latest'),
   appId: await accessSecretVersion('projects/YOUR_PROJECT_ID/secrets/FIREBASE_APP_ID/versions/latest'),
-  measurementId: await accessSecretVersion('projects/YOUR_PROJECT_ID/secrets/FIREBASE_MEASUREMENT_ID/versions/latest')
+  measurementId: await accessSecretVersion('projects/YOUR_PROJECT_ID/secrets/FIREBASE_MEASUREMENT_ID/versions/latest'),
+  credential: serviceAccount ? cert(JSON.parse(serviceAccount)) : undefined
 };
 
 // Initialize Firebase

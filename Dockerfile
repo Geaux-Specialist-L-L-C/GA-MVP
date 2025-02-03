@@ -28,9 +28,11 @@ ENV VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id_here
 ENV VITE_FIREBASE_APP_ID=your_app_id_here
 ENV VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id_here
 ENV VITE_OPENAI_API_KEY=your_openai_api_key_here
-ENV REACT_APP_AZURE_ENDPOINT=your_azure_endpoint_here
-ENV REACT_APP_MODEL_NAME=your_model_name_here
-ENV REACT_APP_AZURE_API_KEY=your_azure_api_key_here
+ENV REACT_APP_AZURE_ENDPOINT=https://ai-geauxacademy8942ai219453410909.openai.azure.com/
+ENV REACT_APP_AZURE_COGNITIVE_ENDPOINT=https://ai-geauxacademy8942ai219453410909.cognitiveservices.azure.com/
+ENV REACT_APP_AZURE_DEPLOYMENT_ENDPOINT=https://ai-geauxacademy8942ai219453410909.services.ai.azure.com/models
+ENV REACT_APP_MODEL_NAME=gpt-4
+ENV REACT_APP_AZURE_API_KEY=DYLWvom1rGV6o6eOaVmuOGMAlb3oPwdlgYfFLBRoirTufjfdnBSlJQQJ99AKACHYHv6XJ3w3AAAAACOGkQBU
 
 # Command to run the application
 CMD ["npm", "run", "dev"]

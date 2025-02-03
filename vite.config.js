@@ -39,6 +39,7 @@ export default defineConfig({
       messagingSenderId: JSON.stringify(process.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
       appId: JSON.stringify(process.env.VITE_FIREBASE_APP_ID),
       measurementId: JSON.stringify(process.env.VITE_FIREBASE_MEASUREMENT_ID)
-    }
+    },
+    'process.env': {}
   }
 });

@@ -1,8 +1,11 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProfileProvider } from './contexts/ProfileContext';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import AuthRoute from './components/auth/AuthRoute.tsx';
+import { ThemeProvider } from 'styled-components';
+import { theme } from './theme/theme';
 
 // Lazy load components
 const Home = React.lazy(() => import('./pages/Home'));
@@ -21,51 +24,51 @@ const LoadingFallback = () => (
 );
 
 const App = () => {
-  const { currentUser } = useAuth();
-
-  console.log('App - currentUser:', currentUser);
-
   return (
-    <Router>
-      <ErrorBoundary>
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            
-            {/* Protected Routes */}
-            <Route path="/student-profile" element={
-              <AuthRoute>
-                <StudentProfileLegacy />
-              </AuthRoute>
-            } />
-            <Route path="/student-dashboard" element={
-              <AuthRoute>
-                <StudentDashboardFormLegacy />
-              </AuthRoute>
-            } />
-            <Route path="/parent-profile" element={
-              <AuthRoute>
-                <ParentProfileLegacy />
-              </AuthRoute>
-            } />
-            <Route path="/parent-profile-form" element={
-              <AuthRoute>
-                <ParentProfileFormLegacy />
-              </AuthRoute>
-            } />
-            <Route path="/parent-dashboard" element={
-              <AuthRoute>
-                <ParentDashboardFormLegacy />
-              </AuthRoute>
-            } />
+    <ErrorBoundary>
+      <ThemeProvider theme={theme}>
+        <AuthProvider>
+          <ProfileProvider>
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                
+                {/* Protected Routes */}
+                <Route path="/student-profile" element={
+                  <AuthRoute>
+                    <StudentProfileLegacy />
+                  </AuthRoute>
+                } />
+                <Route path="/student-dashboard" element={
+                  <AuthRoute>
+                    <StudentDashboardFormLegacy />
+                  </AuthRoute>
+                } />
+                <Route path="/parent-profile" element={
+                  <AuthRoute>
+                    <ParentProfileLegacy />
+                  </AuthRoute>
+                } />
+                <Route path="/parent-profile-form" element={
+                  <AuthRoute>
+                    <ParentProfileFormLegacy />
+                  </AuthRoute>
+                } />
+                <Route path="/parent-dashboard" element={
+                  <AuthRoute>
+                    <ParentDashboardFormLegacy />
+                  </AuthRoute>
+                } />
 
-            {/* Fallback route for unmatched paths */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
-      </ErrorBoundary>
-    </Router>
+                {/* Fallback route for unmatched paths */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+          </ProfileProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 };
 

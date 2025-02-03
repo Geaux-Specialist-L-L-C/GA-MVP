@@ -36,8 +36,8 @@ async def log_requests(request: Request, call_next):
 
 # Azure OpenAI Configuration
 openai.api_type = "azure"
-openai.api_base = os.getenv("VITE_AZUREAI_ENDPOINT_URL")
-openai.api_key = os.getenv("VITE_AZUREAI_ENDPOINT_KEY")
+openai.api_base = os.getenv("VITE_AZURE_ENDPOINT", "https://ai-geauxacademy8942ai219453410909.openai.azure.com/")
+openai.api_key = os.getenv("VITE_AZURE_API_KEY", "DYLWvom1rGV6o6eOaVmuOGMAlb3oPwdlgYfFLBRoirTufjfdnBSlJQQJ99AKACHYHv6XJ3w3AAAAACOGkQBU")
 openai.api_version = "2023-07-01-preview"
 
 class ChatMessage(BaseModel):
