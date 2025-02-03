@@ -67,4 +67,6 @@
 
 ### Deployment
 To deploy the application to Firebase:
-`
+
+### Additional Information
+For detailed development plans and milestones, refer to the [Development Plan](Developmentplan.md).
