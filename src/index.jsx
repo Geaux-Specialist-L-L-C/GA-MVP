@@ -14,9 +14,11 @@ root.render(
     <ErrorBoundary>
       <BrowserRouter>
         <ProfileProvider>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
+          <ErrorBoundary>
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+          </ErrorBoundary>
         </ProfileProvider>
       </BrowserRouter>
     </ErrorBoundary>
