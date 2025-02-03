@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import ErrorBoundary from './components/shared/ErrorBoundary';
+import AuthRoute from './components/auth/AuthRoute.tsx';
 
 // Lazy load components
 const Home = React.lazy(() => import('./pages/Home'));
@@ -22,13 +23,6 @@ const LoadingFallback = () => (
 const App = () => {
   const { currentUser } = useAuth();
 
-  const ProtectedRoute = ({ children }) => {
-    if (!currentUser) {
-      return <Navigate to="/login" />;
-    }
-    return children;
-  };
-
   return (
     <Router>
       <ErrorBoundary>
@@ -39,29 +33,29 @@ const App = () => {
             
             {/* Protected Routes */}
             <Route path="/student-profile" element={
-              <ProtectedRoute>
+              <AuthRoute>
                 <StudentProfileLegacy />
-              </ProtectedRoute>
+              </AuthRoute>
             } />
             <Route path="/student-dashboard" element={
-              <ProtectedRoute>
+              <AuthRoute>
                 <StudentDashboardFormLegacy />
-              </ProtectedRoute>
+              </AuthRoute>
             } />
             <Route path="/parent-profile" element={
-              <ProtectedRoute>
+              <AuthRoute>
                 <ParentProfileLegacy />
-              </ProtectedRoute>
+              </AuthRoute>
             } />
             <Route path="/parent-profile-form" element={
-              <ProtectedRoute>
+              <AuthRoute>
                 <ParentProfileFormLegacy />
-              </ProtectedRoute>
+              </AuthRoute>
             } />
             <Route path="/parent-dashboard" element={
-              <ProtectedRoute>
+              <AuthRoute>
                 <ParentDashboardFormLegacy />
-              </ProtectedRoute>
+              </AuthRoute>
             } />
 
             {/* Fallback route for unmatched paths */}

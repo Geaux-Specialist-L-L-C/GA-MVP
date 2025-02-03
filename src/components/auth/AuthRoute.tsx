@@ -1,7 +1,5 @@
-/src/components/auth/AuthRoute.tsx
-
 import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../common/LoadingSpinner';
 
@@ -9,14 +7,13 @@ interface AuthRouteProps {}
 
 const AuthRoute: React.FC<AuthRouteProps> = () => {
   const { currentUser, loading } = useAuth();
-  const location = useLocation();
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
   if (!currentUser) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (location.pathname === '/dashboard' && !currentUser.profileComplete) {
