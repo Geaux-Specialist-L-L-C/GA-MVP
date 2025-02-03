@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import Navbar from './Navbar';
 
+// filepath: /src/components/layout/Layout.jsx
 const Layout = ({ children }) => {
   return (
     <LayoutContainer>

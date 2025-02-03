@@ -2,10 +2,18 @@
 
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "src/contexts/AuthContext";
 import { FcGoogle } from "react-icons/fc";
 import styled from "styled-components";
 
+/**
+ * Login component for user authentication
+ * @component
+ * @example
+ * return (
+ *   <Login />
+ * )
+ */
 const Login = () => {
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
