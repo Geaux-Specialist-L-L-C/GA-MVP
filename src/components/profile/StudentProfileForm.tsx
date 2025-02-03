@@ -1,148 +1,232 @@
 import React, { useState } from 'react';
-import { addStudentToParent } from '../../services/profileService';
-import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { FcGoogle } from 'react-icons/fc';
+import { addDoc, collection } from 'firebase/firestore';
+import { db, auth } from '../firebase/config';
 import styled from 'styled-components';
 
-export const StudentProfileForm = ({ parentId }: { parentId: string }) => {
-  const { loginWithGoogle } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [formData, setFormData] = useState({
-    displayName: '',
-    grade: '',
-    dateOfBirth: ''
-  });
-  const [error, setError] = useState("");
+interface StudentFormData {
+  firstName: string;
+  lastName: string;
+  age: string;
+  grade: string;
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    await addStudentToParent(parentId, {
-      ...formData,
-      uid: crypto.randomUUID(),
-      dateOfBirth: new Date(formData.dateOfBirth)
+interface FormState {
+  loading: boolean;
+  error: string | null;
+  success: boolean;
+}
+
+export const StudentProfileForm: React.FC = () => {
+  const [formData, setFormData] = useState<StudentFormData>({
+    firstName: '',
+    lastName: '',
+    age: '',
+    grade: ''
+  });
+
+  const [formState, setFormState] = useState<FormState>({
+    loading: false,
+    error: null,
+    success: false
+  });
+
+  const resetForm = () => {
+    setFormData({
+      firstName: '',
+      lastName: '',
+      age: '',
+      grade: ''
+    });
+    setFormState({
+      loading: false,
+      error: null,
+      success: false
     });
   };
 
-  const handleGoogleLogin = async () => {
+  const validateForm = (): boolean => {
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      setFormState(prev => ({ ...prev, error: 'First and last name are required' }));
+      return false;
+    }
+    if (!formData.age || parseInt(formData.age) < 4 || parseInt(formData.age) > 18) {
+      setFormState(prev => ({ ...prev, error: 'Age must be between 4 and 18' }));
+      return false;
+    }
+    if (!formData.grade.trim()) {
+      setFormState(prev => ({ ...prev, error: 'Grade is required' }));
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parentId = auth.currentUser?.uid;
+    
+    if (!parentId) {
+      setFormState(prev => ({ ...prev, error: 'Parent authentication required' }));
+      return;
+    }
+
+    if (!validateForm()) return;
+
+    setFormState(prev => ({ ...prev, loading: true, error: null }));
+    
     try {
-      setError("");
-      await loginWithGoogle();
-      const destination = location.state?.from?.pathname || "/dashboard";
-      navigate(destination, { replace: true });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to login");
-      console.error("Login error:", err);
+      await addDoc(collection(db, 'students'), {
+        ...formData,
+        parentId,
+        createdAt: new Date().toISOString()
+      });
+      
+      setFormState({ loading: false, error: null, success: true });
+      setTimeout(resetForm, 3000);
+    } catch (error) {
+      setFormState({
+        loading: false,
+        error: error instanceof Error ? error.message : 'An error occurred',
+        success: false
+      });
     }
   };
 
   return (
-    <Container>
-      <FormBox>
-        <Title>Student Profile Form</Title>
-        
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-
-        <GoogleButton onClick={handleGoogleLogin}>
-          <FcGoogle className="text-xl" />
-          Sign in with Google
-        </GoogleButton>
-
-        <form onSubmit={handleSubmit}>
-          <input
+    <FormContainer>
+      {formState.success && (
+        <SuccessMessage>Student added successfully!</SuccessMessage>
+      )}
+      {formState.error && (
+        <ErrorMessage>{formState.error}</ErrorMessage>
+      )}
+      <Form onSubmit={handleSubmit}>
+        <FormGroup>
+          <Label>First Name *</Label>
+          <Input
             type="text"
-            placeholder="Student Name"
-            value={formData.displayName}
-            onChange={(e) => setFormData({
-              ...formData,
-              displayName: e.target.value
-            })}
+            value={formData.firstName}
+            onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+            disabled={formState.loading}
+            required
           />
-          <input
+        </FormGroup>
+        <FormGroup>
+          <Label>Last Name *</Label>
+          <Input
             type="text"
-            placeholder="Grade"
+            value={formData.lastName}
+            onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+            disabled={formState.loading}
+            required
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label>Age *</Label>
+          <Input
+            type="number"
+            min="4"
+            max="18"
+            value={formData.age}
+            onChange={(e) => setFormData({...formData, age: e.target.value})}
+            disabled={formState.loading}
+            required
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label>Grade *</Label>
+          <Input
+            type="text"
             value={formData.grade}
-            onChange={(e) => setFormData({
-              ...formData,
-              grade: e.target.value
-            })}
+            onChange={(e) => setFormData({...formData, grade: e.target.value})}
+            disabled={formState.loading}
+            required
           />
-          <input
-            type="date"
-            value={formData.dateOfBirth}
-            onChange={(e) => setFormData({
-              ...formData,
-              dateOfBirth: e.target.value
-            })}
-          />
-          <button type="submit">Add Student</button>
-        </form>
-      </FormBox>
-    </Container>
+        </FormGroup>
+        <SubmitButton type="submit" disabled={formState.loading}>
+          {formState.loading ? 'Adding Student...' : 'Add Student'}
+        </SubmitButton>
+      </Form>
+    </FormContainer>
   );
 };
 
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 20px;
-  background-color: #f5f5f5;
-`;
-
-const FormBox = styled.div`
-  width: 100%;
-  max-width: 400px;
+const FormContainer = styled.div`
+  max-width: 500px;
+  margin: 2rem auto;
+  padding: 2rem;
   background: white;
   border-radius: 8px;
-  padding: 2rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
-const Title = styled.h2`
-  text-align: center;
-  color: #2C3E50;
-  margin-bottom: 1.5rem;
-  font-size: 1.75rem;
-`;
-
-const ErrorMessage = styled.div`
-  background-color: #fee2e2;
-  color: #dc2626;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-  text-align: center;
-`;
-
-const GoogleButton = styled.button`
-  width: 100%;
+const Form = styled.form`
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  background-color: white;
-  color: #333;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  flex-direction: column;
+  gap: 1rem;
+`;
 
-  &:hover {
-    background-color: #f8fafc;
-  }
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const Label = styled.label`
+  font-weight: 500;
+  color: var(--text-color);
+`;
+
+const Input = styled.input`
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
 
   &:focus {
     outline: none;
-    ring: 2px;
-    ring-offset: 2px;
-    ring-blue-500;
+    border-color: var(--primary-color);
+  }
+
+  &:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
   }
 `;
+
+const SubmitButton = styled.button`
+  padding: 0.75rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover:not(:disabled) {
+    background: var(--secondary-color);
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+`;
+
+const Message = styled.div`
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+`;
+
+const SuccessMessage = styled(Message)`
+  background: var(--success-color);
+  color: white;
+`;
+
+const ErrorMessage = styled(Message)`
+  background: var(--danger-color);
+  color: white;
+`;
+
+export default StudentProfileForm;
