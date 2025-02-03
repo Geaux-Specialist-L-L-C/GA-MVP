@@ -3,16 +3,24 @@ import { getAnalytics } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
+
+const client = new SecretManagerServiceClient();
+
+async function accessSecretVersion(name) {
+  const [version] = await client.accessSecretVersion({ name });
+  return version.payload.data.toString();
+}
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: await accessSecretVersion('projects/YOUR_PROJECT_ID/secrets/FIREBASE_API_KEY/versions/latest'),
+  authDomain: await accessSecretVersion('projects/YOUR_PROJECT_ID/secrets/FIREBASE_AUTH_DOMAIN/versions/latest'),
+  databaseURL: await accessSecretVersion('projects/YOUR_PROJECT_ID/secrets/FIREBASE_DATABASE_URL/versions/latest'),
+  projectId: await accessSecretVersion('projects/YOUR_PROJECT_ID/secrets/FIREBASE_PROJECT_ID/versions/latest'),
+  storageBucket: await accessSecretVersion('projects/YOUR_PROJECT_ID/secrets/FIREBASE_STORAGE_BUCKET/versions/latest'),
+  messagingSenderId: await accessSecretVersion('projects/YOUR_PROJECT_ID/secrets/FIREBASE_MESSAGING_SENDER_ID/versions/latest'),
+  appId: await accessSecretVersion('projects/YOUR_PROJECT_ID/secrets/FIREBASE_APP_ID/versions/latest'),
+  measurementId: await accessSecretVersion('projects/YOUR_PROJECT_ID/secrets/FIREBASE_MEASUREMENT_ID/versions/latest')
 };
 
 // Initialize Firebase
