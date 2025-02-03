@@ -67,9 +67,13 @@ export const AuthProvider = ({ children }) => {
     logout,
   };
 
+  if (loading) {
+    return null; // or a loading spinner component
+  }
+
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
