@@ -25,16 +25,11 @@ module.exports = {
     ],
     rules: {
         "constructor-super": "error",
-        "@typescript-eslint/explicit-function-return-type": "warn",
         "@typescript-eslint/no-explicit-any": "warn",
-        "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+        "@typescript-eslint/no-unused-vars": "error",
         "react-hooks/rules-of-hooks": "error",
         "react-hooks/exhaustive-deps": "warn",
-        "react/prop-types": "off",
-        "react/react-in-jsx-scope": "off",
-        "no-console": ["warn", { "allow": ["warn", "error"] }],
-        "eqeqeq": ["error", "always"],
-        "no-duplicate-imports": "error"
+        "react/react-in-jsx-scope": "off"
     },
     settings: {
         react: {
