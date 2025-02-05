@@ -9,5 +9,17 @@ export const theme = {
     error: '#E74C3C',
     success: '#2ECC71'
   },
-  // Add other theme values as needed
+  breakpoints: {
+    mobile: '320px',
+    tablet: '768px',
+    desktop: '1024px',
+    large: '1200px',
+  },
+  spacing: {
+    xs: '0.25rem',
+    sm: '0.5rem',
+    md: '1rem',
+    lg: '2rem',
+    xl: '3rem',
+  },
 };
