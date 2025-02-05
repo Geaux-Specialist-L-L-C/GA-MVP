@@ -35,6 +35,7 @@ const Header: React.FC = () => {
       <StyledAuthButtons>
         <Link to="/login" className="btn btn-login">Login</Link>
         <Link to="/signup" className="btn btn-signup">Sign Up</Link>
+        <LogoutButton>Logout</LogoutButton>
       </StyledAuthButtons>
     </StyledHeaderContainer>
   );
@@ -107,6 +108,20 @@ const StyledNavLink = styled(Link)<{ $isActive: boolean }>`
 const StyledAuthButtons = styled.div`
   display: flex;
   gap: 1rem;
+  margin-left: auto;
+`;
+
+const LogoutButton = styled.button`
+  background: #dc3545;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    background: #c82333;
+  }
 `;
 
 const Nav = styled.nav`
