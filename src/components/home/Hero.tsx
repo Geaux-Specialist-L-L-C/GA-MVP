@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import './Hero.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUser } from '@fortawesome/free-solid-svg-icons';
 
 const Hero = () => {
   return (
@@ -8,8 +10,12 @@ const Hero = () => {
         <h1>Discover Your Learning Style</h1>
         <p>Personalized education tailored to how you learn best</p>
         <div className="hero-cta">
-          <Link to="/assessment" className="btn btn-primary">Take Assessment</Link>
-          <Link to="/about" className="btn btn-secondary">Learn More</Link>
+          <Link to="/assessment" className="btn btn-primary">
+            <FontAwesomeIcon icon={faUser} /> Take Assessment
+          </Link>
+          <Link to="/about" className="btn btn-secondary">
+            <FontAwesomeIcon icon={faUser} /> Learn More
+          </Link>
         </div>
       </div>
       <div className="hero-image">
