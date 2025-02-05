@@ -1,4 +1,3 @@
-// filepath: /src/pages/SignUp.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from 'src/contexts/AuthContext';
@@ -95,8 +94,8 @@ const SignUp = () => {
         {error && <ErrorMessage>{error}</ErrorMessage>}
         <form onSubmit={handleSubmit}>
           <FormGroup>
-            <label htmlFor="email">Email:</label>
-            <input
+            <Label htmlFor="email">Email:</Label>
+            <Input
               id="email"
               type="email"
               value={formData.email}
@@ -108,8 +107,8 @@ const SignUp = () => {
             />
           </FormGroup>
           <FormGroup>
-            <label htmlFor="password">Password:</label>
-            <input
+            <Label htmlFor="password">Password:</Label>
+            <Input
               id="password"
               type="password"
               value={formData.password}
@@ -183,20 +182,21 @@ const ErrorMessage = styled.div`
 
 const FormGroup = styled.div`
   margin-bottom: 1rem;
+`;
 
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #666;
-  }
+const Label = styled.label`
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+  font-weight: 500;
+`;
 
-  input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-  }
+const Input = styled.input`
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
 `;
 
 const Button = styled.button`
