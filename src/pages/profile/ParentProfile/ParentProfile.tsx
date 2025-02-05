@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { addStudent } from '../../store/slices/profileSlice';
-import { Student } from '../../types/profiles';
-import { useAuth } from '../../contexts/AuthContext';
+import { addStudent } from '../../../store/slices/profileSlice';
+import { Student } from '../../../types/profiles';
+import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import styled from 'styled-components';

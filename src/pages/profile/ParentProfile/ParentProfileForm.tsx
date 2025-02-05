@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { createParentProfile } from '../../services/profileService';
+import { useAuth } from '../../../contexts/AuthContext';
+import { createParentProfile } from '../../../services/profileService';
 
 export const ParentProfileForm = () => {
   const { user } = useAuth();

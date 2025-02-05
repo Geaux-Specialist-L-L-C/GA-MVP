@@ -49,7 +49,15 @@ const Dashboard = () => {
               <h3>Parent Dashboard</h3>
               <p>View student progress and manage curriculum</p>
             </NavCard>
-            {/* Additional navigation cards */}
+            <ActionButton onClick={() => navigate('/edit-profile')}>
+              Edit Profile
+            </ActionButton>
+            <ActionButton onClick={() => navigate('/billing-settings')}>
+              Billing Settings
+            </ActionButton>
+            <ActionButton onClick={() => navigate('/notifications')}>
+              Notification Settings
+            </ActionButton>
           </NavGrid>
         </NavigationSection>
       </DashboardContent>
@@ -57,6 +65,134 @@ const Dashboard = () => {
   );
 };
 
-// ... existing styled components ...
+const DashboardContainer = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: var(--background-color);
+  min-height: calc(100vh - 70px); // Account for header
+`;
+
+const DashboardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+
+  h1 {
+    color: var(--primary-color);
+    font-size: 2rem;
+  }
+`;
+
+const LogoutButton = styled.button`
+  background: #dc3545;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    background: #c82333;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: red;
+  margin-bottom: 1rem;
+`;
+
+const DashboardContent = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+`;
+
+const ProfileSection = styled.section`
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
+const ProfileCard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-top: 1rem;
+`;
+
+const ProfileImage = styled.img`
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+`;
+
+const ProfileInfo = styled.div`
+  h3 {
+    margin: 0;
+    color: var(--primary-color);
+  }
+  
+  p {
+    margin: 0.5rem 0;
+    color: var(--text-color);
+  }
+`;
+
+const NavigationSection = styled.section`
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
+const NavGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+`;
+
+const NavCard = styled(Link)`
+  background: var(--primary-color);
+  color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  h3 {
+    margin: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    margin: 0;
+    opacity: 0.9;
+  }
+`;
+
+const ActionButton = styled.button`
+  background: white;
+  color: var(--primary-color);
+  padding: 1rem;
+  border: 1px solid var(--primary-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--primary-color);
+    color: white;
+  }
+`;
 
 export default Dashboard;

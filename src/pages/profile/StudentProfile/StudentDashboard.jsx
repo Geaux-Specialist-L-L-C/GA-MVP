@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FaGraduationCap, FaChartLine, FaBook } from 'react-icons/fa';
-import LearningStyleInsights from '../vue-components/LearningStyleInsights.jsx';
-import LearningStyleInsightsWrapper from "../vue-components/LearningStyleInsightsWrapper";
-import { useAuth } from '../contexts/AuthContext';
+import LearningStyleInsights from '../../../vue-components/LearningStyleInsights.jsx';
+import LearningStyleInsightsWrapper from "../../../vue-components/LearningStyleInsightsWrapper.jsx";
+import { useAuth } from '../../../contexts/AuthContext.jsx';
 import { FcGoogle } from 'react-icons/fc';
 
 const StudentDashboard = () => {
