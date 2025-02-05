@@ -31,6 +31,16 @@ const Login: React.FC<LoginProps> = () => {
         
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
+        <FormGroup>
+          <Label htmlFor="email">Email</Label>
+          <Input type="email" id="email" placeholder="Enter your email" />
+        </FormGroup>
+
+        <FormGroup>
+          <Label htmlFor="password">Password</Label>
+          <Input type="password" id="password" placeholder="Enter your password" />
+        </FormGroup>
+
         <GoogleButton onClick={handleGoogleLogin}>
           <FcGoogle className="text-xl" />
           Sign in with Google
@@ -74,6 +84,36 @@ const ErrorMessage = styled.div`
   margin-bottom: 1rem;
   font-size: 0.875rem;
   text-align: center;
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 1.5rem;
+`;
+
+const Label = styled.label`
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+  font-weight: 500;
+`;
+
+const Input = styled.input`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  }
+
+  &::placeholder {
+    color: #a0aec0;
+  }
 `;
 
 const GoogleButton = styled.button`
