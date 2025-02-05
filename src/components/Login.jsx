@@ -142,6 +142,8 @@ const FormGroup = styled.div`
 const FormLabel = styled.label`
   font-weight: 500;
   color: var(--text-color);
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
 `;
 
 const FormInput = styled.input`
@@ -154,6 +156,10 @@ const FormInput = styled.input`
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
+  }
+
+  &::placeholder {
+    color: #a0aec0;
   }
 `;
 
