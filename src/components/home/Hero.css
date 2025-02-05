@@ -29,6 +29,15 @@
   gap: 1rem;
 }
 
+.hero-cta .btn {
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hero-cta .btn:hover {
+  background-color: #e6b800;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
 .hero-image {
   flex: 1;
   display: flex;

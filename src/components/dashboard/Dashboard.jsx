@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import styled from 'styled-components';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUserTie, faUserEdit } from '@fortawesome/free-solid-svg-icons';
 
 const Dashboard = () => {
   const { currentUser, logout } = useAuth();
@@ -29,7 +31,7 @@ const Dashboard = () => {
       
       <DashboardContent>
         <ProfileSection>
-          <h2>Profile Information</h2>
+          <h2>User Profile</h2>
           <ProfileCard>
             <ProfileImage 
               src={currentUser?.photoURL || '/default-avatar.png'} 
@@ -46,12 +48,15 @@ const Dashboard = () => {
           <h2>Quick Navigation</h2>
           <NavGrid>
             <NavCard to="/parent-dashboard">
+              <FontAwesomeIcon icon={faUserTie} />
               <h3>Parent Dashboard</h3>
               <p>View student progress and manage curriculum</p>
             </NavCard>
-            <ActionButton onClick={() => navigate('/edit-profile')}>
-              Edit Profile
-            </ActionButton>
+            <NavCard to="/edit-profile">
+              <FontAwesomeIcon icon={faUserEdit} />
+              <h3>Edit Profile</h3>
+              <p>Update your profile information</p>
+            </NavCard>
             <ActionButton onClick={() => navigate('/billing-settings')}>
               Billing Settings
             </ActionButton>
