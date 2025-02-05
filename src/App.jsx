@@ -3,12 +3,12 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProfileProvider } from './contexts/ProfileContext';
 import ErrorBoundary from './components/shared/ErrorBoundary';
-import AuthRoute from './components/auth/AuthRoute.tsx';
+import AuthRoute from './components/auth/AuthRoute';
 import { ThemeProvider } from 'styled-components';
 import { theme } from './theme/theme';
 import PrivateRoute from './components/PrivateRoute';
 import Header from './components/layout/Header';
-import Dashboard from './components/dashboard/Dashboard';  // Updated import path
+import Dashboard from './components/dashboard/Dashboard';
 
 // Lazy load components
 const Home = React.lazy(() => import('./pages/Home'));
@@ -19,7 +19,7 @@ const ParentProfileLegacy = React.lazy(() => import('./pages/ParentProfileLegacy
 const ParentProfileFormLegacy = React.lazy(() => import('./pages/ParentProfileFormLegacy'));
 const ParentDashboardFormLegacy = React.lazy(() => import('./pages/ParentDashboardFormLegacy'));
 const About = React.lazy(() => import('./pages/About'));
-const Curriculum = React.lazy(() => import('./pages/Curriculum')); 
+const Curriculum = React.lazy(() => import('./pages/Curriculum'));
 const LearningStyles = React.lazy(() => import('./pages/LearningStyles'));
 const Contact = React.lazy(() => import('./pages/Contact'));
 

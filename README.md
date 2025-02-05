@@ -86,3 +86,65 @@ To deploy the application to Firebase:
 ## React Setup
 
 This section provides guidelines for setting up and using React in this project.
+
+## Updated File Structure
+
+The file structure has been updated for better organization and consistency. Below is the new structure:
+
+```plaintext
+/src/
+├── components/                    # /src/components/* - Reusable components
+│   ├── auth/                     # /src/components/auth/* - Authentication components
+│   │   ├── AuthRoute.tsx
+│   │   ├── LoginForm.tsx
+│   │   └── SignUpForm.tsx
+│   ├── common/                   # /src/components/common/* - Shared UI components
+│   │   ├── Button/
+│   │   │   ├── Button.tsx
+│   │   │   ├── Button.test.tsx
+│   │   │   └── Button.styles.ts
+│   │   └── Card/
+│   │       ├── Card.tsx
+│   │       └── Card.styles.ts
+│   ├── layout/                   # /src/components/layout/* - Layout components
+│   │   ├── Header/
+│   │   ├── Footer/
+│   │   ├── Navigation/
+│   │   └── Sidebar/
+│   └── features/                 # /src/components/features/* - Feature-specific components
+│       ├── home/
+│       ├── profile/
+│       └── dashboard/
+├── pages/                        # /src/pages/* - Page components
+│   ├── Home/
+│   │   ├── index.tsx
+│   │   └── Home.styles.ts
+│   └── Dashboard/
+│       ├── index.tsx
+│       └── Dashboard.styles.ts
+├── hooks/                        # /src/hooks/* - Custom React hooks
+│   └── useAuth.ts
+├── services/                     # /src/services/* - API and external services
+│   ├── api/
+│   │   └── index.ts
+│   └── firebase/
+│       └── config.ts
+├── store/                        # /src/store/* - State management
+│   ├── slices/
+│   └── index.ts
+├── types/                        # /src/types/* - TypeScript types/interfaces
+│   └── index.ts
+├── utils/                        # /src/utils/* - Utility functions
+│   └── helpers.ts
+├── styles/                       # /src/styles/* - Global styles
+│   ├── theme.ts
+│   └── global.ts
+└── config/                       # /src/config/* - Configuration files
+    └── env.ts
+```
+
+## Notes on Merged Files
+
+- The `AuthRoute` component has been consolidated into `src/components/auth/AuthRoute.tsx`.
+- The theme files have been merged into `src/theme/theme.js` for consistency.
+- Import paths have been updated accordingly in `src/App.jsx` and other relevant files.
