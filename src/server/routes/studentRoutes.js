@@ -15,7 +15,7 @@ router.post('/students', async (req, res) => {
     };
     res.status(201).json(newStudent);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to create student profile' });
+    res.status(500).json({ error: `Failed to create student profile: ${error.message}` });
   }
 });
 
@@ -31,7 +31,7 @@ router.get('/students/:student_id', async (req, res) => {
     };
     res.status(200).json(student);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to get student profile' });
+    res.status(500).json({ error: `Failed to get student profile: ${error.message}` });
   }
 });
 
@@ -48,7 +48,7 @@ router.put('/students/:student_id', async (req, res) => {
     };
     res.status(200).json(updatedStudent);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update student profile' });
+    res.status(500).json({ error: `Failed to update student profile: ${error.message}` });
   }
 });
 
@@ -57,9 +57,9 @@ router.delete('/students/:student_id', async (req, res) => {
     const { student_id } = req.params;
     // Here you would typically delete the student from your database
     // This is a mock response
-    res.status(200).json({ detail: 'Student deleted successfully' });
+    res.status(200).json({ detail: `Student ${student_id} deleted successfully` });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to delete student profile' });
+    res.status(500).json({ error: `Failed to delete student profile: ${error.message}` });
   }
 });
 

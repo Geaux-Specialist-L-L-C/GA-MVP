@@ -1,4 +1,7 @@
-const HomeContainer = styled.div`
+import styled from 'styled-components';
+import { Link } from 'react-router-dom';
+
+export const HomeContainer = styled.div`
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
@@ -12,7 +15,7 @@ const HomeContainer = styled.div`
   }
 `;
 
-const StyledLink = styled(Link).attrs(({ disabled }) => ({
+export const StyledLink = styled(Link).attrs(({ disabled }) => ({
   role: 'button',
   'aria-disabled': disabled,
 }))`

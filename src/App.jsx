@@ -5,7 +5,7 @@ import { ProfileProvider } from './contexts/ProfileContext';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import AuthRoute from './components/auth/AuthRoute';
 import { ThemeProvider } from 'styled-components';
-import { theme } from './theme/theme';
+import theme from './theme/theme';
 import PrivateRoute from './components/PrivateRoute';
 import Header from './components/layout/Header';
 import Dashboard from './components/dashboard/Dashboard';
@@ -13,11 +13,7 @@ import Dashboard from './components/dashboard/Dashboard';
 // Lazy load components
 const Home = React.lazy(() => import('./pages/Home'));
 const Login = React.lazy(() => import('./components/Login'));
-const StudentProfileLegacy = React.lazy(() => import('./pages/StudentProfileLegacy'));
-const StudentDashboardFormLegacy = React.lazy(() => import('./pages/StudentDashboardFormLegacy'));
-const ParentProfileLegacy = React.lazy(() => import('./pages/ParentProfileLegacy'));
-const ParentProfileFormLegacy = React.lazy(() => import('./pages/ParentProfileFormLegacy'));
-const ParentDashboardFormLegacy = React.lazy(() => import('./pages/ParentDashboardFormLegacy'));
+const StudentProfile = React.lazy(() => import('./pages/profile/StudentProfile/StudentProfile'));
 const About = React.lazy(() => import('./pages/About'));
 const Curriculum = React.lazy(() => import('./pages/Curriculum'));
 const LearningStyles = React.lazy(() => import('./pages/LearningStyles'));
@@ -49,29 +45,10 @@ const App = () => {
                 {/* Protected Routes */}
                 <Route path="/student-profile" element={
                   <AuthRoute>
-                    <StudentProfileLegacy />
+                    <StudentProfile />
                   </AuthRoute>
                 } />
-                <Route path="/student-dashboard" element={
-                  <AuthRoute>
-                    <StudentDashboardFormLegacy />
-                  </AuthRoute>
-                } />
-                <Route path="/parent-profile" element={
-                  <AuthRoute>
-                    <ParentProfileLegacy />
-                  </AuthRoute>
-                } />
-                <Route path="/parent-profile-form" element={
-                  <AuthRoute>
-                    <ParentProfileFormLegacy />
-                  </AuthRoute>
-                } />
-                <Route path="/parent-dashboard" element={
-                  <AuthRoute>
-                    <ParentDashboardFormLegacy />
-                  </AuthRoute>
-                } />
+                
                 <Route path="/dashboard" element={
                   <PrivateRoute>
                     <Dashboard />
