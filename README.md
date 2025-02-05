@@ -89,8 +89,6 @@ This section provides guidelines for setting up and using React in this project.
 
 ## Updated File Structure
 
-The file structure has been updated for better organization and consistency. Below is the new structure:
-
 ```plaintext
 /src/
 ├── components/                    # /src/components/* - Reusable components
@@ -145,6 +143,18 @@ The file structure has been updated for better organization and consistency. Bel
 
 ## Notes on Merged Files
 
-- The `AuthRoute` component has been consolidated into `src/components/auth/AuthRoute.tsx`.
-- The theme files have been merged into `src/theme/theme.js` for consistency.
-- Import paths have been updated accordingly in `src/App.jsx` and other relevant files.
+- `src/components/auth/AuthRoute.tsx` now contains the merged content from `src/components/AuthRoute.tsx` and `public/JSX/AuthRoute.jsx`.
+- `src/theme/theme.js` now contains the merged content from `src/components/layout/styles/theme.js`.
+
+## Updated Import Paths
+
+- Ensure all import paths in your components are updated to reflect the new structure. For example:
+  ```jsx
+  // Before
+  import AuthRoute from '../AuthRoute';
+
+  // After
+  import AuthRoute from '../components/auth/AuthRoute';
+  ```
+
+- Similarly, update any other import paths that have changed due to the restructuring.

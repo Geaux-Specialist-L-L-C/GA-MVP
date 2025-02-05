@@ -1,10 +1,11 @@
-import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 const AuthRoute = () => {
+const AuthRoute = () => {
   const { currentUser, loading } = useAuth();
+  const location = useLocation();
   const location = useLocation();
 
   if (loading) {
@@ -12,6 +13,7 @@ const AuthRoute = () => {
   }
 
   if (!currentUser) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
