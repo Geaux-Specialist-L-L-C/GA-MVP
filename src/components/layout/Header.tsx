@@ -2,9 +2,10 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 
-const Header: React.FC = () => {
+const Header = () => {
   const location = useLocation();
-  
+  const isLoggedIn = false; // This will need to be dynamic based on your auth logic
+
   return (
     <StyledHeaderContainer>
       <StyledLogoSection>
@@ -22,10 +23,10 @@ const Header: React.FC = () => {
             <StyledNavLink to="/about" $isActive={location.pathname === "/about"}>About</StyledNavLink>
           </StyledNavItem>
           <StyledNavItem>
-            <StyledNavLink to="/features" $isActive={location.pathname === "/features"}>Features</StyledNavLink>
+            <StyledNavLink to="/features" $isActive={location.pathname.startsWith("/features")}>Features</StyledNavLink>
           </StyledNavItem>
           <StyledNavItem>
-            <StyledNavLink to="/vark-styles" $isActive={location.pathname === "/vark-styles"}>VARK Styles</StyledNavLink>
+            <StyledNavLink to="/learning-styles" $isActive={location.pathname.startsWith("/learning-styles")}>Learning Styles</StyledNavLink>
           </StyledNavItem>
           <StyledNavItem>
             <StyledNavLink to="/contact" $isActive={location.pathname === "/contact"}>Contact</StyledNavLink>
@@ -33,14 +34,20 @@ const Header: React.FC = () => {
         </StyledNavLinks>
       </StyledNavSection>
       <StyledAuthButtons>
-        <Link to="/login" className="btn btn-login">Login</Link>
-        <Link to="/signup" className="btn btn-signup">Sign Up</Link>
-        <LogoutButton>Logout</LogoutButton>
+        {isLoggedIn ? (
+          <LogoutButton>Logout</LogoutButton>
+        ) : (
+          <>
+            <Link to="/login" className="btn btn-login">Login</Link>
+            <Link to="/signup" className="btn btn-signup">Sign Up</Link>
+          </>
+        )}
       </StyledAuthButtons>
     </StyledHeaderContainer>
   );
 };
 
+// Styled Components
 const StyledHeaderContainer = styled.header`
   position: fixed;
   top: 0;
@@ -99,7 +106,7 @@ const StyledNavLink = styled(Link)<{ $isActive: boolean }>`
     background: rgba(100, 108, 255, 0.08);
   }
 
-  ${props => props.$isActive && `
+  ${(props) => props.$isActive && `
     color: var(--primary-color, #646cff);
     background: rgba(100, 108, 255, 0.08);
   `}
@@ -122,21 +129,6 @@ const LogoutButton = styled.button`
   &:hover {
     background: #c82333;
   }
-`;
-
-const Nav = styled.nav`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: white;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  align-items: center;
-  padding: 0 2rem;
-  z-index: 200;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 `;
 
 export default Header;

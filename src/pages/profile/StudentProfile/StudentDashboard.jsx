@@ -1,24 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FaGraduationCap, FaChartLine, FaBook } from 'react-icons/fa';
 import LearningStyleInsights from '../../../vue-components/LearningStyleInsights.jsx';
-import LearningStyleInsightsWrapper from "../../../vue-components/LearningStyleInsightsWrapper.jsx";
 import { useAuth } from '../../../contexts/AuthContext.jsx';
 import { FcGoogle } from 'react-icons/fc';
+import { getStudentProfile } from '../../../services/profileService';
 
 const StudentDashboard = () => {
+  const { user, loginWithGoogle } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
-  const { loginWithGoogle } = useAuth();
+  const [studentData, setStudentData] = useState(null);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      const fetchData = async () => {
+        try {
+          const studentProfile = await getStudentProfile(user.uid);
+          setStudentData(studentProfile);
+        } catch (err) {
+          console.error('Error fetching student profile:', err);
+        }
+      };
+      fetchData();
+    }
+  }, [user]);
 
   const handleGoogleLogin = async () => {
     try {
       setError('');
       await loginWithGoogle();
-      // Handle navigation to /dashboard after successful login
     } catch (error) {
-      setError(error.message);
+      setError('Login failed. Please try again.');
       console.error('Login error:', error);
     }
   };
@@ -38,28 +52,44 @@ const StudentDashboard = () => {
         <DashboardGrid>
           <Card>
             <h3><FaGraduationCap /> Learning Style</h3>
-            <LearningStyleInsights />
+            {studentData ? (
+              <LearningStyleInsights learningStyle={studentData.learningStyle} />
+            ) : (
+              <p>Loading...</p>
+            )}
           </Card>
 
           <Card>
             <h3><FaChartLine /> Progress</h3>
             <ProgressTracker>
-              {/* Progress visualization here */}
+              {studentData ? (
+                <p>{studentData.progress || "No progress data available."}</p>
+              ) : (
+                <p>Loading...</p>
+              )}
             </ProgressTracker>
           </Card>
 
           <Card>
             <h3><FaBook /> Recent Activities</h3>
             <ActivityList>
-              {/* Activity items here */}
+              {studentData?.recentActivities?.length > 0 ? (
+                studentData.recentActivities.map((activity, index) => (
+                  <p key={index}>{activity}</p>
+                ))
+              ) : (
+                <p>No recent activities.</p>
+              )}
             </ActivityList>
           </Card>
         </DashboardGrid>
 
-        <GoogleLoginButton onClick={handleGoogleLogin}>
-          <FcGoogle className="text-xl" />
-          Sign in with Google
-        </GoogleLoginButton>
+        {!user && (
+          <GoogleLoginButton onClick={handleGoogleLogin}>
+            <FcGoogle className="text-xl" />
+            Sign in with Google
+          </GoogleLoginButton>
+        )}
         {error && <ErrorMessage>{error}</ErrorMessage>}
       </motion.div>
     </DashboardContainer>

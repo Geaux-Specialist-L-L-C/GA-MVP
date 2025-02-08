@@ -1,97 +1,53 @@
 import React, { useState, memo } from "react";
-import { motion, useReducedMotion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { motion, useReducedMotion } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import styled from 'styled-components';
-import { containerVariants, itemVariants } from '../utils/animations';
-import { FaGraduationCap, FaChartLine, FaLightbulb } from 'react-icons/fa';
+import styled from "styled-components";
+import { FaGraduationCap, FaChartLine, FaLightbulb } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
-import Header from '../components/layout/Header';  // Updated import path
+import Header from "../components/layout/Header";
 
-// Component definitions first
-const Features = () => (
-  <FeaturesGrid>
-    {features.map((feature, index) => (
-      <FeatureCard
-        key={index}
-        as={motion.div}
-        variants={itemVariants}
-        whileHover="hover"
-      >
-        <IconWrapper>{feature.icon}</IconWrapper>
-        <h3>{feature.title}</h3>
-        <p>{feature.description}</p>
-      </FeatureCard>
-    ))}
-  </FeaturesGrid>
-);
+// Flip Animation for Cards
+const CardVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
 
-const LearningStyles = () => (
-  <section>
-    {/* Add your learning styles content here */}
-  </section>
-);
+const FlipCard = ({ icon, title, description }) => {
+  const [flipped, setFlipped] = useState(false);
 
-const Hero = () => {
   return (
-    <HeroSection>
-      <HeroContent>
-        <HeroTitle>Welcome to Geaux Academy</HeroTitle>
-        <HeroSubtitle>Your Journey to Learning Excellence Starts Here</HeroSubtitle>
-        <HeroImage src="/images/hero-learning.svg" alt="hero" />
-      </HeroContent>
-    </HeroSection>
+    <FlipContainer
+      as={motion.div}
+      variants={CardVariants}
+      initial="hidden"
+      animate="visible"
+      whileHover={{ scale: 1.05 }}
+      onClick={() => setFlipped(!flipped)}
+    >
+      <FlipInner className={flipped ? "flipped" : ""}>
+        <FlipFront>
+          <IconWrapper>{icon}</IconWrapper>
+          <h3>{title}</h3>
+        </FlipFront>
+        <FlipBack>
+          <p>{description}</p>
+        </FlipBack>
+      </FlipInner>
+    </FlipContainer>
   );
 };
 
-// Memoization after component definitions
-const MemoizedHero = memo(Hero);
-const MemoizedFeatures = memo(Features);
-const MemoizedLearningStyles = memo(LearningStyles);
-
-const reducedMotionVariant = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { duration: 0.1 }
-  }
-};
-
-// Remove duplicate itemVariants definition since we're importing it
-// Remove duplicate pageVariants since we're using containerVariants
-
 const features = [
-  {
-    icon: <FaGraduationCap />,
-    title: "Expert Instruction",
-    description: "Learn from industry professionals"
-  },
-  {
-    icon: <FaChartLine />,
-    title: "Track Progress",
-    description: "Monitor your growth with analytics"
-  },
-  {
-    icon: <FaLightbulb />,
-    title: "Interactive Learning",
-    description: "Engage with hands-on exercises"
-  }
+  { icon: <FaGraduationCap />, title: "Expert Instruction", description: "Learn from industry professionals." },
+  { icon: <FaChartLine />, title: "Track Progress", description: "Monitor your growth with analytics." },
+  { icon: <FaLightbulb />, title: "Interactive Learning", description: "Engage with hands-on exercises." },
 ];
 
 const Home = () => {
-  const prefersReducedMotion = useReducedMotion();
-  const currentVariants = prefersReducedMotion ? reducedMotionVariant : containerVariants;
-  const { currentUser, logout, loginWithGoogle } = useAuth();
+  const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
 
   const handleGoogleLogin = async () => {
     try {
@@ -105,56 +61,47 @@ const Home = () => {
   };
 
   return (
-    <Container
-      as={motion.div}
-      variants={containerVariants}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-    >
-      <Header />  {/* Add header component */}
-      <motion.div
-        variants={currentVariants}
-        initial="hidden"
-        animate="show"
-      >
-        <MemoizedHero />
-        <MemoizedFeatures />
-        <MemoizedLearningStyles />
-        
-        <CallToAction>
-          <h2>Ready to Start Your Learning Journey?</h2>
-          <p>Join Geaux Academy today and discover your unique learning style</p>
-          <StyledLink to="/signup">
-            Get Started
-          </StyledLink>
-        </CallToAction>
+    <Container>
+      <Header />
+      <HeroSection>
+        <HeroContent>
+          <h1>Welcome to Geaux Academy</h1>
+          <p>Your Journey to Learning Excellence Starts Here</p>
+          <HeroImage src="/images/hero_img.svg" alt="Hero" />
+        </HeroContent>
+      </HeroSection>
 
-        <ButtonGroup>
-          <GoogleButton onClick={handleGoogleLogin}>
-            <FcGoogle className="text-xl" />
-            Sign in with Google
-          </GoogleButton>
-          {error && <ErrorMessage>{error}</ErrorMessage>}
-        </ButtonGroup>
-      </motion.div>
+      {/* Features Section with Flip Effect */}
+      <FeaturesGrid>
+        {features.map((feature, index) => (
+          <FlipCard key={index} icon={feature.icon} title={feature.title} description={feature.description} />
+        ))}
+      </FeaturesGrid>
+
+      <CallToAction>
+        <h2>Ready to Start Your Learning Journey?</h2>
+        <p>Join Geaux Academy today and discover your unique learning style.</p>
+        <StyledButton to="/signup">Get Started</StyledButton> {/* ✅ FIXED REDIRECT */}
+      </CallToAction>
+
+      <GoogleLoginSection>
+        <GoogleLoginButton onClick={handleGoogleLogin}>
+          <FcGoogle /> Sign in with Google
+        </GoogleLoginButton>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+      </GoogleLoginSection>
     </Container>
   );
 };
 
 export default memo(Home);
 
+/* 🖌️ Styled Components */
+
 const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
-
-  @media (max-width: 768px) {
-    padding: 0.5rem;
-    h2 { 
-      font-size: 1.5rem; 
-    }
-  }
 `;
 
 const HeroSection = styled.section`
@@ -168,18 +115,16 @@ const HeroSection = styled.section`
 const HeroContent = styled.div`
   text-align: center;
   max-width: 800px;
-`;
-
-const HeroTitle = styled.h1`
-  font-size: 3rem;
-  margin-bottom: 1.5rem;
-  color: ${props => props.theme.colors.primary};
-`;
-
-const HeroSubtitle = styled.p`
-  font-size: 1.5rem;
-  margin-bottom: 2rem;
-  color: ${props => props.theme.colors.text};
+  
+  h1 {
+    font-size: 3rem;
+    color: var(--primary-color);
+  }
+  
+  p {
+    font-size: 1.5rem;
+    color: var(--text-color);
+  }
 `;
 
 const HeroImage = styled.img`
@@ -188,128 +133,74 @@ const HeroImage = styled.img`
   margin-top: 2rem;
 `;
 
-const StyledLink = styled(Link)`
-  display: inline-block;
-  background: var(--primary-color);
-  color: white;
-  padding: 1rem 2rem;
-  border-radius: 4px;
-  font-size: 1.1rem;
-  text-decoration: none;
-  text-align: center;
-  cursor: pointer;
-  transition: background 0.2s;
-
-  &:hover {
-    background: var(--secondary-color);
-  }
-
-  &:focus-visible {
-    outline: 2px dashed var(--secondary-color);
-    outline-offset: 4px;
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 1rem;
-  
-  @media (max-width: 768px) {
-    justify-content: center;
-  }
-`;
-
-const CTAButton = styled(motion.button)`
-  padding: 1rem 2rem;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-`;
-
 const FeaturesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  display: flex;
+  justify-content: center;
   gap: 2rem;
   margin-top: 4rem;
-`;
 
-const FeatureCard = styled(motion.div)`
-  padding: 2rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  text-align: center;
-
-  h3 {
-    color: var(--primary-color);
-    margin: 1rem 0;
-    font-size: 1.5rem;
-  }
-
-  p {
-    color: var(--text-color);
-    line-height: 1.6;
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: center;
   }
 `;
 
-const IconWrapper = styled.div`
-  font-size: 2.5rem;
-  color: var(--primary-color);
-  margin-bottom: 1rem;
+const FlipContainer = styled.div`
+  perspective: 1000px;
+  width: 280px;
+  height: 280px;
 `;
 
-const GoogleButton = styled.button`
+const FlipInner = styled.div`
   width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s;
+  
+  &.flipped {
+    transform: rotateY(180deg);
+  }
+`;
+
+const FlipFront = styled.div`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  background: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  background-color: white;
-  color: #333;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #f8fafc;
-  }
-
-  &:focus {
-    outline: none;
-    ring: 2px;
-    ring-offset: 2px;
-    ring-blue-500;
-  }
+  border-radius: 10px;
+  text-align: center;
+  flex-direction: column;
+  gap: 1rem;
 `;
 
-const ErrorMessage = styled.div`
-  background-color: #fee2e2;
-  color: #dc2626;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
+const FlipBack = styled.div`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  background: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
   text-align: center;
+  transform: rotateY(180deg);
+`;
+
+const IconWrapper = styled.div`
+  font-size: 3rem;
+  color: var(--primary-color);
 `;
 
 const CallToAction = styled.section`
   text-align: center;
-  padding: 4rem 2rem;
+  margin-top: 4rem;
   
   h2 {
     font-size: 2rem;
@@ -321,10 +212,44 @@ const CallToAction = styled.section`
   }
 `;
 
-const styles = {
-  container: {
-    padding: '0 0.5rem', // Ensure this line is correct
-    // Other styles...
-  },
-  // Other style objects...
-};
+const StyledButton = styled(Link)`
+  display: inline-block;
+  background: var(--primary-color);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background 0.2s;
+
+  &:hover {
+    background: var(--secondary-color);
+  }
+`;
+
+const GoogleLoginSection = styled.div`
+  text-align: center;
+  margin-top: 2rem;
+`;
+
+const GoogleLoginButton = styled.button`
+  background: #4285F4;
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+
+  &:hover {
+    background: #357ae8;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+`;

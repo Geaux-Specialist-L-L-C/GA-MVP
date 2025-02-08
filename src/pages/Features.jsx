@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import styled from 'styled-components';
-import { FaChartLine, FaChalkboardTeacher, FaGamepad, FaBullseye } from "react-icons/fa";
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import styled from "styled-components";
+import { FaChartLine, FaChalkboardTeacher, FaGamepad, FaBullseye, FaBrain, FaUsers } from "react-icons/fa";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import Header from "../components/layout/Header";
 
 const Features = () => {
   const [selectedFeature, setSelectedFeature] = useState(null);
@@ -12,15 +13,12 @@ const Features = () => {
   const [error, setError] = useState("");
 
   const features = [
-    {
-      title: "Personalized Learning Paths",
-      description: "AI-driven customization based on your learning style",
-      details: "Detailed information about Personalized Learning Paths",
-      icon: <FaBullseye />
-    },
-    { title: "Real-time Progress Tracking", description: "Monitor achievements and growth with detailed analytics", details: "Detailed information about Real-time Progress Tracking", icon: <FaChartLine /> },
-    { title: "Interactive Content", description: "Engage with multimedia lessons and activities", details: "Detailed information about Interactive Content", icon: <FaGamepad /> },
-    { title: "Expert Support", description: "Access to qualified educators and mentors", details: "Detailed information about Expert Support", icon: <FaChalkboardTeacher /> }
+    { title: "Personalized Learning Paths", description: "AI-driven customization based on your learning style", icon: <FaBullseye /> },
+    { title: "Real-time Progress Tracking", description: "Monitor achievements and growth with detailed analytics", icon: <FaChartLine /> },
+    { title: "Interactive Content", description: "Engage with multimedia lessons and activities", icon: <FaGamepad /> },
+    { title: "Expert Support", description: "Access to qualified educators and mentors", icon: <FaChalkboardTeacher /> },
+    { title: "AI-Powered Insights", description: "Get deep learning insights based on your progress", icon: <FaBrain /> },
+    { title: "Community Learning", description: "Engage with a learning community and peer support", icon: <FaUsers /> }
   ];
 
   const handleGoogleLogin = async () => {
@@ -35,92 +33,117 @@ const Features = () => {
   };
 
   return (
-    <FeaturesContainer>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Header>
-          <h1>Platform Features</h1>
-          <p>Discover the tools that make learning personalized and effective</p>
-        </Header>
-        <div className="features-grid">
-          {features.map((feature, index) => (
-            <motion.div
-              key={index}
-              className="feature-card"
-              onClick={() => setSelectedFeature(feature)}
-              whileHover={{ scale: 1.05 }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <IconWrapper>{feature.icon}</IconWrapper>
-              <h2>{feature.title}</h2>
-              <p>{feature.description}</p>
-            </motion.div>
-          ))}
-        </div>
-        {selectedFeature && (
-          <div className="feature-modal">
-            <h2>{selectedFeature.title}</h2>
-            <p>{selectedFeature.details}</p>
-            <button onClick={() => setSelectedFeature(null)}>Close</button>
-          </div>
-        )}
-        <div className="google-login">
-          <button onClick={handleGoogleLogin} className="google-login-button">
-            Sign in with Google
-          </button>
-          {error && <p className="error-message">{error}</p>}
-        </div>
-      </motion.div>
-    </FeaturesContainer>
+    <>
+      <Header />
+      <FeaturesContainer>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <Title>Platform Features</Title>
+          <FeatureGrid>
+            {features.map((feature, index) => (
+              <FeatureCard key={index} whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }}>
+                <FeatureIcon>{feature.icon}</FeatureIcon>
+                <FeatureText>
+                  <h2>{feature.title}</h2>
+                  <p>{feature.description}</p>
+                </FeatureText>
+              </FeatureCard>
+            ))}
+          </FeatureGrid>
+          <LoginSection>
+            <p>Sign in to unlock more features!</p>
+            <GoogleLoginButton onClick={handleGoogleLogin}>
+              Sign in with Google
+            </GoogleLoginButton>
+            {error && <ErrorMessage>{error}</ErrorMessage>}
+          </LoginSection>
+        </motion.div>
+      </FeaturesContainer>
+    </>
   );
 };
 
+// Styled Components
 const FeaturesContainer = styled.div`
-  max-width: 1200px;
-  margin: 60px auto 0; // Add top margin to match header height
+  max-width: 1100px;
+  margin: 80px auto 0;
   padding: 2rem;
-  min-height: calc(100vh - 60px); // Ensure full viewport height minus header
+  text-align: center;
 `;
 
-const Header = styled.header`
+const Title = styled.h1`
+  font-size: 2.5rem;
+  color: var(--primary-color);
+  margin-bottom: 2rem;
+`;
+
+const FeatureGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+  justify-items: center; // Ensures even alignment
+`;
+
+const FeatureCard = styled(motion.div)`
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   text-align: center;
-  margin-bottom: 4rem;
-  
-  h1 {
-    font-size: 2.5rem;
-    color: var(--primary-color);
-    margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 300px;
+`;
+
+const FeatureIcon = styled.div`
+  font-size: 3rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+`;
+
+const FeatureText = styled.div`
+  h2 {
+    font-size: 1.5rem;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
   }
   
   p {
-    font-size: 1.2rem;
-    color: var(--text-color);
+    font-size: 1rem;
+    color: #666;
   }
 `;
 
-const IconWrapper = styled.div`
-  font-size: 3rem;
-  margin-bottom: 1.5rem;
-  color: var(--primary-color);
-  height: 3rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  svg {
-    width: 1em;
-    height: 1em;
-    transition: transform 0.3s ease;
-  }
+const LoginSection = styled.div`
+  margin-top: 3rem;
+  text-align: center;
+`;
 
-  &:hover svg {
-    transform: scale(1.1);
+const GoogleLoginButton = styled.button`
+  background: #4285F4;
+  color: white;
+  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 1rem;
+  display: inline-block;
+  
+  &:hover {
+    background: #357ae8;
   }
+`;
+
+const ErrorMessage = styled.div`
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+  font-size: 0.875rem;
 `;
 
 export default Features;

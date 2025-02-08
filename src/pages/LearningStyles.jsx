@@ -1,131 +1,119 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
-import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
-import { FaBook, FaHeadphones, FaEye, FaRunning } from 'react-icons/fa';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState } from "react";
+import styled from "styled-components";
+import { motion } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
+import { FaBook, FaHeadphones, FaEye, FaRunning, FaBrain, FaUsers } from "react-icons/fa";
+import { useAuth } from "../contexts/AuthContext";
+import Header from "../components/layout/Header";
 
 const LearningStyles = () => {
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleGoogleLogin = async () => {
     try {
-      setError('');
+      setError("");
       await loginWithGoogle();
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (err) {
       setError(err.message);
-      console.error('Login error:', err);
+      console.error("Login error:", err);
     }
   };
 
+  const learningStyles = [
+    { title: "Visual", description: "Learn through seeing, watching, and reading", icon: <FaEye /> },
+    { title: "Auditory", description: "Learn through listening and speaking", icon: <FaHeadphones /> },
+    { title: "Reading/Writing", description: "Learn through reading and writing text", icon: <FaBook /> },
+    { title: "Kinesthetic", description: "Learn through doing and moving", icon: <FaRunning /> },
+    { title: "Logical", description: "Learn through reasoning and problem-solving", icon: <FaBrain /> },
+    { title: "Social", description: "Learn through group interaction and collaboration", icon: <FaUsers /> }
+  ];
+
   return (
-    <Container>
-      <Header>
-        <h1>Learning Styles</h1>
-        <p>Discover how you learn best</p>
-      </Header>
+    <>
+      <Header />
+      <Container>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <Title>Learning Styles</Title>
+          <Subtitle>Discover how you learn best</Subtitle>
 
-      <StylesGrid>
-        <StyleCard>
-          <IconWrapper>
-            <FaEye />
-          </IconWrapper>
-          <h3>Visual</h3>
-          <p>Learn through seeing, watching, and reading</p>
-        </StyleCard>
+          <StylesGrid>
+            {learningStyles.map((style, index) => (
+              <StyleCard key={index} whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }}>
+                <IconWrapper>{style.icon}</IconWrapper>
+                <h3>{style.title}</h3>
+                <p>{style.description}</p>
+              </StyleCard>
+            ))}
+          </StylesGrid>
 
-        <StyleCard>
-          <IconWrapper>
-            <FaHeadphones />
-          </IconWrapper>
-          <h3>Auditory</h3>
-          <p>Learn through listening and speaking</p>
-        </StyleCard>
+          <CTASection>
+            <h2>Want to know your learning style?</h2>
+            <StyledButton to="/take-assessment">Take the Assessment</StyledButton>
+          </CTASection>
 
-        <StyleCard>
-          <IconWrapper>
-            <FaBook />
-          </IconWrapper>
-          <h3>Reading/Writing</h3>
-          <p>Learn through reading and writing text</p>
-        </StyleCard>
-
-        <StyleCard>
-          <IconWrapper>
-            <FaRunning />
-          </IconWrapper>
-          <h3>Kinesthetic</h3>
-          <p>Learn through doing and moving</p>
-        </StyleCard>
-      </StylesGrid>
-
-      <CTASection>
-        <h2>Want to know your learning style?</h2>
-        <StyledLink to="/take-assessment">Take the Assessment</StyledLink>
-      </CTASection>
-
-      <GoogleLoginSection>
-        <GoogleLoginButton onClick={handleGoogleLogin}>
-          Sign in with Google
-        </GoogleLoginButton>
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-      </GoogleLoginSection>
-    </Container>
+          <GoogleLoginSection>
+            <p>Sign in to unlock more features!</p>
+            <GoogleLoginButton onClick={handleGoogleLogin}>Sign in with Google</GoogleLoginButton>
+            {error && <ErrorMessage>{error}</ErrorMessage>}
+          </GoogleLoginSection>
+        </motion.div>
+      </Container>
+    </>
   );
 };
 
+// Styled Components
 const Container = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 1100px;
+  margin: 80px auto 0;
   padding: 2rem;
+  text-align: center;
 `;
 
-const Header = styled.div`
-  text-align: center;
-  margin-bottom: 3rem;
-  
-  h1 {
-    color: var(--primary-color);
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-  }
-  
-  p {
-    color: var(--text-color);
-    font-size: 1.2rem;
-  }
+const Title = styled.h1`
+  font-size: 2.5rem;
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+`;
+
+const Subtitle = styled.p`
+  font-size: 1.2rem;
+  color: var(--text-color);
+  margin-bottom: 2rem;
 `;
 
 const StylesGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
-  margin-bottom: 3rem;
+  justify-items: center;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(1, 1fr);
+  }
 `;
 
 const StyleCard = styled(motion.div)`
   background: white;
   padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   text-align: center;
-  
-  h3 {
-    color: var(--primary-color);
-    margin: 1rem 0;
-  }
-  
-  p {
-    color: var(--text-color);
-  }
+  width: 100%;
+  max-width: 280px;
 `;
 
 const IconWrapper = styled.div`
-  font-size: 2.5rem;
+  font-size: 3rem;
   color: var(--primary-color);
+  margin-bottom: 1rem;
 `;
 
 const CTASection = styled.div`
@@ -138,15 +126,16 @@ const CTASection = styled.div`
   }
 `;
 
-const StyledLink = styled(Link)`
+const StyledButton = styled(Link)`
   background: var(--primary-color);
   color: white;
   padding: 1rem 2rem;
-  border-radius: 4px;
+  border-radius: 8px;
   text-decoration: none;
   font-weight: bold;
   transition: background-color 0.2s;
-  
+  display: inline-block;
+
   &:hover {
     background: var(--secondary-color);
   }
@@ -158,23 +147,28 @@ const GoogleLoginSection = styled.div`
 `;
 
 const GoogleLoginButton = styled.button`
-  background: var(--primary-color);
+  background: #4285F4;
   color: white;
-  padding: 1rem 2rem;
+  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s;
-
+  margin-top: 1rem;
+  display: inline-block;
+  
   &:hover {
-    background: var(--secondary-color);
+    background: #357ae8;
   }
 `;
 
 const ErrorMessage = styled.div`
-  color: red;
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 4px;
   margin-top: 1rem;
+  font-size: 0.875rem;
 `;
 
 export default LearningStyles;

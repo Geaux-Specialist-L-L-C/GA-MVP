@@ -12,6 +12,7 @@ import Dashboard from './components/dashboard/Dashboard';
 
 // Lazy load components
 const Home = React.lazy(() => import('./pages/Home'));
+const Features = React.lazy(() => import('./pages/Features'));  // ✅ Add Features.jsx
 const Login = React.lazy(() => import('./components/Login'));
 const StudentProfile = React.lazy(() => import('./pages/profile/StudentProfile/StudentProfile'));
 const About = React.lazy(() => import('./pages/About'));
@@ -36,6 +37,7 @@ const App = () => {
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/features" element={<Features />} />  {/* ✅ Add Features Route */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/curriculum" element={<Curriculum />} />
