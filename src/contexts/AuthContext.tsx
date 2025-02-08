@@ -4,34 +4,16 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
-  getRedirectResult,
   onAuthStateChanged,
   getIdToken,
-  UserCredential
+  UserCredential,
+  getRedirectResult
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
 import { getParentProfile } from '../services/profileService';
 import { AuthContextType, User } from '../types/auth';
 
-const defaultContext: AuthContextType = {
-  currentUser: null,
-  loading: true,
-  authError: null,
-  login: async () => ({ user: null }),
-  loginWithGoogle: async () => undefined,
-  signup: async () => ({ user: null }),
-  logout: async () => {}
-};
-
-const AuthContext = createContext<AuthContextType>(defaultContext);
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+const AuthContext = createContext<AuthContextType | null>(null);
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -42,99 +24,137 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const [loading, setLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Handle redirect result when component mounts
   useEffect(() => {
-    const handleRedirectResult = async () => {
+    let isSubscribed = true;
+
+    const checkRedirectAndAuthState = async () => {
       try {
+        console.log("🔄 Checking for redirect result...");
         const result = await getRedirectResult(auth);
-        if (result?.user) {
-          const token = await getIdToken(result.user, true);
+        if (result?.user && isSubscribed) {
+          const token = await getIdToken(result.user);
           localStorage.setItem('token', token);
           
-          await getParentProfile(result.user.uid);
-          setCurrentUser(result.user as User);
-          console.log("✅ Redirect sign-in successful");
+          try {
+            const parentProfile = await getParentProfile(result.user.uid);
+            setCurrentUser({
+              uid: result.user.uid,
+              email: result.user.email,
+              displayName: result.user.displayName,
+              photoURL: result.user.photoURL,
+              ...parentProfile
+            });
+          } catch (profileError) {
+            console.error("Error fetching parent profile:", profileError);
+            setCurrentUser({
+              uid: result.user.uid,
+              email: result.user.email,
+              displayName: result.user.displayName,
+              photoURL: result.user.photoURL
+            });
+          }
+          console.log("✅ Redirect sign-in successful!");
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("❌ Redirect sign-in error:", error);
-        setAuthError((error as Error).message);
-      } finally {
-        setLoading(false);
+        if (error?.code !== 'auth/credential-already-in-use' && isSubscribed) {
+          setAuthError("Failed to complete sign-in. Please try again.");
+        }
       }
+
+      // Set up auth state listener after checking redirect result
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (!isSubscribed) return;
+
+        if (user) {
+          try {
+            const token = await getIdToken(user);
+            localStorage.setItem('token', token);
+            
+            const parentProfile = await getParentProfile(user.uid);
+            setCurrentUser({
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL,
+              ...parentProfile
+            });
+          } catch (error) {
+            console.error("Error fetching parent profile:", error);
+            setCurrentUser({
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL
+            });
+          }
+        } else {
+          setCurrentUser(null);
+          localStorage.removeItem('token');
+        }
+        setLoading(false);
+      });
+
+      return unsubscribe;
     };
 
-    handleRedirectResult();
+    const unsubscribePromise = checkRedirectAndAuthState();
+    
+    return () => {
+      isSubscribed = false;
+      unsubscribePromise.then(unsubscribe => unsubscribe());
+    };
   }, []);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log("🔄 Auth state changed:", user ? "User logged in" : "User logged out");
-      if (user) {
-        try {
-          const token = await getIdToken(user, true);
-          localStorage.setItem('token', token);
-          setCurrentUser(user as User);
-        } catch (error) {
-          console.error("❌ Token refresh error:", error);
-        }
-      } else {
-        localStorage.removeItem('token');
-        setCurrentUser(null);
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const loginWithGoogle = async (): Promise<{ user: User } | void> => {
-    try {
-      setAuthError(null);
-      console.log("🔄 Starting Google sign-in process...");
-      
-      const result = await signInWithPopup(auth, googleProvider);
-      
-      if (result?.user) {
-        const token = await getIdToken(result.user, true);
-        localStorage.setItem('token', token);
-        await getParentProfile(result.user.uid);
-        setCurrentUser(result.user as User);
-        console.log("✅ Popup sign-in successful");
-        return { user: result.user as User };
-      }
-    } catch (error) {
-      console.error("❌ Popup sign-in error:", error);
-      
-      if ((error as { code?: string }).code === 'auth/popup-blocked' || 
-          (error as { code?: string }).code === 'auth/popup-closed-by-user' ||
-          (error as { code?: string }).code === 'auth/cancelled-popup-request') {
-        try {
-          console.log("🔄 Switching to redirect sign-in...");
-          await signInWithRedirect(auth, googleProvider);
-          return;
-        } catch (redirectError) {
-          console.error("❌ Redirect sign-in error:", redirectError);
-          setAuthError((redirectError as Error).message);
-          throw redirectError;
-        }
-      }
-      
-      setAuthError((error as Error).message);
-      throw error;
-    }
-  };
 
   const login = async (email: string, password: string): Promise<UserCredential> => {
     try {
       setAuthError(null);
       const result = await signInWithEmailAndPassword(auth, email, password);
-      const token = await getIdToken(result.user, true);
-      localStorage.setItem('token', token);
       setCurrentUser(result.user as User);
       return result;
     } catch (error) {
-      console.error("❌ Email/Password login error:", error);
+      console.error("❌ Login error:", error);
       setAuthError((error as Error).message);
+      throw error;
+    }
+  };
+
+  const loginWithGoogle = async (): Promise<void> => {
+    try {
+      setAuthError(null);
+      console.log("🔄 Starting Google sign-in process...");
+
+      try {
+        const result = await signInWithPopup(auth, googleProvider);
+        if (result?.user) {
+          setCurrentUser(result.user as User);
+          console.log("✅ Google login successful!");
+          return;
+        }
+      } catch (popupError: any) {
+        console.warn("⚠️ Popup login failed:", popupError);
+        
+        // Handle various popup-related errors
+        if (popupError?.code === 'auth/popup-blocked' || 
+            popupError?.code === 'auth/popup-closed-by-user' ||
+            popupError?.code === 'auth/cancelled-popup-request') {
+          console.log("🔄 Switching to redirect auth method...");
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        }
+
+        // Re-throw other errors
+        throw popupError;
+      }
+    } catch (error: any) {
+      console.error("❌ Google login error:", error);
+
+      if (error?.code === 'auth/network-request-failed') {
+        setAuthError("Network error. Please check your connection and try again.");
+        return;
+      }
+
+      setAuthError("Unable to sign in with Google. Please try again.");
       throw error;
     }
   };
@@ -143,8 +163,6 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     try {
       setAuthError(null);
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      const token = await getIdToken(result.user, true);
-      localStorage.setItem('token', token);
       setCurrentUser(result.user as User);
       return result;
     } catch (error) {
@@ -182,3 +200,13 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     </AuthContext.Provider>
   );
 }
+
+const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export default useAuth;

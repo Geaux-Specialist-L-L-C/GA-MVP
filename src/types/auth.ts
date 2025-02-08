@@ -3,10 +3,16 @@ export interface User {
   uid: string;
   email: string | null;
   displayName: string | null;
+  photoURL: string | null;
   metadata?: {
     lastSignInTime?: string;
     creationTime?: string;
   };
+}
+
+export interface AuthError {
+  code?: string;
+  message: string;
 }
 
 export interface AuthContextType {
@@ -14,9 +20,10 @@ export interface AuthContextType {
   loading: boolean;
   authError: string | null;
   login: (email: string, password: string) => Promise<any>;
-  loginWithGoogle: () => Promise<{ user: User } | void>;
+  loginWithGoogle: () => Promise<void>;
   signup: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
+  getRedirectResult?: () => Promise<void>;
 }
 
 export interface Student {

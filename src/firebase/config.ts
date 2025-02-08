@@ -55,7 +55,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Configure Google Auth Provider
+// Configure Google Auth Provider with custom parameters
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account'
@@ -88,4 +88,4 @@ const initializeAuth = async () => {
 // Initialize auth settings
 initializeAuth();
 
-export { auth, db, storage, googleProvider };
+export { app, auth, db, storage, googleProvider };

@@ -9,6 +9,19 @@ export default defineConfig({
     react(),
     vue() // Add Vue plugin
   ],
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+      },
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage']
+        }
+      }
+    }
+  },
   server: {
     port: 5173,
     strictPort: true,
@@ -34,7 +47,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src')
-    }
+    },
+    extensions: ['.js', '.jsx', '.ts', '.tsx']
   },
   define: {
     __VITE_FIREBASE_CONFIG__: {
@@ -47,15 +61,5 @@ export default defineConfig({
       measurementId: JSON.stringify(process.env.VITE_FIREBASE_MEASUREMENT_ID)
     },
     'process.env': {}
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage']
-        }
-      }
-    }
   }
 });

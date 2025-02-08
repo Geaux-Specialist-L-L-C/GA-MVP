@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
-import { useAuth } from '../contexts/AuthContext';
+import useAuth from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/layout/Header';
 
@@ -133,6 +133,131 @@ const Contact: React.FC = () => {
   );
 };
 
-// ... existing styled components ...
+const ContactContainer = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  min-height: 100vh;
+`;
+
+const ContentGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin: 2rem 0;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const ContactForm = styled.form`
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 1.5rem;
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+  }
+
+  input, textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+
+    &:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+  }
+`;
+
+const ContactInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const InfoCard = styled.div`
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+
+  h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+  }
+
+  p {
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+  }
+`;
+
+const SubmitButton = styled.button`
+  background: var(--primary-color);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background: var(--primary-dark);
+  }
+`;
+
+const SuccessMessage = styled.div`
+  background: #10B981;
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin: 2rem 0;
+`;
+
+const GoogleLoginContainer = styled.div`
+  text-align: center;
+  margin-top: 2rem;
+`;
+
+const GoogleLoginButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background-color: white;
+  color: #333;
+  font-size: 1rem;
+  cursor: pointer;
+  margin: 0 auto;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f8fafc;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: #dc2626;
+  margin-top: 1rem;
+  text-align: center;
+`;
 
 export default Contact;

@@ -6,11 +6,17 @@ import CreateStudent from '../../pages/profile/ParentProfile/CreateStudent';
 import StudentCard from '../../components/student/StudentCard';
 import { getParentProfile } from '../../services/profileService';
 import styled from 'styled-components';
-import { Parent } from '../../types/auth';
 
 interface UserData {
   name: string;
   lastLogin: string;
+}
+
+interface ParentProfile {
+  id?: string;
+  students?: string[];
+  name?: string;
+  email?: string;
 }
 
 const Dashboard: React.FC = () => {
@@ -19,10 +25,10 @@ const Dashboard: React.FC = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
-  const [parentProfile, setParentProfile] = useState<Parent | null>(null);
+  const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchUserData = async (): Promise<void> => {
       try {
         if (!currentUser?.uid) {
           navigate('/login');
@@ -32,7 +38,7 @@ const Dashboard: React.FC = () => {
         console.log('🔄 Fetching user data for:', currentUser.uid);
         
         setUserData({
-          name: currentUser.displayName || currentUser.email || 'User',
+          name: currentUser.displayName || currentUser.email || '',
           lastLogin: currentUser.metadata?.lastSignInTime || 'N/A',
         });
 
@@ -95,7 +101,7 @@ const Dashboard: React.FC = () => {
           {parentProfile ? (
             <>
               <CreateStudent />
-              {parentProfile.students?.length > 0 ? (
+              {parentProfile.students && parentProfile.students.length > 0 ? (
                 <StudentsList>
                   <h3>Your Students</h3>
                   {parentProfile.students.map(studentId => (
@@ -117,6 +123,63 @@ const Dashboard: React.FC = () => {
   );
 };
 
-// ... existing styled components ...
+const DashboardContainer = styled.div`
+  padding: 2rem;
+  background-color: #f9fafb;
+  min-height: 100vh;
+`;
+
+const DashboardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+`;
+
+const DashboardGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+`;
+
+const DashboardCard = styled.div`
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+`;
+
+const ParentSection = styled.section`
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+`;
+
+const StudentsList = styled.div`
+  margin-top: 1rem;
+`;
+
+const EmptyState = styled.div`
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f1f5f9;
+  border-radius: 0.5rem;
+  text-align: center;
+`;
+
+const LogoutButton = styled.button`
+  background-color: #ef4444;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #dc2626;
+  }
+`;
 
 export default Dashboard;

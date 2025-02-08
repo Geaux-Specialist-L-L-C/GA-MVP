@@ -1,138 +1,225 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import styled from 'styled-components';
-import { FcGoogle } from 'react-icons/fc';
-import Button from './common/Button';
-
-interface FormData {
-  email: string;
-  password: string;
-}
-
-interface LocationState {
-  from?: {
-    pathname: string;
-  };
-  error?: string;
-}
+import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { FcGoogle } from "react-icons/fc";
+import styled from "styled-components";
 
 const Login: React.FC = () => {
-  const [formData, setFormData] = useState<FormData>({
-    email: '',
-    password: ''
-  });
-  const [error, setError] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  
-  const { login, loginWithGoogle, currentUser, authError } = useAuth();
+  const { loginWithGoogle, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const locationState = location.state as LocationState;
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
 
-  // Get the redirect path from location state or default to dashboard
-  const from = locationState?.from?.pathname || '/dashboard';
-
-  useEffect(() => {
-    // If user is already logged in, redirect them
-    if (currentUser) {
-      console.log("👤 User already logged in, redirecting to:", from);
-      navigate(from, { replace: true });
-    }
-  }, [currentUser, navigate, from]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      setError('');
-      setLoading(true);
-      await login(formData.email, formData.password);
-      navigate(from, { replace: true });
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to login');
-    } finally {
-      setLoading(false);
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async (): Promise<void> => {
     try {
-      setError('');
+      setError("");
       setLoading(true);
       await loginWithGoogle();
-      // No need to navigate here as it's handled by the useEffect above
+      const destination = location.state?.from?.pathname || "/dashboard";
+      navigate(destination, { replace: true });
     } catch (err) {
-      console.error('Google login error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to sign in with Google');
+      setError(err instanceof Error ? err.message : "Failed to login");
+      console.error("Google Login Error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Show error from auth context if present
-  useEffect(() => {
-    if (authError) {
-      setError(authError);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    
+    try {
+      await login(formData.email, formData.password);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid email or password");
+      console.error("Email Login Error:", err);
+    } finally {
+      setLoading(false);
     }
-  }, [authError]);
+  };
 
   return (
-    <LoginContainer>
-      <LoginCard>
-        <h2>Login to Your Account</h2>
+    <Container> {/* ✅ Now Container is defined */}
+      <LoginBox>
+        <Title>Welcome Back</Title>
+
         {error && <ErrorMessage>{error}</ErrorMessage>}
-        
-        <Form onSubmit={handleSubmit}>
+
+        <Form onSubmit={handleLogin}>
           <FormGroup>
             <Label htmlFor="email">Email</Label>
-            <Input
-              type="email"
-              id="email"
+            <Input 
+              type="email" 
+              id="email" 
+              placeholder="Enter your email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={handleChange}
               required
-              disabled={loading}
             />
           </FormGroup>
 
           <FormGroup>
             <Label htmlFor="password">Password</Label>
-            <Input
-              type="password"
-              id="password"
+            <Input 
+              type="password" 
+              id="password" 
+              placeholder="Enter your password"
               value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              onChange={handleChange}
               required
-              disabled={loading}
             />
           </FormGroup>
 
-          <LoginButton type="submit" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
-          </LoginButton>
+          <SubmitButton type="submit" disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
+          </SubmitButton>
         </Form>
 
-        <Divider>
-          <span>Or</span>
-        </Divider>
+        <Divider>or</Divider>
 
         <GoogleButton onClick={handleGoogleLogin} disabled={loading}>
-          <FcGoogle />
-          <span>Continue with Google</span>
+          <FcGoogle className="text-xl" />
+          Sign in with Google
         </GoogleButton>
-
-        <SignupPrompt>
-          Don't have an account?{' '}
-          <Button to="/signup" $variant="secondary">
-            Sign Up
-          </Button>
-        </SignupPrompt>
-      </LoginCard>
-    </LoginContainer>
+      </LoginBox>
+    </Container>
   );
 };
 
-// ... existing styled components ...
+/* ✅ Define the missing styled-component Container */
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #f5f5f5;
+`;
+
+const LoginBox = styled.div`
+  width: 100%;
+  max-width: 400px;
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+`;
+
+const Title = styled.h2`
+  text-align: center;
+  color: #2C3E50;
+  margin-bottom: 1.5rem;
+  font-size: 1.75rem;
+`;
+
+const ErrorMessage = styled.div`
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  text-align: center;
+`;
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const Label = styled.label`
+  font-weight: 500;
+  color: var(--text-color);
+`;
+
+const Input = styled.input`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  }
+
+  &::placeholder {
+    color: #a0aec0;
+  }
+`;
+
+const SubmitButton = styled.button`
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover:not(:disabled) {
+    background: var(--primary-dark);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`;
+
+const Divider = styled.div`
+  text-align: center;
+  margin: 1.5rem 0;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: bold;
+`;
+
+const GoogleButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background-color: white;
+  color: #333;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f8fafc;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`;
 
 export default Login;
