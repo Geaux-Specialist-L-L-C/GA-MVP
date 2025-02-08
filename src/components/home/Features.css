@@ -28,6 +28,8 @@
 
 .feature-card:hover {
   transform: translateY(-5px);
+  background-color: #e6b800; /* P920d */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* P920d */
 }
 
 .feature-icon {

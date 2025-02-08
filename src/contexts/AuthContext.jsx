@@ -3,7 +3,9 @@ import {
   signInWithEmailAndPassword, 
   signInWithPopup,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
 
@@ -29,6 +31,19 @@ export function AuthProvider({ children }) {
     });
 
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const setAuthPersistence = async () => {
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+      } catch (error) {
+        console.error("Failed to set auth persistence:", error);
+        setError(error.message);
+      }
+    };
+
+    setAuthPersistence();
   }, []);
 
   const login = async (email, password) => {
