@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -7,7 +8,9 @@ import {
   getIdToken,
   UserCredential,
   getRedirectResult,
-  GoogleAuthProvider
+  GoogleAuthProvider,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
 import { getParentProfile } from '../services/profileService';
@@ -23,21 +26,21 @@ function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const handleRedirectResult = async () => {
+    const initAuth = async () => {
       try {
-        setLoading(true);
-        console.log("🔄 Checking redirect result...");
+        console.log("🔄 Setting Firebase auth persistence...");
+        await setPersistence(auth, browserLocalPersistence); // ✅ Ensures login is remembered across reloads
+
         const result = await getRedirectResult(auth);
         
         if (result) {
           console.log("✅ Redirect result received");
-          // Get ID token and store it
           const token = await getIdToken(result.user);
           localStorage.setItem('token', token);
 
-          // Get parent profile
           try {
             const parentProfile = await getParentProfile(result.user.uid);
             setCurrentUser({
@@ -47,6 +50,7 @@ function AuthProvider({ children }: AuthProviderProps): JSX.Element {
               photoURL: result.user.photoURL,
               ...parentProfile
             });
+            navigate('/dashboard', { replace: true });
           } catch (profileError) {
             console.error("Error fetching parent profile:", profileError);
             setCurrentUser({
@@ -55,59 +59,48 @@ function AuthProvider({ children }: AuthProviderProps): JSX.Element {
               displayName: result.user.displayName,
               photoURL: result.user.photoURL
             });
+            navigate('/dashboard', { replace: true });
           }
         }
+
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+          console.log("🔄 Auth state changed:", user ? "User logged in" : "No user");
+          
+          if (user) {
+            const token = await getIdToken(user);
+            localStorage.setItem('token', token);
+
+            const parentProfile = await getParentProfile(user.uid);
+            setCurrentUser({
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL,
+              ...parentProfile
+            });
+          } else {
+            setCurrentUser(null);
+            localStorage.removeItem('token');
+          }
+          setLoading(false);
+        });
+
+        return unsubscribe;
       } catch (error) {
-        console.error("❌ Error handling redirect result:", error);
-        setAuthError("Sign-in failed. Please try again.");
-      } finally {
+        console.error("🔥 Auth persistence error:", error);
         setLoading(false);
       }
     };
 
-    // Handle redirect result when component mounts
-    handleRedirectResult();
-
-    // Set up auth state listener
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log("🔄 Auth state changed:", user?.email);
-      if (user) {
-        try {
-          const token = await getIdToken(user);
-          localStorage.setItem('token', token);
-          
-          const parentProfile = await getParentProfile(user.uid);
-          setCurrentUser({
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            ...parentProfile
-          });
-        } catch (error) {
-          console.error("Error fetching parent profile:", error);
-          setCurrentUser({
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL
-          });
-        }
-      } else {
-        setCurrentUser(null);
-        localStorage.removeItem('token');
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+    initAuth();
+  }, [navigate]);
 
   const login = async (email: string, password: string): Promise<UserCredential> => {
     try {
       setAuthError(null);
       const result = await signInWithEmailAndPassword(auth, email, password);
       setCurrentUser(result.user as User);
+      navigate('/dashboard', { replace: true });
       return result;
     } catch (error) {
       console.error("❌ Login error:", error);
