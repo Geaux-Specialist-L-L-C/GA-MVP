@@ -48,7 +48,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <Container> {/* ✅ Now Container is defined */}
+    <Container>
       <LoginBox>
         <Title>Welcome Back</Title>
 
@@ -95,7 +95,6 @@ const Login: React.FC = () => {
   );
 };
 
-/* ✅ Define the missing styled-component Container */
 const Container = styled.div`
   display: flex;
   flex-direction: column;

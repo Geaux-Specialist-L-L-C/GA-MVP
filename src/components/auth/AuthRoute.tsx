@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import LoadingSpinner from '../common/LoadingSpinner';
 import styled from 'styled-components';
 
 const LoadingContainer = styled.div`
@@ -9,20 +10,6 @@ const LoadingContainer = styled.div`
   align-items: center;
   min-height: 100vh;
   background: rgba(255, 255, 255, 0.8);
-`;
-
-const LoadingSpinner = styled.div`
-  width: 50px;
-  height: 50px;
-  border: 5px solid #f3f3f3;
-  border-top: 5px solid var(--primary-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
 `;
 
 interface AuthRouteProps {
@@ -44,6 +31,11 @@ const AuthRoute: React.FC<AuthRouteProps> = ({ children }) => {
   if (currentUser) {
     // If user is already logged in, redirect to dashboard
     return <Navigate to="/dashboard" state={{ from: location }} replace />;
+  }
+
+  // If user is not authenticated, redirect to login page
+  if (!currentUser) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

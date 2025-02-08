@@ -124,6 +124,8 @@ function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       setAuthError("Failed to start Google sign-in.");
       setLoading(false);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
