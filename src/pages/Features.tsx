@@ -6,11 +6,11 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/layout/Header";
 
-const Features = () => {
-  const [selectedFeature, setSelectedFeature] = useState(null);
+const Features: React.FC = () => {
+  const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
 
   const features = [
     { title: "Personalized Learning Paths", description: "AI-driven customization based on your learning style", icon: <FaBullseye /> },
@@ -27,7 +27,7 @@ const Features = () => {
       await loginWithGoogle();
       navigate("/dashboard");
     } catch (error) {
-      setError(error.message);
+      setError((error as Error).message);
       console.error("Login error:", error);
     }
   };

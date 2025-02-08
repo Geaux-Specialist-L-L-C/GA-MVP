@@ -6,17 +6,17 @@ import { FaBook, FaHeadphones, FaEye, FaRunning, FaBrain, FaUsers } from "react-
 import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/layout/Header";
 
-const LearningStyles = () => {
+const LearningStyles: React.FC = () => {
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
 
   const handleGoogleLogin = async () => {
     try {
       setError("");
       await loginWithGoogle();
       navigate("/dashboard");
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
       console.error("Login error:", err);
     }

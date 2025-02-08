@@ -2,11 +2,14 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const PrivateRoute = ({ children }) => {
+interface PrivateRouteProps {
+  children: React.ReactNode;
+}
+
+const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   const { user } = useAuth();
   const location = useLocation();
 
-  // Pass an error message as state if the user is unauthorized.
   if (!user) {
     return (
       <Navigate 
@@ -20,7 +23,7 @@ const PrivateRoute = ({ children }) => {
     );
   }
 
-  return children;
+  return <>{children}</>;
 };
 
 export default PrivateRoute;

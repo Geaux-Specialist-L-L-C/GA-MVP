@@ -4,13 +4,13 @@ import { useAuth } from '../contexts/AuthContext';
 import styled from 'styled-components';
 import { FcGoogle } from "react-icons/fc";
 
-const Login = () => {
+const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { user, login, loginWithGoogle } = useAuth(); // Remove googleLogin
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const emailRef = useRef();
-  const passwordRef = useRef();
+  const { user, login, loginWithGoogle } = useAuth();
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -18,7 +18,7 @@ const Login = () => {
     }
   }, [user, navigate]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (loading) return;
@@ -26,7 +26,7 @@ const Login = () => {
     try {
       setError('');
       setLoading(true);
-      await login(emailRef.current.value, passwordRef.current.value);
+      await login(emailRef.current!.value, passwordRef.current!.value);
       navigate('/dashboard');
     } catch (err) {
       setError('Failed to sign in. Please check your credentials.');

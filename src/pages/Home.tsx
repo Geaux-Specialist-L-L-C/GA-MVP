@@ -8,7 +8,13 @@ import { FcGoogle } from "react-icons/fc";
 import Button from '../components/common/Button'; // ✅ Make sure this path is correct!
 
 // ✅ Flip Card Component
-const FlipCard = ({ icon, title, description }) => {
+interface FlipCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}
+
+const FlipCard: React.FC<FlipCardProps> = ({ icon, title, description }) => {
   return (
     <FlipContainer>
       <FlipInner className="flip">
@@ -31,17 +37,17 @@ const features = [
   { icon: <FaLightbulb />, title: "Interactive Learning", description: "Engage with hands-on exercises." },
 ];
 
-const Home = () => {
+const Home: React.FC = () => {
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
 
   const handleGoogleLogin = async () => {
     try {
       setError("");
       await loginWithGoogle();
       navigate("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       setError(error.message);
       console.error("Login error:", error);
     }

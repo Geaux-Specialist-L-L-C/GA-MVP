@@ -7,13 +7,22 @@ import StudentCard from '../../components/student/StudentCard';
 import { getParentProfile } from '../../services/profileService';
 import styled from 'styled-components';
 
-const Dashboard = () => {
+interface UserData {
+  name: string;
+  lastLogin: string;
+}
+
+interface ParentProfile {
+  students: string[];
+}
+
+const Dashboard: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [parentProfile, setParentProfile] = useState(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
+  const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {

@@ -2,16 +2,22 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FaGraduationCap, FaChartLine, FaBook } from 'react-icons/fa';
-import LearningStyleInsights from '../../../vue-components/LearningStyleInsights.jsx';
-import { useAuth } from '../../../contexts/AuthContext.jsx';
+import LearningStyleInsights from '../../../vue-components/LearningStyleInsights';
+import { useAuth } from '../../../contexts/AuthContext';
 import { FcGoogle } from 'react-icons/fc';
 import { getStudentProfile } from '../../../services/profileService';
 
-const StudentDashboard = () => {
+interface StudentData {
+  learningStyle: any;
+  progress: string;
+  recentActivities: string[];
+}
+
+const StudentDashboard: React.FC = () => {
   const { user, loginWithGoogle } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [studentData, setStudentData] = useState(null);
-  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [studentData, setStudentData] = useState<StudentData | null>(null);
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     if (user) {

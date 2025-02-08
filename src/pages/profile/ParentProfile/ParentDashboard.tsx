@@ -9,13 +9,13 @@ import { useAuth } from "../../contexts/AuthContext";
 import { FcGoogle } from "react-icons/fc";
 import { getParentProfile } from '../../services/profileService';
 
-const ParentDashboard = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [parentProfile, setParentProfile] = useState(null);
+const ParentDashboard: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
   const { user, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
 
   useEffect(() => {
     const fetchProfile = async () => {

@@ -4,10 +4,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { FcGoogle } from 'react-icons/fc';
 
-const NotFound = () => {
+const NotFound: React.FC = () => {
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string>('');
 
   const handleGoogleLogin = async () => {
     try {
@@ -15,7 +15,7 @@ const NotFound = () => {
       await loginWithGoogle();
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Login error');
       console.error('Login error:', err);
     }
   };

@@ -4,11 +4,11 @@ import { useAuth } from '../contexts/AuthContext';
 import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
 
-const Login = () => {
+const Login: React.FC = () => {
   const { user, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string>('');
   const errorMessage = location.state?.error || null;
 
   useEffect(() => {
@@ -18,12 +18,12 @@ const Login = () => {
     }
   }, [user, navigate, location]);
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async (): Promise<void> => {
     try {
       setError('');
       await loginWithGoogle();
     } catch (error) {
-      setError('Failed to sign in with Google: ' + error.message);
+      setError('Failed to sign in with Google: ' + (error as Error).message);
       console.error('Login error:', error);
     }
   };

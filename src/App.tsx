@@ -23,13 +23,13 @@ const Contact = React.lazy(() => import('./pages/Contact'));
 const SignUp = React.lazy(() => import('./components/auth/SignUp'));
 
 // Loading component
-const LoadingFallback = () => (
+const LoadingFallback: React.FC = () => (
   <div className="flex items-center justify-center min-h-screen">
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
   </div>
 );
 
-const App = () => {
+const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <ThemeProvider theme={theme}>

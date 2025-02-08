@@ -1,193 +1,104 @@
-import React, { useState } from 'react';
-import { useAuth } from '../../../contexts/AuthContext';
-import { createParentProfile } from '../../../services/profileService';
-import styled from 'styled-components';
+import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../../contexts/AuthContext";
+import { FcGoogle } from "react-icons/fc";
+import styled from "styled-components";
 
-export const ParentProfileForm = () => {
-  const { user } = useAuth();
-  const [formData, setFormData] = useState({
-    displayName: user?.displayName || '',
-    phone: '',
-    email: user?.email || ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+const ParentProfileForm: React.FC = () => {
+  const { loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [error, setError] = useState<string>("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!user) {
-      setError('You must be logged in to create a profile');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
+  const handleGoogleLogin = async () => {
     try {
-      console.log('📝 Creating parent profile for:', user.uid);
-      await createParentProfile({
-        uid: user.uid,
-        email: formData.email,
-        displayName: formData.displayName,
-        phone: formData.phone
-      });
-      setSuccess(true);
-      console.log('✅ Parent profile created successfully');
+      setError("");
+      await loginWithGoogle();
+      const destination = location.state?.from?.pathname || "/dashboard";
+      navigate(destination, { replace: true });
     } catch (err) {
-      console.error('❌ Error creating parent profile:', err);
-      setError('Failed to create profile. Please try again.');
-    } finally {
-      setLoading(false);
+      setError(err instanceof Error ? err.message : "Failed to login");
+      console.error("Login error:", err);
     }
   };
 
-  if (success) {
-    return (
-      <SuccessMessage>
-        Profile created successfully! You can now add students to your account.
-      </SuccessMessage>
-    );
-  }
-
   return (
-    <FormContainer>
-      <h2>Complete Your Parent Profile</h2>
-      {error && <ErrorMessage>{error}</ErrorMessage>}
-      
-      <Form onSubmit={handleSubmit}>
-        <FormGroup>
-          <Label htmlFor="displayName">Full Name</Label>
-          <Input
-            id="displayName"
-            type="text"
-            placeholder="Your full name"
-            value={formData.displayName}
-            onChange={(e) => setFormData({
-              ...formData,
-              displayName: e.target.value
-            })}
-            required
-          />
-        </FormGroup>
+    <Container>
+      <FormBox>
+        <Title>Parent Profile Form</Title>
+        
+        {error && <ErrorMessage>{error}</ErrorMessage>}
 
-        <FormGroup>
-          <Label htmlFor="phone">Phone Number</Label>
-          <Input
-            id="phone"
-            type="tel"
-            placeholder="Your phone number"
-            value={formData.phone}
-            onChange={(e) => setFormData({
-              ...formData,
-              phone: e.target.value
-            })}
-            required
-          />
-        </FormGroup>
-
-        <FormGroup>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="Your email"
-            value={formData.email}
-            onChange={(e) => setFormData({
-              ...formData,
-              email: e.target.value
-            })}
-            required
-            disabled={!!user?.email}
-          />
-        </FormGroup>
-
-        <SubmitButton type="submit" disabled={loading}>
-          {loading ? 'Creating Profile...' : 'Create Profile'}
-        </SubmitButton>
-      </Form>
-    </FormContainer>
+        <GoogleButton onClick={handleGoogleLogin}>
+          <FcGoogle className="text-xl" />
+          Sign in with Google
+        </GoogleButton>
+      </FormBox>
+    </Container>
   );
 };
 
-const FormContainer = styled.div`
-  max-width: 500px;
-  margin: 0 auto;
-  padding: 2rem;
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #f5f5f5;
+`;
+
+const FormBox = styled.div`
+  width: 100%;
+  max-width: 400px;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-
-  h2 {
-    margin-bottom: 1.5rem;
-    color: var(--primary-color);
-    text-align: center;
-  }
+  padding: 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 `;
 
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
-
-const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const Label = styled.label`
-  font-weight: 500;
-  color: #333;
-`;
-
-const Input = styled.input`
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-
-  &:disabled {
-    background: #f5f5f5;
-    cursor: not-allowed;
-  }
-`;
-
-const SubmitButton = styled.button`
-  background: var(--primary-color);
-  color: white;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  margin-top: 1rem;
-
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-
-  &:hover:not(:disabled) {
-    background: var(--primary-dark);
-  }
+const Title = styled.h2`
+  text-align: center;
+  color: #2C3E50;
+  margin-bottom: 1.5rem;
+  font-size: 1.75rem;
 `;
 
 const ErrorMessage = styled.div`
+  background-color: #fee2e2;
   color: #dc2626;
-  background: #fee2e2;
   padding: 0.75rem;
   border-radius: 4px;
   margin-bottom: 1rem;
+  font-size: 0.875rem;
+  text-align: center;
 `;
 
-const SuccessMessage = styled.div`
-  color: #059669;
-  background: #d1fae5;
-  padding: 1rem;
-  border-radius: 4px;
-  text-align: center;
-  margin: 1rem 0;
+const GoogleButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background-color: white;
+  color: #333;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f8fafc;
+  }
+
+  &:focus {
+    outline: none;
+    ring: 2px;
+    ring-offset: 2px;
+    ring-blue-500;
+  }
 `;
 
 export default ParentProfileForm;

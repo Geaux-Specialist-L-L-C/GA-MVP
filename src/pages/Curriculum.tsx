@@ -6,11 +6,11 @@ import { FcGoogle } from 'react-icons/fc';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/layout/Header'; // Add missing import
 
-const Curriculum = () => {
-  const [selectedGrade, setSelectedGrade] = useState('middle');
+const Curriculum: React.FC = () => {
+  const [selectedGrade, setSelectedGrade] = useState<string>('middle');
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string>('');
 
   const handleGoogleLogin = async () => {
     try {
@@ -18,7 +18,7 @@ const Curriculum = () => {
       await loginWithGoogle();
       navigate('/dashboard');
     } catch (error) {
-      setError(error.message);
+      setError((error as Error).message);
       console.error('Login error:', error);
     }
   };
@@ -162,7 +162,7 @@ const GradeLevels = styled.div`
   margin-bottom: 2rem;
 `;
 
-const GradeButton = styled.button`
+const GradeButton = styled.button<{ isSelected: boolean }>`
   background: ${(props) => (props.isSelected ? '#007bff' : '#f8f9fa')};
   color: ${(props) => (props.isSelected ? '#fff' : '#000')};
   border: 1px solid #007bff;

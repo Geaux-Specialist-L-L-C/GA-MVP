@@ -1,25 +1,25 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
 
-const SignUp = () => {
+const SignUp: React.FC = () => {
   const navigate = useNavigate();
   const { createUser, googleLogin } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
       await createUser(email, password);
       navigate('/dashboard');
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     }
     setLoading(false);
@@ -59,7 +59,7 @@ const SignUp = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength="6"
+              minLength={6}
             />
           </FormGroup>
           <SignUpButton type="submit" disabled={loading}>

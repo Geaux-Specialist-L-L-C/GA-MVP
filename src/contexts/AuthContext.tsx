@@ -1,22 +1,41 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
   signOut,
   onAuthStateChanged,
-  getIdToken
+  getIdToken,
+  User as FirebaseUser
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
 import { getParentProfile } from '../services/profileService';
 
-const AuthContext = createContext();
+interface AuthContextType {
+  user: FirebaseUser | null;
+  login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+}
 
-export const useAuth = () => useContext(AuthContext);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -34,19 +53,18 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email: string, password: string): Promise<void> => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const token = await getIdToken(userCredential.user, true);
       localStorage.setItem('token', token);
-      return userCredential;
     } catch (error) {
       console.error("Login error:", error);
       throw error;
     }
   };
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (): Promise<void> => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const token = await getIdToken(result.user, true);
@@ -55,8 +73,6 @@ export function AuthProvider({ children }) {
       const parentProfile = await getParentProfile(result.user.uid);
 
       console.log("✅ Google Sign-in Successful:", result.user);
-      return { result, parentProfile };
-
     } catch (error) {
       console.error("❌ Google login error:", error);
 
@@ -72,19 +88,18 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const signup = async (email, password) => {
+  const signup = async (email: string, password: string): Promise<void> => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const token = await getIdToken(userCredential.user, true);
       localStorage.setItem('token', token);
-      return userCredential;
     } catch (error) {
       console.error("Signup error:", error);
       throw error;
     }
   };
 
-  const logout = async () => {
+  const logout = async (): Promise<void> => {
     try {
       await signOut(auth);
       localStorage.removeItem('token');
@@ -95,7 +110,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
     login,
     loginWithGoogle,
@@ -108,4 +123,4 @@ export function AuthProvider({ children }) {
       {!loading && children}
     </AuthContext.Provider>
   );
-}
+};
