@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { addStudentProfile } from '../../services/profileService';
-import { useAuth } from '../../contexts/AuthContext';
+import { addStudentProfile } from '../../../services/profileService';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const CreateStudent = () => {
   const [studentName, setStudentName] = useState('');

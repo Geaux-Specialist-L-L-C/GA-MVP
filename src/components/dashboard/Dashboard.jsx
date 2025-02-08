@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import ParentProfileForm from '../../pages/profile/ParentProfile/ParentProfileForm';
+import CreateStudent from '../../pages/profile/ParentProfile/CreateStudent';
+import StudentCard from '../../components/student/StudentCard';
+import { getParentProfile } from '../../services/profileService';
 import styled from 'styled-components';
 
 const Dashboard = () => {
@@ -9,19 +13,26 @@ const Dashboard = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [parentProfile, setParentProfile] = useState(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         if (currentUser?.uid) {
+          console.log('🔄 Fetching user data for:', currentUser.uid);
+          
           setUserData({
             name: currentUser.displayName || currentUser.email,
             lastLogin: currentUser.metadata?.lastSignInTime || 'N/A',
           });
+
+          const profile = await getParentProfile(currentUser.uid);
+          console.log('📋 Parent profile loaded:', profile);
+          setParentProfile(profile);
         }
       } catch (err) {
+        console.error('❌ Error fetching user data:', err);
         setError('Failed to fetch user data');
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -40,11 +51,15 @@ const Dashboard = () => {
   };
 
   if (loading) {
-    return <DashboardContainer>Loading...</DashboardContainer>;
+    return <DashboardContainer>Loading user data...</DashboardContainer>;
   }
 
   if (error) {
     return <DashboardContainer>Error: {error}</DashboardContainer>;
+  }
+
+  if (!currentUser) {
+    return <DashboardContainer>Please log in to access your dashboard.</DashboardContainer>;
   }
 
   return (
@@ -59,6 +74,30 @@ const Dashboard = () => {
           <h3>Last Login</h3>
           <p>{userData?.lastLogin || 'N/A'}</p>
         </DashboardCard>
+
+        {/* Parent Dashboard Section - Always show if user is logged in */}
+        <ParentSection>
+          <h2>Parent Dashboard</h2>
+          {parentProfile ? (
+            <>
+              <CreateStudent />
+              {parentProfile.students?.length > 0 ? (
+                <StudentsList>
+                  <h3>Your Students</h3>
+                  {parentProfile.students.map(studentId => (
+                    <StudentCard key={studentId} studentId={studentId} />
+                  ))}
+                </StudentsList>
+              ) : (
+                <EmptyState>
+                  <p>No students added yet. Add your first student to get started!</p>
+                </EmptyState>
+              )}
+            </>
+          ) : (
+            <ParentProfileForm />
+          )}
+        </ParentSection>
       </DashboardGrid>
     </DashboardContainer>
   );
@@ -111,6 +150,37 @@ const DashboardCard = styled.div`
     color: var(--primary-color);
     margin-bottom: 1rem;
   }
+`;
+
+const ParentSection = styled.div`
+  background: #f9f9f9;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: 2rem;
+  grid-column: 1 / -1;
+`;
+
+const StudentsList = styled.div`
+  margin-top: 2rem;
+  
+  h3 {
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+  }
+`;
+
+const StudentCard = styled.div`
+  background: white;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+`;
+
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: #666;
 `;
 
 export default Dashboard;
