@@ -5,7 +5,6 @@ import { FaGraduationCap, FaChartLine, FaUsers, FaLightbulb } from 'react-icons/
 import { BiTargetLock } from 'react-icons/bi';
 import { MdPersonalVideo } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
-import Header from '../components/layout/Header';
 
 const CTAButton = styled.button`
   background: var(--primary-color);
@@ -31,7 +30,6 @@ const About = () => {
 
   return (
     <>
-      <Header />
       <AboutContainer>
         <motion.div
           initial={{ opacity: 0, y: 20 }}

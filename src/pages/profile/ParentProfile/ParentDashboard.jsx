@@ -11,24 +11,24 @@ import { getParentProfile } from '../../services/profileService';
 
 const ParentDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [studentData, setStudentData] = useState(null);
+  const [parentProfile, setParentProfile] = useState(null);
   const { user, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchProfile = async () => {
       if (user) {
         try {
-          const parentProfile = await getParentProfile(user.uid);
-          setStudentData(parentProfile.students || []);
+          const profile = await getParentProfile(user.uid);
+          setParentProfile(profile);
         } catch (error) {
-          console.error("Error fetching student data:", error);
+          console.error("Error fetching profile:", error);
         }
       }
     };
-    fetchData();
+    fetchProfile();
   }, [user]);
 
   const handleGoogleLogin = async () => {
@@ -49,6 +49,25 @@ const ParentDashboard = () => {
         <h1>Parent Dashboard</h1>
       </DashboardHeader>
 
+      <ProfileSection>
+        <h2>Account Details</h2>
+        <p>Name: {parentProfile?.name || "Parent"}</p>
+        <p>Email: {user?.email}</p>
+        <button onClick={() => navigate("/billing-settings")}>Billing Settings</button>
+      </ProfileSection>
+
+      <StudentManagement>
+        <h2>Student Profiles</h2>
+        <button onClick={() => navigate("/create-student")}>➕ Add Student</button>
+        
+        {parentProfile?.students?.map((student) => (
+          <StudentCard key={student.id}>
+            <p>{student.name}</p>
+            <button onClick={() => navigate(`/take-assessment/${student.id}`)}>Take Assessment</button>
+          </StudentCard>
+        ))}
+      </StudentManagement>
+
       <DashboardNav>
         <NavButton isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
           Overview
@@ -67,13 +86,13 @@ const ParentDashboard = () => {
       <DashboardContent>
         {activeTab === 'overview' && (
           <>
-            <StudentProgressTracker studentData={studentData} />
+            <StudentProgressTracker studentData={parentProfile?.students} />
             <NotificationCenter />
           </>
         )}
-        {activeTab === 'progress' && <StudentProgressTracker studentData={studentData} />}
-        {activeTab === 'curriculum' && <CurriculumApproval studentData={studentData} />}
-        {activeTab === 'insights' && <LearningStyleInsights studentData={studentData} />}
+        {activeTab === 'progress' && <StudentProgressTracker studentData={parentProfile?.students} />}
+        {activeTab === 'curriculum' && <CurriculumApproval studentData={parentProfile?.students} />}
+        {activeTab === 'insights' && <LearningStyleInsights studentData={parentProfile?.students} />}
       </DashboardContent>
 
       {!user && (
@@ -89,5 +108,30 @@ const ParentDashboard = () => {
     </DashboardContainer>
   );
 };
+
+const ProfileSection = styled.div`
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
+const StudentManagement = styled.div`
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 20px;
+`;
+
+const StudentCard = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  margin: 10px 0;
+`;
 
 export default ParentDashboard;

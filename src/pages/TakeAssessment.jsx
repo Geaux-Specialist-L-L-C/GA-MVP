@@ -1,8 +1,7 @@
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { getStudentProfile } from '../services/profileService';
-import { updateStudentAssessmentStatus } from '../services/profileService';
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getStudentProfile, updateStudentAssessmentStatus } from "../services/profileService";
 
 const TakeAssessment = () => {
   const { currentUser } = useAuth();
@@ -12,22 +11,30 @@ const TakeAssessment = () => {
 
   useEffect(() => {
     if (!currentUser) {
-      navigate('/signup'); // Redirect if not authenticated
-    } else {
-      const fetchStudent = async () => {
+      navigate("/signup");
+      return;
+    }
+
+    const fetchStudent = async () => {
+      try {
         const studentProfile = await getStudentProfile(studentId);
         if (!studentProfile) {
-          navigate('/parent-dashboard'); // Redirect if no student found
+          navigate("/parent-dashboard");
         } else {
           setStudent(studentProfile);
         }
-      };
-      fetchStudent();
-    }
+      } catch (error) {
+        console.error("Error fetching student profile:", error);
+        navigate("/parent-dashboard");
+      }
+    };
+
+    fetchStudent();
   }, [currentUser, studentId, navigate]);
 
   const handleAssessmentCompletion = async () => {
-    await updateStudentAssessmentStatus(studentId, true);
+    if (!studentId) return;
+    await updateStudentAssessmentStatus(studentId, "completed");
     navigate(`/student-dashboard/${studentId}`);
   };
 

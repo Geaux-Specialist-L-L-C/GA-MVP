@@ -75,4 +75,5 @@ const RetryButton = styled.button`
   }
 `;
 
+export { ErrorBoundary };  // Add named export
 export default ErrorBoundary;

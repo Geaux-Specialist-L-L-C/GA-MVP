@@ -7,7 +7,7 @@ import AuthRoute from './components/auth/AuthRoute';
 import { ThemeProvider } from 'styled-components';
 import theme from './theme/theme';
 import PrivateRoute from './components/PrivateRoute';
-import Header from './components/layout/Header';
+import Layout from './components/Layout';
 import Dashboard from './components/dashboard/Dashboard';
 import TakeAssessment from './pages/TakeAssessment';
 
@@ -35,34 +35,33 @@ const App = () => {
       <ThemeProvider theme={theme}>
         <AuthProvider>
           <ProfileProvider>
-            <Header />
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/features" element={<Features />} />  {/* ✅ Add Features Route */}
+                <Route element={<Layout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/features" element={<Features />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/curriculum" element={<Curriculum />} />
+                  <Route path="/learning-styles" element={<LearningStyles />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/take-assessment" element={<TakeAssessment />} />
+                  <Route path="/student-profile" element={
+                    <AuthRoute>
+                      <StudentProfile />
+                    </AuthRoute>
+                  } />
+                  <Route path="/dashboard" element={
+                    <PrivateRoute>
+                      <Dashboard />
+                    </PrivateRoute>
+                  } />
+                </Route>
+                
+                {/* Auth routes outside of Layout */}
                 <Route path="/login" element={<Login />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/curriculum" element={<Curriculum />} />
-                <Route path="/learning-styles" element={<LearningStyles />} />
-                <Route path="/contact" element={<Contact />} />
-                {/* New TakeAssessment Route */}
-                <Route path="/take-assessment" element={<TakeAssessment />} />
-                
-                {/* Protected Routes */}
-                <Route path="/student-profile" element={
-                  <AuthRoute>
-                    <StudentProfile />
-                  </AuthRoute>
-                } />
-                
                 <Route path="/signup" element={<SignUp />} />
-                <Route path="/dashboard" element={
-                  <PrivateRoute>
-                    <Dashboard />
-                  </PrivateRoute>
-                } />
 
-                {/* Fallback route for unmatched paths */}
+                {/* Fallback route */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

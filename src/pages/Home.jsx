@@ -5,7 +5,6 @@ import { useAuth } from "../contexts/AuthContext";
 import styled from "styled-components";
 import { FaGraduationCap, FaChartLine, FaLightbulb } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
-import Header from "../components/layout/Header";
 import Button from '../components/common/Button'; // ✅ Make sure this path is correct!
 
 // ✅ Flip Card Component
@@ -50,7 +49,6 @@ const Home = () => {
 
   return (
     <Container>
-      <Header />
       <HeroSection>
         <HeroContent>
           <h1>Welcome to Geaux Academy</h1>

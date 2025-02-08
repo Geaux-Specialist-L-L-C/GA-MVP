@@ -1,104 +1,116 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getParentProfile } from '../../services/profileService';
 import styled from 'styled-components';
 
 const Dashboard = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
-  const [parentProfile, setParentProfile] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (currentUser) {
-        try {
-          const profile = await getParentProfile(currentUser.uid);
-          setParentProfile(profile);
-        } catch (err) {
-          console.error("Error fetching profile:", err);
+    const fetchUserData = async () => {
+      try {
+        if (currentUser?.uid) {
+          setUserData({
+            name: currentUser.displayName || currentUser.email,
+            lastLogin: currentUser.metadata?.lastSignInTime || 'N/A',
+          });
         }
+      } catch (err) {
+        setError('Failed to fetch user data');
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchProfile();
-  }, [currentUser]);
 
-  if (!currentUser) {
-    navigate('/login'); // Force login before showing dashboard
+    fetchUserData();
+  }, [currentUser?.uid]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (err) {
+      setError('Failed to log out');
+    }
+  };
+
+  if (loading) {
+    return <DashboardContainer>Loading...</DashboardContainer>;
+  }
+
+  if (error) {
+    return <DashboardContainer>Error: {error}</DashboardContainer>;
   }
 
   return (
     <DashboardContainer>
       <DashboardHeader>
-        <h1>Parent Profile</h1>
-        <LogoutButton onClick={logout}>Logout</LogoutButton>
+        <h1>Welcome, {userData?.name || 'User'}</h1>
+        <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
       </DashboardHeader>
 
-      {error && <ErrorMessage>{error}</ErrorMessage>}
-
-      <ProfileSection>
-        <h2>Account Details</h2>
-        <p>Name: {parentProfile?.name || 'Parent'}</p>
-        <p>Email: {currentUser?.email}</p>
-        <p>Subscription: Active</p>
-        <button onClick={() => navigate('/billing-settings')}>Billing Settings</button>
-      </ProfileSection>
-
-      <StudentManagement>
-        <h2>Student Profiles</h2>
-        <button onClick={() => navigate('/create-student')}>Add Student</button>
-        {parentProfile?.students?.map((student) => (
-          <StudentCard key={student.id}>
-            <p>{student.name}</p>
-            <button onClick={() => navigate(`/student-dashboard/${student.id}`)}>View Dashboard</button>
-          </StudentCard>
-        ))}
-      </StudentManagement>
+      <DashboardGrid>
+        <DashboardCard>
+          <h3>Last Login</h3>
+          <p>{userData?.lastLogin || 'N/A'}</p>
+        </DashboardCard>
+      </DashboardGrid>
     </DashboardContainer>
   );
 };
 
-export default Dashboard;
-
-// Styled Components
 const DashboardContainer = styled.div`
-  max-width: 900px;
-  margin: 0 auto;
   padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
 `;
 
 const DashboardHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 2rem;
+
+  h1 {
+    font-size: 2rem;
+    color: var(--primary-color);
+  }
 `;
 
 const LogoutButton = styled.button`
-  background: #dc3545;
+  background: var(--primary-color);
   color: white;
   padding: 0.5rem 1rem;
+  border: none;
   border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--primary-dark);
+  }
 `;
 
-const ErrorMessage = styled.div`
-  color: red;
-  margin-bottom: 1rem;
+const DashboardGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
 `;
 
-const ProfileSection = styled.div`
-  padding: 1rem;
+const DashboardCard = styled.div`
   background: white;
+  padding: 1.5rem;
   border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+  }
 `;
 
-const StudentManagement = styled.div`
-  margin-top: 2rem;
-`;
-
-const StudentCard = styled.div`
-  background: #f8f9fa;
-  padding: 1rem;
-  margin-top: 1rem;
-  border-radius: 8px;
-`;
+export default Dashboard;

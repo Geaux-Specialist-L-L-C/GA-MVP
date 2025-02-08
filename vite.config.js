@@ -16,6 +16,10 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     cors: true,
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+      "Cross-Origin-Embedder-Policy": "require-corp",
+    },
     proxy: {
       '/api': {
         target: process.env.VITE_AZURE_ENDPOINT,
