@@ -160,6 +160,8 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       setAuthError("Failed to start Google sign-in. Please try again.");
       setLoading(false);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
