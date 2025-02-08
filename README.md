@@ -1,149 +1,53 @@
 # Geaux Academy
 
-## Getting Started
+An interactive learning platform that adapts to individual learning styles through AI-powered assessments and personalized content delivery.
+
+## Quick Start
 
 ### Prerequisites
-- Node.js (version 18 or higher)
+- Node.js (v18+)
 - Firebase CLI (`npm install -g firebase-tools`)
 
 ### Installation
-1. Clone the repository:
+1. Clone and install:
    ```bash
    git clone <repository-url>
    cd GA-MVP
-   ```
-
-2. Install dependencies:
-   ```bash
    npm install
    ```
 
-3. Create a `.env` file in the root directory with your Firebase configuration:
-   ```env
-   VITE_FIREBASE_API_KEY=your_api_key
-   VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
-   VITE_FIREBASE_PROJECT_ID=geaux-academy
-   VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-   VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   VITE_FIREBASE_APP_ID=your_app_id
-   VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
-   ```
+2. Configure environment:
+   Create `.env` file with Firebase configuration (see `.env.example`)
 
-### Running the Application
-1. Start the development server:
+3. Start development:
    ```bash
-   npm run dev
+   npm run dev    # Start dev server
    ```
 
-2. To run Firebase emulators (optional, for local development):
-   ```bash
-   firebase emulators:start
-   ```
+Visit `http://localhost:5173` for development.
 
-3. To build for production:
-   ```bash
-   npm run build
-   ```
+## Key Features
+- AI-powered learning style assessment through interactive chat
+- Personalized learning paths based on VARK model
+- Real-time progress tracking
+- Google authentication
+- Interactive dashboard for students and educators
 
-4. To preview the production build:
-   ```bash
-   npm run preview
-   ```
+## Documentation
+- [Development Guide](./DEVELOPMENT_GUIDE.md) - Detailed setup, architecture, and development roadmap
+- [Component Structure](./src/components/README.md) - UI component documentation
+- [API Documentation](./backend/README.md) - Backend API reference
 
-### Accessing the Application
-- Development: `http://localhost:5173`
-- Production preview: `http://localhost:4173`
+## Scripts
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run preview  # Preview production build
+npm run deploy   # Deploy to Firebase
+```
 
-### Firebase Setup
-1. Login to Firebase:
-   ```bash
-   firebase login
-   ```
+## Contributing
+See [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) for detailed development instructions and roadmap.
 
-2. Initialize Firebase project:
-   ```bash
-   firebase init
-   ```
-
-### Deployment
-To deploy the application to Firebase:
-   ```bash
-   npm run deploy
-   ```
-
-### Creating GitHub Issues
-1. Go to the GitHub repository and click on the "Issues" tab.
-2. Create the following issues and assign them to GitHub Copilot:
-   - Title: "Setup Authentication"
-     Description: "Implement Firebase authentication with Google login."
-   - Title: "UI setup"
-     Description: "Design and implement the user interface."
-   - Title: "Database setup"
-     Description: "Set up the database schema and models."
-   - Title: "API setup"
-     Description: "Develop the API endpoints."
-
-## React Setup
-
-This section provides guidelines for setting up and using React in this project.
-
-## Updated File Structure
-
-```plaintext
-├───components
-│   ├───auth
-│   ├───chat
-│   ├───common
-│   │   └───types
-│   ├───dashboard
-│   ├───features
-│   │   ├───learning
-│   │   └───vue
-│   ├───home
-│   ├───layout
-│   ├───shared
-│   │   └───styles
-│   ├───student
-│   └───styles
-├───config
-├───contexts
-├───firebase
-├───pages
-│   ├───profile
-│   │   ├───components
-│   │   ├───ParentProfile
-│   │   │   ├───components
-│   │   │   └───dashboard
-│   │   │       └───components
-│   │   └───StudentProfile
-│   ├───styles
-│   └───values
-├───server
-│   └───routes
-├───services
-├───store
-│   └───slices
-├───styles
-│   ├───components
-│   └───pages
-├───theme
-├───types
-└───utils
-
-## Notes on Merged Files
-
-- `src/components/auth/AuthRoute.tsx` now contains the merged content from `src/components/AuthRoute.tsx` and `public/JSX/AuthRoute.jsx`.
-- `src/theme/theme.js` now contains the merged content from `src/components/layout/styles/theme.js`.
-
-## Updated Import Paths
-
-- Ensure all import paths in your components are updated to reflect the new structure. For example:
-  ```jsx
-  // Before
-  import AuthRoute from '../AuthRoute';
-
-  // After
-  import AuthRoute from '../components/auth/AuthRoute';
-  ```
-
-- Similarly, update any other import paths that have changed due to the restructuring.
+## License
+[MIT License](LICENSE)
