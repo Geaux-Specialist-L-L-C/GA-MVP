@@ -5,6 +5,7 @@ import React from 'react';
 import { FcGoogle } from 'react-icons/fc';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import Header from '../components/layout/Header'; // Add Header import
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -48,75 +49,78 @@ const Contact = () => {
   };
 
   return (
-    <ContactContainer>
-      <ContentGrid>
-        <ContactForm onSubmit={handleSubmit}>
-          <FormGroup>
-            <label htmlFor="name">Name</label>
-            <input
-              type="text"
-              id="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-            />
-          </FormGroup>
-          <FormGroup>
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </FormGroup>
-          <FormGroup>
-            <label htmlFor="message">Message</label>
-            <textarea
-              id="message"
-              rows="5"
-              value={formData.message}
-              onChange={handleChange}
-              required
-            ></textarea>
-          </FormGroup>
-          <SubmitButton type="submit">Send Message</SubmitButton>
-        </ContactForm>
+    <>
+      <Header />
+      <ContactContainer>
+        <ContentGrid>
+          <ContactForm onSubmit={handleSubmit}>
+            <FormGroup>
+              <label htmlFor="name">Name</label>
+              <input
+                type="text"
+                id="name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+              />
+            </FormGroup>
+            <FormGroup>
+              <label htmlFor="email">Email</label>
+              <input
+                type="email"
+                id="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </FormGroup>
+            <FormGroup>
+              <label htmlFor="message">Message</label>
+              <textarea
+                id="message"
+                rows="5"
+                value={formData.message}
+                onChange={handleChange}
+                required
+              ></textarea>
+            </FormGroup>
+            <SubmitButton type="submit">Send Message</SubmitButton>
+          </ContactForm>
 
-        <ContactInfo>
-          <InfoCard>
-            <h3>Office Hours</h3>
-            <p>Monday - Friday: 9:00 AM - 5:00 PM</p>
-            <p>Weekend: Closed</p>
-          </InfoCard>
-          <InfoCard>
-            <h3>Our Office</h3>
-            <p>Location: 123 Main St, Anytown, USA</p>
-            <p>Hours: Mon-Fri, 9am-5pm</p>
-          </InfoCard>
-          <InfoCard>
-            <h3>Support</h3>
-            <p>Email: support@geauxacademy.com</p>
-            <p>Phone: (123) 456-7890</p>
-          </InfoCard>
-        </ContactInfo>
-      </ContentGrid>
+          <ContactInfo>
+            <InfoCard>
+              <h3>Office Hours</h3>
+              <p>Monday - Friday: 9:00 AM - 5:00 PM</p>
+              <p>Weekend: Closed</p>
+            </InfoCard>
+            <InfoCard>
+              <h3>Our Office</h3>
+              <p>Location: 123 Main St, Anytown, USA</p>
+              <p>Hours: Mon-Fri, 9am-5pm</p>
+            </InfoCard>
+            <InfoCard>
+              <h3>Support</h3>
+              <p>Email: support@geauxacademy.com</p>
+              <p>Phone: (123) 456-7890</p>
+            </InfoCard>
+          </ContactInfo>
+        </ContentGrid>
 
-      {isSubmitted && (
-        <SuccessMessage as={motion.div} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          Thank you for your message! We'll get back to you soon.
-        </SuccessMessage>
-      )}
+        {isSubmitted && (
+          <SuccessMessage as={motion.div} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            Thank you for your message! We'll get back to you soon.
+          </SuccessMessage>
+        )}
 
-      <GoogleLoginContainer>
-        <GoogleLoginButton onClick={handleGoogleLogin}>
-          <FcGoogle className="text-xl" />
-          Sign in with Google
-        </GoogleLoginButton>
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-      </GoogleLoginContainer>
-    </ContactContainer>
+        <GoogleLoginContainer>
+          <GoogleLoginButton onClick={handleGoogleLogin}>
+            <FcGoogle className="text-xl" />
+            Sign in with Google
+          </GoogleLoginButton>
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+        </GoogleLoginContainer>
+      </ContactContainer>
+    </>
   );
 };
 

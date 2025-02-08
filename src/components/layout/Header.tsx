@@ -30,25 +30,30 @@ const Header = () => {
           </StyledNavLink>
         </StyledNav>
       </NavWrapper>
+
+      <AuthButtons>
+        <StyledButton to="/login">Login</StyledButton>
+        <StyledButton to="/signup" $primary>Sign Up</StyledButton>
+      </AuthButtons>
     </StyledHeaderContainer>
   );
 };
 
 const StyledHeaderContainer = styled.header`
   position: fixed;
-  top: 0;
   width: 100%;
   height: 64px;
   background: black;
   display: flex;
   align-items: center;
-  padding: 0 2rem;
+  justify-content: space-between;
+  padding: 0 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   z-index: 1000;
 `;
 
 const LogoContainer = styled.div`
-  flex: 0.8;
+  flex: 0.7;
 `;
 
 const StyledLogo = styled.img`
@@ -57,10 +62,10 @@ const StyledLogo = styled.img`
 `;
 
 const NavWrapper = styled.div`
-  flex: 2.2;
+  flex: 2;
   display: flex;
   justify-content: flex-start;
-  margin-left: 5%;
+  margin-left: 4%;
 `;
 
 const StyledNav = styled.nav`
@@ -78,6 +83,28 @@ const StyledNavLink = styled(Link)<{ $active?: boolean }>`
 
   &:hover {
     color: gold;
+  }
+`;
+
+const AuthButtons = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-right: 1.5rem;
+`;
+
+const StyledButton = styled(Link)<{ $primary?: boolean }>`
+  padding: 0.5rem 1rem;
+  color: white;
+  background: ${(props) => (props.$primary ? "gold" : "transparent")};
+  border: 2px solid gold;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: all 0.3s ease-in-out;
+
+  &:hover {
+    background: white;
+    color: black;
   }
 `;
 

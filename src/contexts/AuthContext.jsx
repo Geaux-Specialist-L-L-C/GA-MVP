@@ -10,8 +10,6 @@ import {
 import { auth, googleProvider } from '../firebase/config';
 import { getParentProfile } from '../services/profileService';
 
-// Remove useNavigate import
-
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
@@ -19,8 +17,6 @@ export const useAuth = () => useContext(AuthContext);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  
-  // Remove navigate initialization
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -56,7 +52,6 @@ export function AuthProvider({ children }) {
       const token = await getIdToken(result.user, true);
       localStorage.setItem("token", token);
 
-      // Fetch parent profile to check if they exist
       const parentProfile = await getParentProfile(result.user.uid);
 
       console.log("✅ Google Sign-in Successful:", result.user);

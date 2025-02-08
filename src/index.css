@@ -42,7 +42,7 @@
   --error-color: #E74C3C;        /* Red */
   
   --max-width: 1200px;
-  --header-height: 80px;
+  --header-height: 64px;
   --text-color: #333;
   --light-bg: #f5f5f5;
   --container-padding: 2rem;
@@ -59,7 +59,7 @@
   --sidebar-width: 250px;
 
   /* Navbar Variables */
-  --navbar-height: 70px;
+  --navbar-height: 64px;
   --navbar-bg: white;
   --navbar-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
@@ -84,9 +84,8 @@ body {
   margin: 0;
   padding: 0;
   background-color: var(--background-color);
-  color: var(--text-light-color);
-  padding-top: var(--navbar-height); /* Adjust based on navbar height */
-  margin-top: var(--header-height);
+  color: var(--text-primary);  /* Fix incorrect variable name from --text-light-color */
+  padding-top: var(--header-height); /* Set consistent padding for header */
   background: var(--background-color);
 }
 
@@ -153,7 +152,7 @@ header {
 
 /* Main Content Styles */
 .main-content {
-  padding: 2rem;
+  padding-top: var(--header-height);
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
