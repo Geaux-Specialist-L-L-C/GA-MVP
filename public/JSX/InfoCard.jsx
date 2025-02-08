@@ -9,7 +9,12 @@ const InfoCard = ({ title, description, icon }) => {
     <CardContainer>
       {icon && (
         isImagePath ? (
-          <CardIcon as="img" src={icon} alt={title} />
+          <CardIcon 
+            as="img" 
+            src={icon} 
+            alt={title}
+            crossOrigin={icon.startsWith('http') ? "anonymous" : undefined}
+          />
         ) : (
           <CardIconText>{icon}</CardIconText>
         )

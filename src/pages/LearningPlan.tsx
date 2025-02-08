@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { db } from "../config/firebase";
+import { db } from "../firebase/config";
 import { getDoc, doc, updateDoc } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
 import LoadingSpinner from "../components/common/LoadingSpinner";
@@ -53,6 +53,11 @@ const LearningPlan: React.FC = () => {
   };
 
   const generateLearningPlan = async (): Promise<void> => {
+    if (!currentUser) {
+      setError("Please sign in first");
+      return;
+    }
+    
     if (!learningStyle || !grade) {
       setError("Please complete your profile first");
       return;
@@ -94,6 +99,10 @@ const LearningPlan: React.FC = () => {
   };
 
   const saveToFirestore = async (plan: Subject[]): Promise<void> => {
+    if (!currentUser) {
+      throw new Error("User must be signed in");
+    }
+    
     try {
       const userRef = doc(db, "users", currentUser.uid);
       await updateDoc(userRef, {

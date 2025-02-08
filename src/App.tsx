@@ -1,96 +1,64 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import styled, { ThemeProvider } from 'styled-components';
-import { ProfileProvider } from './contexts/ProfileContext';
-import ErrorBoundary from './components/shared/ErrorBoundary';
-import AuthRoute from './components/auth/AuthRoute';
+import styled from 'styled-components';
+import { ThemeProvider } from 'styled-components';
 import theme from './theme/theme';
-import PrivateRoute from './components/PrivateRoute';
-import Layout from './components/Layout';
+import LoadingSpinner from './components/common/LoadingSpinner';
+import AuthRoute from '../AuthRoute';
+import Login from './pages/Login';
 import Dashboard from './components/dashboard/Dashboard';
-import TakeAssessment from './pages/TakeAssessment';
+import { ProfileProvider } from './contexts/ProfileContext';
+import Layout from './components/Layout';
 
-// Lazy load components
-const Home = React.lazy(() => import('./pages/Home'));
-const Features = React.lazy(() => import('./pages/Features'));
-const Login = React.lazy(() => import('./components/Login'));
-const StudentProfile = React.lazy(() => import('./pages/profile/StudentProfile/StudentProfile'));
-const About = React.lazy(() => import('./pages/About'));
-const Curriculum = React.lazy(() => import('./pages/Curriculum'));
-const LearningStyles = React.lazy(() => import('./pages/LearningStyles'));
-const Contact = React.lazy(() => import('./pages/Contact'));
+// Lazy load other components
 const SignUp = React.lazy(() => import('./components/auth/SignUp'));
-
-const LoadingFallback: React.FC = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-  </div>
-);
-
-const AppContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-`;
+const TakeAssessment = React.lazy(() => import('./pages/TakeAssessment'));
+const StudentProfile = React.lazy(() => import('./pages/profile/StudentProfile/StudentProfile'));
+const StudentDashboard = React.lazy(() => import('./pages/profile/StudentProfile/StudentDashboard'));
 
 const App: React.FC = () => {
   return (
-    <ErrorBoundary>
-      <ThemeProvider theme={theme}>
-        <ProfileProvider>
-          <AppContainer>
-            <Suspense fallback={<LoadingFallback />}>
-              <Routes>
-                {/* Public routes */}
-                <Route element={<Layout />}>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/features" element={<Features />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/curriculum" element={<Curriculum />} />
-                  <Route path="/learning-styles" element={<LearningStyles />} />
-                  <Route path="/contact" element={<Contact />} />
-                </Route>
+    <ThemeProvider theme={theme}>
+      <ProfileProvider>
+        <AppContainer>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Navigate to="/login" replace />} />
+              
+              {/* Auth routes */}
+              <Route path="/login" element={
+                <AuthRoute>
+                  <Login />
+                </AuthRoute>
+              } />
+              <Route path="/signup" element={
+                <AuthRoute>
+                  <SignUp />
+                </AuthRoute>
+              } />
 
-                {/* Auth routes */}
-                <Route path="/login" element={
-                  <AuthRoute>
-                    <Login />
-                  </AuthRoute>
-                } />
-                <Route path="/signup" element={
-                  <AuthRoute>
-                    <SignUp />
-                  </AuthRoute>
-                } />
+              {/* Protected routes */}
+              <Route element={<Layout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/take-assessment" element={<TakeAssessment />} />
+                <Route path="/student-profile" element={<StudentProfile />} />
+                <Route path="/student-dashboard/:id" element={<StudentDashboard />} />
+              </Route>
 
-                {/* Protected routes */}
-                <Route element={<Layout />}>
-                  <Route path="/take-assessment" element={
-                    <PrivateRoute>
-                      <TakeAssessment />
-                    </PrivateRoute>
-                  } />
-                  <Route path="/dashboard" element={
-                    <PrivateRoute>
-                      <Dashboard />
-                    </PrivateRoute>
-                  } />
-                  <Route path="/student-profile" element={
-                    <PrivateRoute>
-                      <StudentProfile />
-                    </PrivateRoute>
-                  } />
-                </Route>
-
-                {/* Catch-all route */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Suspense>
-          </AppContainer>
-        </ProfileProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+              {/* Catch-all route */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </AppContainer>
+      </ProfileProvider>
+    </ThemeProvider>
   );
 };
+
+const AppContainer = styled.div`
+  min-height: 100vh;
+  background-color: ${({ theme }) => theme.colors.background};
+`;
 
 export default App;

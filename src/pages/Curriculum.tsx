@@ -1,103 +1,101 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import styled from 'styled-components';
-import { useAuth } from '../contexts/AuthContext';
-import { FcGoogle } from 'react-icons/fc';
-import { useNavigate } from 'react-router-dom';
-import Header from '../components/layout/Header';
+import React, { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { FcGoogle } from "react-icons/fc";
+import styled from "styled-components";
+import CourseCard from "../components/CourseCard";
 
-interface Subject {
-  id: number;
-  name: string;
-  courses: string[];
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+  level: string;
+  duration: string;
+  type: "Video Animated" | "Quiz" | "Mind Map";
+  category: string;
+  image?: string;
 }
 
-type GradeLevel = 'elementary' | 'middle' | 'high';
-
 const Curriculum: React.FC = () => {
-  const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('middle');
+  const [selectedGrade, setSelectedGrade] = useState<'elementary' | 'middle' | 'high'>('middle');
   const { loginWithGoogle } = useAuth();
-  const navigate = useNavigate();
   const [error, setError] = useState<string>('');
 
   const handleGoogleLogin = async (): Promise<void> => {
     try {
       setError('');
       await loginWithGoogle();
-      navigate('/dashboard');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');
       console.error('Login error:', error);
     }
   };
 
-  const subjects: Subject[] = [
+  const subjects: Course[] = [
     {
-      id: 1,
-      name: 'Mathematics',
-      courses: ['Algebra', 'Geometry', 'Calculus']
+      id: '1',
+      title: 'Mathematics',
+      description: 'Core mathematics curriculum covering algebra, geometry, and more.',
+      level: selectedGrade,
+      duration: '9 months',
+      type: 'Video Animated',
+      category: 'math'
     },
-    { id: 2, name: 'Science', courses: ['Biology', 'Chemistry', 'Physics'] },
-    { id: 3, name: 'Languages', courses: ['English', 'Spanish', 'French'] }
+    {
+      id: '2',
+      title: 'Science',
+      description: 'Comprehensive science program including biology, chemistry, and physics.',
+      level: selectedGrade,
+      duration: '9 months',
+      type: 'Video Animated',
+      category: 'science'
+    }
+    // Add more courses as needed
   ];
-
-  const gradeLevels: GradeLevel[] = ['elementary', 'middle', 'high'];
 
   return (
     <CurriculumContainer>
-      <Header />
-      <motion.h1 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        Our Curriculum
-      </motion.h1>
-      <SubjectGrid
-        as={motion.div}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-        {subjects.map((subject) => (
-          <SubjectCard key={subject.id}>
-            <h2>{subject.name}</h2>
-            <CourseList>
-              {subject.courses.map((course, index) => (
-                <CourseItem key={index}>{course}</CourseItem>
-              ))}
-            </CourseList>
-          </SubjectCard>
+      <Header>
+        <h1>Curriculum</h1>
+        <p>Explore our comprehensive learning programs tailored to each grade level.</p>
+      </Header>
+
+      <GradeSelectorContainer>
+        <GradeButton 
+          active={selectedGrade === 'elementary'} 
+          onClick={() => setSelectedGrade('elementary')}
+        >
+          Elementary School
+        </GradeButton>
+        <GradeButton 
+          active={selectedGrade === 'middle'} 
+          onClick={() => setSelectedGrade('middle')}
+        >
+          Middle School
+        </GradeButton>
+        <GradeButton 
+          active={selectedGrade === 'high'} 
+          onClick={() => setSelectedGrade('high')}
+        >
+          High School
+        </GradeButton>
+      </GradeSelectorContainer>
+
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+
+      <CoursesGrid>
+        {subjects.map((course) => (
+          <CourseCard key={course.id} {...course} />
         ))}
-      </SubjectGrid>
+      </CoursesGrid>
 
-      <CourseListing>
-        <h2>Courses by Grade Level</h2>
-        <GradeLevels>
-          {gradeLevels.map((grade) => (
-            <GradeButton 
-              key={grade}
-              isSelected={selectedGrade === grade}
-              onClick={() => setSelectedGrade(grade)}
-            >
-              {grade.charAt(0).toUpperCase() + grade.slice(1)}
-            </GradeButton>
-          ))}
-        </GradeLevels>
-        <CourseDetails>
-          <h3>{selectedGrade.charAt(0).toUpperCase() + selectedGrade.slice(1)} School</h3>
-          {/* Course details based on selected grade */}
-        </CourseDetails>
-      </CourseListing>
-
-      <LoginSection>
-        <h2>Login to Access More Features</h2>
-        {error && <ErrorMessage>{error}</ErrorMessage>}
+      <CTASection>
+        <h2>Ready to Start Learning?</h2>
+        <p>Join our platform to access the full curriculum and personalized learning paths.</p>
         <GoogleButton onClick={handleGoogleLogin}>
           <FcGoogle />
-          Sign in with Google
+          <span>Sign in with Google to Get Started</span>
         </GoogleButton>
-      </LoginSection>
+      </CTASection>
     </CurriculumContainer>
   );
 };
@@ -106,125 +104,102 @@ const CurriculumContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
-  min-height: 100vh;
 `;
 
-const SubjectGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin: 2rem 0;
-`;
+const Header = styled.div`
+  text-align: center;
+  margin-bottom: 3rem;
 
-const SubjectCard = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
-  
-  h2 {
+  h1 {
+    font-size: 2.5rem;
     color: var(--primary-color);
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    color: var(--text-color);
+    font-size: 1.1rem;
   }
 `;
 
-const CourseList = styled.ul`
-  list-style: none;
-  padding: 0;
-`;
-
-const CourseItem = styled.li`
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--background-alt);
-  color: var(--text-color);
-
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const CourseListing = styled.section`
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
-  margin: 2rem 0;
-
-  h2 {
-    color: var(--primary-color);
-    margin-bottom: 1.5rem;
-    text-align: center;
-  }
-`;
-
-const GradeLevels = styled.div`
+const GradeSelectorContainer = styled.div`
   display: flex;
   justify-content: center;
   gap: 1rem;
   margin-bottom: 2rem;
 `;
 
-const CourseDetails = styled.div`
-  h3 {
-    color: var(--primary-color);
-    margin-bottom: 1rem;
+interface GradeButtonProps {
+  active: boolean;
+}
+
+const GradeButton = styled.button<GradeButtonProps>`
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  background: ${props => props.active ? 'var(--primary-color)' : 'white'};
+  color: ${props => props.active ? 'white' : 'var(--text-color)'};
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+  &:hover {
+    background: ${props => props.active ? 'var(--primary-dark)' : '#f8f8f8'};
   }
 `;
 
-const LoginSection = styled.div`
+const CoursesGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+`;
+
+const CTASection = styled.div`
   text-align: center;
+  margin-top: 4rem;
   padding: 2rem;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
-  margin-top: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 
   h2 {
     color: var(--primary-color);
+    margin-bottom: 1rem;
+  }
+
+  p {
+    color: var(--text-color);
     margin-bottom: 1.5rem;
   }
 `;
 
 const GoogleButton = styled.button`
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  background-color: white;
-  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  color: var(--text-color);
   font-size: 1rem;
   cursor: pointer;
-  margin: 0 auto;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 
   &:hover {
-    background-color: #f8fafc;
+    background: #f8f8f8;
   }
 `;
 
 const ErrorMessage = styled.div`
   color: #dc2626;
-  margin-top: 1rem;
-  text-align: center;
-`;
-
-const GradeButton = styled.button<{ isSelected: boolean }>`
-  background: ${(props) => (props.isSelected ? '#007bff' : '#f8f9fa')};
-  color: ${(props) => (props.isSelected ? '#fff' : '#000')};
-  border: 1px solid #007bff;
+  background-color: #fee2e2;
+  padding: 0.75rem;
   border-radius: 4px;
-  padding: 0.5rem 1rem;
-  margin: 0 0.5rem;
-  cursor: pointer;
-  transition: background 0.3s;
-
-  &:hover {
-    background: #007bff;
-    color: #fff;
-  }
+  margin: 1rem 0;
+  text-align: center;
 `;
 
 export default Curriculum;

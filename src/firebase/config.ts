@@ -4,32 +4,16 @@ import {
   GoogleAuthProvider, 
   setPersistence, 
   browserLocalPersistence,
+  browserSessionPersistence,
   inMemoryPersistence,
-  connectAuthEmulator 
+  connectAuthEmulator,
+  useDeviceLanguage
 } from "firebase/auth";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
+import { getAnalytics } from "firebase/analytics";
 
-interface ImportMetaEnv {
-  VITE_FIREBASE_API_KEY: string;
-  VITE_FIREBASE_AUTH_DOMAIN: string;
-  VITE_FIREBASE_PROJECT_ID: string;
-  VITE_FIREBASE_STORAGE_BUCKET: string;
-  VITE_FIREBASE_MESSAGING_SENDER_ID: string;
-  VITE_FIREBASE_APP_ID: string;
-  VITE_FIREBASE_USE_EMULATOR?: string;
-  DEV?: boolean;
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}
-
-declare global {
-  interface ImportMeta {
-    readonly env: ImportMetaEnv;
-  }
-}
+// Environment variables are typed in src/env.d.ts
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -54,6 +38,10 @@ try {
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+const analytics = getAnalytics(app);
+
+// Enable device language support
+useDeviceLanguage(auth);
 
 // Configure Google Auth Provider with custom parameters
 const googleProvider = new GoogleAuthProvider();
@@ -76,10 +64,12 @@ if (import.meta.env.VITE_FIREBASE_USE_EMULATOR === 'true') {
 // Set auth persistence based on environment
 const initializeAuth = async () => {
   try {
-    // Use in-memory persistence for development to avoid issues with popup blocks
-    const persistenceType = import.meta.env.DEV ? inMemoryPersistence : browserLocalPersistence;
+    // Use in-memory persistence for development, session persistence for production
+    const persistenceType = import.meta.env.DEV 
+      ? inMemoryPersistence 
+      : browserSessionPersistence; // Changed to session persistence for better security
     await setPersistence(auth, persistenceType);
-    console.info(`✅ Firebase Auth persistence set to ${import.meta.env.DEV ? 'IN_MEMORY' : 'LOCAL'}`);
+    console.info(`✅ Firebase Auth persistence set to ${import.meta.env.DEV ? 'IN_MEMORY' : 'SESSION'}`);
   } catch (error) {
     console.error("❌ Error setting auth persistence:", error);
   }
@@ -88,4 +78,4 @@ const initializeAuth = async () => {
 // Initialize auth settings
 initializeAuth();
 
-export { app, auth, db, storage, googleProvider };
+export { app, auth, db, storage, analytics, googleProvider };

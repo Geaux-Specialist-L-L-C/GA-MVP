@@ -1,8 +1,13 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../common/LoadingSpinner';
 
-const PrivateRoute = () => {
+interface PrivateRouteProps {
+  children: React.ReactNode;
+}
+
+const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   const { currentUser, loading } = useAuth();
   const location = useLocation();
 
@@ -11,7 +16,7 @@ const PrivateRoute = () => {
   }
 
   return currentUser ? (
-    <Outlet />
+    children
   ) : (
     <Navigate to="/login" state={{ from: location }} replace />
   );

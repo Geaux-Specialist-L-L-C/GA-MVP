@@ -1,258 +1,329 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../../contexts/AuthContext';
-import styled from 'styled-components';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import styled from 'styled-components';
 import { FaGraduationCap, FaChartLine, FaBook } from 'react-icons/fa';
-import { FcGoogle } from 'react-icons/fc';
+import { useAuth } from '../../../contexts/AuthContext';
 import { getStudentProfile } from '../../../services/profileService';
-import type { Student } from '../../../types/student';
-
-// Remove or comment out the Vue component import until it's available
-// import LearningStyleInsights from '../../../vue-components/LearningStyleInsights';
-
-const DashboardContainer = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-`;
-
-const Header = styled.header`
-  text-align: center;
-  margin-bottom: 3rem;
-  
-  h1 {
-    font-size: 2.5rem;
-    color: var(--primary-color);
-    margin-bottom: 1rem;
-  }
-
-  p {
-    font-size: 1.2rem;
-    color: var(--text-color);
-  }
-`;
-
-const DashboardGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-`;
-
-const Card = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
-  h3 {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--primary-color);
-    margin-bottom: 1rem;
-    font-size: 1.25rem;
-  }
-`;
-
-const ProgressTracker = styled.div`
-  width: 100%;
-  min-height: 200px;
-  background: var(--background-light);
-  border-radius: 8px;
-  padding: 1rem;
-`;
-
-const ProgressItem = styled.div`
-  padding: 0.5rem;
-  border-bottom: 1px solid #eee;
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const ActivityList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
-
-const ActivityItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  background: #f8fafc;
-  border-radius: 6px;
-`;
-
-const EmptyState = styled.div`
-  text-align: center;
-  color: #64748b;
-  padding: 2rem;
-`;
-
-const GoogleLoginButton = styled.button`
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  background-color: white;
-  color: #333;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #f8fafc;
-  }
-
-  &:focus {
-    outline: none;
-    ring: 2px;
-    ring-offset: 2px;
-    ring-blue-500;
-  }
-`;
-
-const ErrorMessage = styled.div`
-  padding: 0.75rem;
-  margin-top: 1rem;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  text-align: center;
-  color: #dc2626;
-  background-color: #fee2e2;
-`;
+import { Student } from '../../../types/auth';
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
 
 interface StudentData extends Student {
-  recentActivities?: Array<{
-    id: string;
+  recentActivities: Array<{
+    id?: string;
     type: string;
     name: string;
     date: string;
   }>;
+  progress: Array<{
+    type: string;
+    value: number;
+  }>;
 }
 
 const StudentDashboard: React.FC = () => {
-  const { currentUser, loginWithGoogle } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [studentData, setStudentData] = useState<StudentData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    if (currentUser) {
-      const fetchData = async (): Promise<void> => {
-        try {
-          const studentProfile = await getStudentProfile(currentUser.uid);
-          if (studentProfile && studentProfile.id) {
-            setStudentData({
-              ...studentProfile,
-              recentActivities: [],
-              id: studentProfile.id,
-              name: studentProfile.name,
-              parentId: studentProfile.parentId,
-              hasTakenAssessment: studentProfile.hasTakenAssessment
-            });
-          }
-        } catch (err) {
-          console.error('Error fetching student profile:', err);
-          setError('Failed to load student data');
-        }
-      };
-      fetchData();
-    }
-  }, [currentUser]);
+    const fetchStudentData = async () => {
+      if (!id) {
+        setError('Student ID not found');
+        return;
+      }
 
-  const handleGoogleLogin = async (): Promise<void> => {
-    try {
-      setError('');
-      await loginWithGoogle();
-    } catch (err) {
-      setError('Login failed. Please try again.');
-      console.error('Login error:', err);
-    }
-  };
+      try {
+        const data = await getStudentProfile(id);
+        if (data) {
+          setStudentData({
+            ...data,
+            id: data.id || id,
+            recentActivities: [],
+            progress: []
+          } as StudentData);
+        } else {
+          setError('Student not found');
+        }
+      } catch (err) {
+        console.error('Error fetching student data:', err);
+        setError('Failed to load student data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <StyledLoadingContainer>
+        <LoadingSpinner />
+      </StyledLoadingContainer>
+    );
+  }
+
+  if (error) {
+    return <StyledErrorContainer>{error}</StyledErrorContainer>;
+  }
 
   return (
-    <DashboardContainer>
+    <StyledDashboardContainer>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <Header>
-          <h1>Student Dashboard</h1>
-          <p>Track your progress and learning journey</p>
-        </Header>
+        <StyledHeader>
+          <StyledHeaderLeft>
+            <StyledBackButton onClick={() => navigate('/dashboard')}>
+              ← Back to Parent Dashboard
+            </StyledBackButton>
+            <h1>{studentData?.name}'s Dashboard</h1>
+          </StyledHeaderLeft>
+          {studentData?.hasTakenAssessment ? (
+            <StyledAssessmentBadge $complete>
+              Assessment Complete
+            </StyledAssessmentBadge>
+          ) : (
+            <StyledAssessmentBadge>
+              <StyledAssessmentButton onClick={() => navigate('/take-assessment')}>
+                Take Assessment
+              </StyledAssessmentButton>
+            </StyledAssessmentBadge>
+          )}
+        </StyledHeader>
 
-        <DashboardGrid>
-          <Card>
-            <h3><FaGraduationCap /> Learning Style</h3>
-            {studentData ? (
-              // <LearningStyleInsights learningStyle={studentData.learningStyle} />
-              <p>{studentData.learningStyle || "No learning style data available."}</p>
-            ) : (
-              <p>Loading...</p>
-            )}
-          </Card>
-
-          <Card>
-            <h3><FaChartLine /> Progress</h3>
-            <ProgressTracker>
-              {studentData ? (
-                <div>
-                  {Array.isArray(studentData.progress) ? (studentData.progress && studentData.progress.length > 0 ? (
-                    studentData.progress.map((item, index) => (
-                      <ProgressItem key={index}>
-                        {typeof item === 'string' ? item : `${item.type}: ${item.value}`}
-                      </ProgressItem>
-                    ))
-                  ) : (
-                    <p>No progress data available.</p>
-                  )) : (
-                    <p>No progress data available.</p>
-                  )}
-                </div>
+        <StyledDashboardGrid>
+          <StyledCard>
+            <StyledCardHeader>
+              <FaGraduationCap />
+              <h3>Learning Style</h3>
+            </StyledCardHeader>
+            <StyledCardContent>
+              {studentData?.learningStyle ? (
+                <StyledLearningStyleInfo>
+                  {studentData.learningStyle}
+                </StyledLearningStyleInfo>
               ) : (
-                <p>Loading...</p>
+                <StyledEmptyState>
+                  Complete the assessment to discover your learning style
+                </StyledEmptyState>
               )}
-            </ProgressTracker>
-          </Card>
+            </StyledCardContent>
+          </StyledCard>
 
-          <Card>
-            <h3><FaBook /> Recent Activities</h3>
-            <ActivityList>
-              {studentData?.recentActivities && studentData.recentActivities.length > 0 ? (
-                studentData.recentActivities.map((activity, index) => (
-                  <ActivityItem key={activity.id || index}>
-                    <ActivityIcon />
-                    <ActivityContent>
-                      <ActivityName>{activity.name}</ActivityName>
-                      <ActivityDate>{activity.date}</ActivityDate>
-                    </ActivityContent>
-                  </ActivityItem>
-                ))
+          <StyledCard>
+            <StyledCardHeader>
+              <FaChartLine />
+              <h3>Progress</h3>
+            </StyledCardHeader>
+            <StyledCardContent>
+              {studentData?.progress?.length ? (
+                <StyledProgressGrid>
+                  {studentData.progress.map((item, index) => (
+                    <StyledProgressItem key={index}>
+                      <StyledProgressLabel>{item.type}</StyledProgressLabel>
+                      <StyledProgressBar>
+                        <StyledProgressFill $width={item.value} />
+                      </StyledProgressBar>
+                      <StyledProgressValue>{item.value}%</StyledProgressValue>
+                    </StyledProgressItem>
+                  ))}
+                </StyledProgressGrid>
               ) : (
-                <EmptyState>No recent activities</EmptyState>
+                <StyledEmptyState>No progress data available yet</StyledEmptyState>
               )}
-            </ActivityList>
-          </Card>
-        </DashboardGrid>
+            </StyledCardContent>
+          </StyledCard>
 
-        {!currentUser && (
-          <GoogleLoginButton onClick={handleGoogleLogin}>
-            <FcGoogle className="text-xl" />
-            Sign in with Google
-          </GoogleLoginButton>
-        )}
-        {error && <ErrorMessage>{error}</ErrorMessage>}
+          <StyledCard>
+            <StyledCardHeader>
+              <FaBook />
+              <h3>Recent Activities</h3>
+            </StyledCardHeader>
+            <StyledCardContent>
+              {studentData?.recentActivities?.length ? (
+                <StyledActivityList>
+                  {studentData.recentActivities.map((activity, index) => (
+                    <StyledActivityItem key={activity.id || index}>
+                      <StyledActivityName>{activity.name}</StyledActivityName>
+                      <StyledActivityDate>{activity.date}</StyledActivityDate>
+                    </StyledActivityItem>
+                  ))}
+                </StyledActivityList>
+              ) : (
+                <StyledEmptyState>No recent activities</StyledEmptyState>
+              )}
+            </StyledCardContent>
+          </StyledCard>
+        </StyledDashboardGrid>
       </motion.div>
-    </DashboardContainer>
+    </StyledDashboardContainer>
   );
 };
+
+// Styled Components
+const StyledDashboardContainer = styled.div`
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+`;
+
+const StyledLoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+`;
+
+const StyledErrorContainer = styled.div`
+  text-align: center;
+  color: red;
+  padding: 2rem;
+`;
+
+const StyledHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+`;
+
+const StyledHeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+`;
+
+const StyledBackButton = styled.button`
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const StyledAssessmentBadge = styled.div<{ $complete?: boolean }>`
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  background-color: ${props => props.$complete ? '#4CAF50' : '#FFF'};
+  color: ${props => props.$complete ? '#FFF' : 'inherit'};
+  border: ${props => props.$complete ? 'none' : '1px solid #ddd'};
+`;
+
+const StyledAssessmentButton = styled.button`
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const StyledDashboardGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+`;
+
+const StyledCard = styled.div`
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+`;
+
+const StyledCardHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+  
+  h3 {
+    margin: 0;
+  }
+`;
+
+const StyledCardContent = styled.div`
+  min-height: 200px;
+`;
+
+const StyledEmptyState = styled.div`
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+`;
+
+const StyledLearningStyleInfo = styled.div`
+  font-size: 1.2rem;
+  color: var(--primary-color);
+  text-align: center;
+  padding: 1rem;
+`;
+
+const StyledProgressGrid = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const StyledProgressItem = styled.div``;
+
+const StyledProgressLabel = styled.div`
+  margin-bottom: 0.5rem;
+`;
+
+const StyledProgressBar = styled.div`
+  background: #f0f0f0;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+`;
+
+const StyledProgressFill = styled.div<{ $width: number }>`
+  background: var(--primary-color);
+  height: 100%;
+  width: ${props => props.$width}%;
+  transition: width 0.3s ease;
+`;
+
+const StyledProgressValue = styled.div`
+  text-align: right;
+  font-size: 0.875rem;
+  color: #666;
+  margin-top: 0.25rem;
+`;
+
+const StyledActivityList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const StyledActivityItem = styled.div`
+  padding: 0.75rem;
+  border-radius: 4px;
+  background: #f8f9fa;
+`;
+
+const StyledActivityName = styled.div`
+  font-weight: 500;
+`;
+
+const StyledActivityDate = styled.div`
+  font-size: 0.875rem;
+  color: #666;
+`;
 
 export default StudentDashboard;
