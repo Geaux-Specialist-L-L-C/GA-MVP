@@ -1,24 +1,21 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import vue from '@vitejs/plugin-vue';
+import { resolve } from 'path';
 
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     vue() // Add Vue plugin
   ],
-  resolve: {
-    alias: {
-      '@': '/src'
-    }
-  },
   server: {
     port: 5173,
     strictPort: true,
     cors: true,
     headers: {
-      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
-      "Cross-Origin-Embedder-Policy": "require-corp",
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      'Cross-Origin-Embedder-Policy': 'require-corp'
     },
     proxy: {
       '/api': {
@@ -34,6 +31,11 @@ export default defineConfig({
       clientPort: 5173
     }
   },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src')
+    }
+  },
   define: {
     __VITE_FIREBASE_CONFIG__: {
       apiKey: JSON.stringify(process.env.VITE_FIREBASE_API_KEY),
@@ -45,5 +47,15 @@ export default defineConfig({
       measurementId: JSON.stringify(process.env.VITE_FIREBASE_MEASUREMENT_ID)
     },
     'process.env': {}
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage']
+        }
+      }
+    }
   }
 });

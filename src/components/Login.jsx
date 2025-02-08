@@ -1,102 +1,119 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import styled from 'styled-components';
-import { FcGoogle } from "react-icons/fc";
+import { FcGoogle } from 'react-icons/fc';
+import Button from './common/Button';
 
 const Login = () => {
-  const navigate = useNavigate();
-  const { user, login, loginWithGoogle } = useAuth(); // Remove googleLogin
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const emailRef = useRef();
-  const passwordRef = useRef();
+  
+  const { login, loginWithGoogle, currentUser, authError } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get the redirect path from location state or default to dashboard
+  const from = location.state?.from?.pathname || '/dashboard';
 
   useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
+    // If user is already logged in, redirect them
+    if (currentUser) {
+      console.log("👤 User already logged in, redirecting to:", from);
+      navigate(from, { replace: true });
     }
-  }, [user, navigate]);
+  }, [currentUser, navigate, from]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (loading) return;
-    
     try {
       setError('');
       setLoading(true);
-      await login(emailRef.current.value, passwordRef.current.value);
-      navigate('/dashboard');
+      await login(formData.email, formData.password);
+      navigate(from, { replace: true });
     } catch (err) {
-      setError('Failed to sign in. Please check your credentials.');
       console.error('Login error:', err);
+      setError(err.message || 'Failed to login');
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
-    if (loading) return;
-    
-    setError('');
-    setLoading(true);
-    
     try {
+      setError('');
+      setLoading(true);
       await loginWithGoogle();
-      navigate('/dashboard');
+      // No need to navigate here as it's handled by the useEffect above
     } catch (err) {
-      if (err.code !== 'auth/popup-closed-by-user') {
-        setError('Failed to sign in with Google. Please try again.');
-        console.error('Google sign in error:', err);
-      }
+      console.error('Google login error:', err);
+      setError(err.message || 'Failed to sign in with Google');
     } finally {
       setLoading(false);
     }
   };
 
+  // Show error from auth context if present
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+    }
+  }, [authError]);
+
   return (
     <LoginContainer>
       <LoginCard>
-        <LoginHeader>Login to Your Account</LoginHeader>
+        <h2>Login to Your Account</h2>
         {error && <ErrorMessage>{error}</ErrorMessage>}
-        <LoginForm onSubmit={handleSubmit}>
+        
+        <Form onSubmit={handleSubmit}>
           <FormGroup>
-            <FormLabel htmlFor="email">Email</FormLabel>
-            <FormInput
+            <Label htmlFor="email">Email</Label>
+            <Input
               type="email"
               id="email"
-              ref={emailRef}
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
+              disabled={loading}
             />
           </FormGroup>
+
           <FormGroup>
-            <FormLabel htmlFor="password">Password</FormLabel>
-            <FormInput
+            <Label htmlFor="password">Password</Label>
+            <Input
               type="password"
               id="password"
-              ref={passwordRef}
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
+              disabled={loading}
             />
           </FormGroup>
-          <SubmitButton disabled={loading} type="submit">
-            Login
-          </SubmitButton>
-        </LoginForm>
-        
-        <Divider>or</Divider>
-        
-        <GoogleButton onClick={handleGoogleLogin}>
+
+          <LoginButton type="submit" disabled={loading}>
+            {loading ? 'Logging in...' : 'Login'}
+          </LoginButton>
+        </Form>
+
+        <Divider>
+          <span>Or</span>
+        </Divider>
+
+        <GoogleButton onClick={handleGoogleLogin} disabled={loading}>
           <FcGoogle />
-          Sign in with Google
+          <span>Continue with Google</span>
         </GoogleButton>
-        
-        <ForgotPassword to="/forgot-password">
-          Forgot Password?
-        </ForgotPassword>
-        
+
         <SignupPrompt>
-          Need an account? <SignupLink to="/signup">Sign Up</SignupLink>
+          Don't have an account?{' '}
+          <Button to="/signup" $variant="secondary">
+            Sign Up
+          </Button>
         </SignupPrompt>
       </LoginCard>
     </LoginContainer>
@@ -104,12 +121,12 @@ const Login = () => {
 };
 
 const LoginContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 2rem;
-  background: var(--background);
+  background: var(--background-color);
 `;
 
 const LoginCard = styled.div`
@@ -119,15 +136,15 @@ const LoginCard = styled.div`
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 400px;
+
+  h2 {
+    text-align: center;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+  }
 `;
 
-const LoginHeader = styled.h2`
-  text-align: center;
-  color: var(--primary-color);
-  margin-bottom: 1.5rem;
-`;
-
-const LoginForm = styled.form`
+const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -139,14 +156,12 @@ const FormGroup = styled.div`
   gap: 0.5rem;
 `;
 
-const FormLabel = styled.label`
+const Label = styled.label`
   font-weight: 500;
   color: var(--text-color);
-  margin-bottom: 0.5rem;
-  font-size: 1rem;
 `;
 
-const FormInput = styled.input`
+const Input = styled.input`
   padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
@@ -155,27 +170,27 @@ const FormInput = styled.input`
   &:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
   }
 
-  &::placeholder {
-    color: #a0aec0;
+  &:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
   }
 `;
 
-const SubmitButton = styled.button`
+const LoginButton = styled.button`
+  width: 100%;
+  padding: 0.75rem;
   background: var(--primary-color);
   color: white;
-  padding: 0.75rem;
   border: none;
   border-radius: 4px;
   font-size: 1rem;
-  font-weight: 500;
   cursor: pointer;
   transition: background 0.2s;
 
-  &:hover {
-    background: var(--secondary-color);
+  &:hover:not(:disabled) {
+    background: var(--primary-dark);
   }
 
   &:disabled {
@@ -184,84 +199,66 @@ const SubmitButton = styled.button`
   }
 `;
 
-const GoogleButton = styled.button`
-  width: 100%;
+const Divider = styled.div`
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  background: white;
-  color: #333;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s;
-
-  &:hover {
-    background: #f8fafc;
-  }
-`;
-
-const Divider = styled.div`
   text-align: center;
-  margin: 1rem 0;
-  position: relative;
+  margin: 1.5rem 0;
 
   &::before,
   &::after {
     content: '';
-    position: absolute;
-    top: 50%;
-    width: 45%;
-    height: 1px;
-    background: #ddd;
+    flex: 1;
+    border-bottom: 1px solid #ddd;
   }
 
-  &::before {
-    left: 0;
-  }
-
-  &::after {
-    right: 0;
+  span {
+    padding: 0 10px;
+    color: #666;
+    font-size: 0.9rem;
   }
 `;
 
-const ForgotPassword = styled(Link)`
-  display: block;
-  text-align: center;
-  color: var(--primary-color);
-  text-decoration: none;
-  margin: 1rem 0;
+const GoogleButton = styled.button`
+  width: 100%;
+  padding: 0.75rem;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
 
-  &:hover {
-    text-decoration: underline;
+  &:hover:not(:disabled) {
+    background: #f8f8f8;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  svg {
+    font-size: 1.5rem;
   }
 `;
 
 const SignupPrompt = styled.div`
   text-align: center;
-  margin-top: 1rem;
-`;
-
-const SignupLink = styled(Link)`
-  color: var(--primary-color);
-  text-decoration: none;
-  font-weight: 500;
-
-  &:hover {
-    text-decoration: underline;
-  }
+  margin-top: 1.5rem;
+  color: var(--text-color);
 `;
 
 const ErrorMessage = styled.div`
-  background: #fee2e2;
   color: #dc2626;
+  background: #fee2e2;
   padding: 0.75rem;
   border-radius: 4px;
   margin-bottom: 1rem;
-  text-align: center;
+  font-size: 0.875rem;
 `;
 
 export default Login;

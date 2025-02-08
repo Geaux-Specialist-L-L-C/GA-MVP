@@ -18,18 +18,21 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        if (currentUser?.uid) {
-          console.log('🔄 Fetching user data for:', currentUser.uid);
-          
-          setUserData({
-            name: currentUser.displayName || currentUser.email,
-            lastLogin: currentUser.metadata?.lastSignInTime || 'N/A',
-          });
-
-          const profile = await getParentProfile(currentUser.uid);
-          console.log('📋 Parent profile loaded:', profile);
-          setParentProfile(profile);
+        if (!currentUser?.uid) {
+          navigate('/login');
+          return;
         }
+
+        console.log('🔄 Fetching user data for:', currentUser.uid);
+        
+        setUserData({
+          name: currentUser.displayName || currentUser.email,
+          lastLogin: currentUser.metadata?.lastSignInTime || 'N/A',
+        });
+
+        const profile = await getParentProfile(currentUser.uid);
+        console.log('📋 Parent profile loaded:', profile);
+        setParentProfile(profile);
       } catch (err) {
         console.error('❌ Error fetching user data:', err);
         setError('Failed to fetch user data');
@@ -39,7 +42,7 @@ const Dashboard = () => {
     };
 
     fetchUserData();
-  }, [currentUser?.uid]);
+  }, [currentUser, navigate]);
 
   const handleLogout = async () => {
     try {
@@ -51,7 +54,13 @@ const Dashboard = () => {
   };
 
   if (loading) {
-    return <DashboardContainer>Loading user data...</DashboardContainer>;
+    return (
+      <DashboardContainer>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </DashboardContainer>
+    );
   }
 
   if (error) {
@@ -169,7 +178,7 @@ const StudentsList = styled.div`
   }
 `;
 
-const StudentCard = styled.div`
+const StudentCardContainer = styled.div`
   background: white;
   padding: 1rem;
   margin: 0.5rem 0;

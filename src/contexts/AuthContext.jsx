@@ -3,7 +3,8 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
-  signOut,
+  signInWithRedirect,
+  getRedirectResult,
   onAuthStateChanged,
   getIdToken
 } from 'firebase/auth';
@@ -12,21 +13,59 @@ import { getParentProfile } from '../services/profileService';
 
 const AuthContext = createContext();
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
 
+  // Handle redirect result when component mounts
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        const token = await getIdToken(firebaseUser, true);
-        localStorage.setItem('token', token);
-        setUser(firebaseUser);
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          const token = await getIdToken(result.user, true);
+          localStorage.setItem('token', token);
+          
+          // Get or create parent profile
+          await getParentProfile(result.user.uid);
+          setCurrentUser(result.user);
+          console.log("✅ Redirect sign-in successful");
+        }
+      } catch (error) {
+        console.error("❌ Redirect sign-in error:", error);
+        setAuthError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    handleRedirectResult();
+  }, []);
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log("🔄 Auth state changed:", user ? "User logged in" : "User logged out");
+      if (user) {
+        try {
+          const token = await getIdToken(user, true);
+          localStorage.setItem('token', token);
+          setCurrentUser(user);
+        } catch (error) {
+          console.error("❌ Token refresh error:", error);
+        }
       } else {
         localStorage.removeItem('token');
-        setUser(null);
+        setCurrentUser(null);
       }
       setLoading(false);
     });
@@ -34,69 +73,92 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
-  const login = async (email, password) => {
+  const loginWithGoogle = async () => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const token = await getIdToken(userCredential.user, true);
-      localStorage.setItem('token', token);
-      return userCredential;
+      setAuthError(null);
+      console.log("🔄 Starting Google sign-in process...");
+      
+      // Try popup first
+      const result = await signInWithPopup(auth, googleProvider);
+      
+      if (result?.user) {
+        const token = await getIdToken(result.user, true);
+        localStorage.setItem('token', token);
+        await getParentProfile(result.user.uid);
+        setCurrentUser(result.user);
+        console.log("✅ Popup sign-in successful");
+        return { user: result.user };
+      }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("❌ Popup sign-in error:", error);
+      
+      // If popup fails, try redirect
+      if (error.code === 'auth/popup-blocked' || 
+          error.code === 'auth/popup-closed-by-user' ||
+          error.code === 'auth/cancelled-popup-request') {
+        try {
+          console.log("🔄 Switching to redirect sign-in...");
+          await signInWithRedirect(auth, googleProvider);
+          // The redirect result will be handled by the useEffect above
+          return;
+        } catch (redirectError) {
+          console.error("❌ Redirect sign-in error:", redirectError);
+          setAuthError(redirectError.message);
+          throw redirectError;
+        }
+      }
+      
+      setAuthError(error.message);
       throw error;
     }
   };
 
-  const loginWithGoogle = async () => {
+  const login = async (email, password) => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      setAuthError(null);
+      const result = await signInWithEmailAndPassword(auth, email, password);
       const token = await getIdToken(result.user, true);
-      localStorage.setItem("token", token);
-
-      const parentProfile = await getParentProfile(result.user.uid);
-
-      console.log("✅ Google Sign-in Successful:", result.user);
-      return { result, parentProfile };
-
+      localStorage.setItem('token', token);
+      setCurrentUser(result.user);
+      return result;
     } catch (error) {
-      console.error("❌ Google login error:", error);
-
-      if (error.code === "auth/popup-closed-by-user") {
-        alert("Google sign-in was closed before completion. Please try again.");
-      } else if (error.code === "auth/cancelled-popup-request") {
-        console.warn("A previous sign-in popup was closed. Trying again...");
-      } else {
-        alert("Google sign-in failed. Please check your Firebase configuration.");
-      }
-
+      console.error("❌ Email/Password login error:", error);
+      setAuthError(error.message);
       throw error;
     }
   };
 
   const signup = async (email, password) => {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const token = await getIdToken(userCredential.user, true);
+      setAuthError(null);
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const token = await getIdToken(result.user, true);
       localStorage.setItem('token', token);
-      return userCredential;
+      setCurrentUser(result.user);
+      return result;
     } catch (error) {
-      console.error("Signup error:", error);
+      console.error("❌ Signup error:", error);
+      setAuthError(error.message);
       throw error;
     }
   };
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      await auth.signOut();
       localStorage.removeItem('token');
-      setUser(null);
+      setCurrentUser(null);
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("❌ Logout error:", error);
+      setAuthError(error.message);
       throw error;
     }
   };
 
   const value = {
-    user,
+    currentUser,
+    loading,
+    authError,
     login,
     loginWithGoogle,
     signup,
@@ -105,7 +167,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
+import Button from '../common/Button';
 
 const Header = () => {
   const location = useLocation();
@@ -32,8 +33,8 @@ const Header = () => {
       </NavWrapper>
 
       <AuthButtons>
-        <StyledButton to="/login">Login</StyledButton>
-        <StyledButton to="/signup" $primary>Sign Up</StyledButton>
+        <Button to="/login" $variant="secondary">Login</Button>
+        <Button to="/signup" $variant="primary">Sign Up</Button>
       </AuthButtons>
     </StyledHeaderContainer>
   );
@@ -90,22 +91,6 @@ const AuthButtons = styled.div`
   display: flex;
   gap: 1rem;
   margin-right: 1.5rem;
-`;
-
-const StyledButton = styled(Link)<{ $primary?: boolean }>`
-  padding: 0.5rem 1rem;
-  color: white;
-  background: ${(props) => (props.$primary ? "gold" : "transparent")};
-  border: 2px solid gold;
-  border-radius: 4px;
-  text-decoration: none;
-  font-weight: bold;
-  transition: all 0.3s ease-in-out;
-
-  &:hover {
-    background: white;
-    color: black;
-  }
 `;
 
 export const PageContainer = styled.main`

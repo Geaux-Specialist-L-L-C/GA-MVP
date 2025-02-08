@@ -57,7 +57,6 @@ const Home = () => {
         </HeroContent>
       </HeroSection>
 
-      {/* Features Section with Flip Effect */}
       <FeaturesGrid>
         {features.map((feature, index) => (
           <FlipCard key={index} icon={feature.icon} title={feature.title} description={feature.description} />
@@ -67,12 +66,11 @@ const Home = () => {
       <CallToAction>
         <h2>Ready to Start Your Learning Journey?</h2>
         <p>Join Geaux Academy today and discover your unique learning style.</p>
-        <Link to="/signup">
-          <Button variant="primary">Get Started</Button>
-        </Link>
+        <Button to="/signup" $variant="primary">Get Started</Button>
       </CallToAction>
 
       <GoogleLoginSection>
+        <p>Sign in to unlock more features!</p>
         <GoogleLoginButton onClick={handleGoogleLogin}>
           <FcGoogle /> Sign in with Google
         </GoogleLoginButton>

@@ -14,8 +14,9 @@ interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
   to?: string;  // ✅ NEW: Allows navigation
-  variant?: 'primary' | 'secondary';
+  $variant?: 'primary' | 'secondary';
   style?: React.CSSProperties;
+  disabled?: boolean;
 }
 
 /**
@@ -28,19 +29,33 @@ interface ButtonProps {
  *   </Button>
  * )
  */
-const Button: React.FC<ButtonProps> = ({ children, onClick, to, variant = 'primary', style }) => {
+const Button: React.FC<ButtonProps> = ({ 
+  children, 
+  onClick, 
+  to, 
+  $variant = 'primary', 
+  style,
+  disabled = false 
+}) => {
   const navigate = useNavigate();
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    if (disabled) return;
+    
     if (to) {
-      navigate(to); // ✅ Navigate to specified route
+      navigate(to);
     } else if (onClick) {
-      onClick(); // ✅ Call custom onClick if provided
+      onClick();
     }
   };
 
   return (
-    <StyledButton onClick={handleClick} variant={variant} style={style}>
+    <StyledButton 
+      onClick={handleClick} 
+      $variant={$variant} 
+      style={style}
+      disabled={disabled}
+    >
       {children}
     </StyledButton>
   );
@@ -51,30 +66,36 @@ export default Button;
 /* ------------------------------------------
    Styled Components
 ------------------------------------------ */
-const StyledButton = styled.button<{ variant: 'primary' | 'secondary' }>`
+const StyledButton = styled.button<{ $variant: 'primary' | 'secondary'; disabled?: boolean }>`
   padding: 0.75rem 1.5rem;
-  border: none;
   border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  color: #ffffff;
+  font-weight: 600;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  transition: all 0.2s ease-in-out;
+  border: none;
+  
+  ${props => props.$variant === 'primary' && `
+    background: var(--primary-color);
+    color: white;
+    
+    &:hover:not(:disabled) {
+      background: var(--primary-dark);
+    }
+  `}
+  
+  ${props => props.$variant === 'secondary' && `
+    background: transparent;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    
+    &:hover:not(:disabled) {
+      background: var(--primary-color);
+      color: white;
+    }
+  `}
 
-  /* Base Styles */
-  background-color: ${({ variant }) =>
-    variant === 'primary' ? 'var(--primary-color)' : 'var(--secondary-color)'};
-
-  /* Hover Modifiers */
-  &:hover {
-    background-color: ${({ variant }) =>
-      variant === 'primary'
-        ? 'var(--primary-color-dark)'
-        : 'var(--secondary-color-dark)'};
-  }
-
-  /* Media Queries */
-  @media (max-width: 768px) {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
+  &:disabled {
+    opacity: 0.7;
+    background: #ccc;
   }
 `;

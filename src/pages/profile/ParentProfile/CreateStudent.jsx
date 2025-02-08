@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { addStudentProfile } from '../../../services/profileService';
@@ -6,56 +6,170 @@ import { useAuth } from '../../../contexts/AuthContext';
 
 const CreateStudent = () => {
   const [studentName, setStudentName] = useState('');
-  const [gradeLevel, setGradeLevel] = useState('');
-  const { user } = useAuth();
+  const [grade, setGrade] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) {
+    if (!currentUser) {
       navigate('/login');
       return;
     }
 
-    const newStudent = { 
-      name: studentName, 
-      grade: gradeLevel, 
-      parentId: user.uid,
-      hasTakenAssessment: false
-    };
+    setLoading(true);
+    setError('');
 
-    await addStudentProfile(user.uid, newStudent);
-    navigate('/parent-dashboard');
+    try {
+      const newStudent = { 
+        name: studentName, 
+        grade: grade, 
+        parentId: currentUser.uid,
+        hasTakenAssessment: false
+      };
+
+      await addStudentProfile(currentUser.uid, newStudent);
+      setStudentName('');
+      setGrade('');
+      navigate('/dashboard');
+    } catch (err) {
+      setError('Failed to create student profile. Please try again.');
+      console.error('Error creating student:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Container>
-      <h1>Add a New Student</h1>
-      <form onSubmit={handleSubmit}>
-        <label>Student Name:</label>
-        <input type="text" value={studentName} onChange={(e) => setStudentName(e.target.value)} required />
+    <FormContainer>
+      <h2>Add a New Student</h2>
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+      
+      <Form onSubmit={handleSubmit}>
+        <FormGroup>
+          <Label>
+            Student Name:
+            <Input
+              type="text"
+              value={studentName}
+              onChange={(e) => setStudentName(e.target.value)}
+              placeholder="Enter student's name"
+              required
+            />
+          </Label>
+        </FormGroup>
 
-        <label>Grade Level:</label>
-        <select value={gradeLevel} onChange={(e) => setGradeLevel(e.target.value)} required>
-          <option value="">Select Grade</option>
-          <option value="1">Grade 1</option>
-          <option value="2">Grade 2</option>
-          <option value="3">Grade 3</option>
-        </select>
+        <FormGroup>
+          <Label>
+            Grade Level:
+            <Select 
+              value={grade} 
+              onChange={(e) => setGrade(e.target.value)}
+              required
+            >
+              <option value="">Select Grade</option>
+              <option value="K">Kindergarten</option>
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i + 1} value={String(i + 1)}>
+                  Grade {i + 1}
+                </option>
+              ))}
+            </Select>
+          </Label>
+        </FormGroup>
 
-        <button type="submit">Save Profile</button>
-      </form>
-    </Container>
+        <SubmitButton type="submit" disabled={loading}>
+          {loading ? 'Creating Profile...' : 'Save Profile'}
+        </SubmitButton>
+      </Form>
+    </FormContainer>
   );
 };
 
-export default CreateStudent;
-
-const Container = styled.div`
+const FormContainer = styled.div`
   max-width: 500px;
-  margin: auto;
+  margin: 2rem auto;
   padding: 2rem;
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const Label = styled.label`
+  font-weight: 500;
+  color: var(--text-color);
+`;
+
+const Input = styled.input`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+  background: white;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+`;
+
+const SubmitButton = styled.button`
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover:not(:disabled) {
+    background: var(--primary-dark);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: #dc2626;
+  background: #fee2e2;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+`;
+
+export default CreateStudent;

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { FaBook, FaHeadphones, FaEye, FaRunning, FaBrain, FaUsers } from "react-icons/fa";
 import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/layout/Header";
+import Button from "../components/common/Button";
 
 const LearningStyles = () => {
   const { loginWithGoogle } = useAuth();
@@ -51,9 +52,9 @@ const LearningStyles = () => {
 
           <CTASection>
             <h2>Want to know your learning style?</h2>
-            <StyledButton onClick={() => navigate('/take-assessment')}>
+            <Button to='/take-assessment' $variant="primary">
               Take the Assessment
-            </StyledButton>
+            </Button>
           </CTASection>
 
           <GoogleLoginSection>
