@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { getStudentProfile, updateStudentAssessmentStatus } from "../services/profileService";
 import type { Student } from '../types/student';
 import styled from 'styled-components';
+import LearningStyleChat from '../components/chat/LearningStyleChat';
 
 const TakeAssessment: React.FC = () => {
   const { currentUser } = useAuth();
@@ -78,8 +79,8 @@ const TakeAssessment: React.FC = () => {
       </Header>
 
       <ContentSection>
-        <p>Answer the questions below to determine the best learning style.</p>
-        {/* Add assessment questions here */}
+        <p>Chat with our AI assistant to help determine your learning style. The assistant will ask you questions and analyze your responses to identify the learning style that best suits you.</p>
+        <LearningStyleChat />
       </ContentSection>
 
       <ActionSection>
