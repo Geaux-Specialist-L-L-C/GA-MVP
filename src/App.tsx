@@ -1,20 +1,30 @@
 import React, { Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
 import { ThemeProvider } from 'styled-components';
 import theme from './theme/theme';
 import LoadingSpinner from './components/common/LoadingSpinner';
-import AuthRoute from '../AuthRoute';
+import Layout from './components/layout/Layout';
 import Login from './pages/Login';
 import Dashboard from './components/dashboard/Dashboard';
 import { ProfileProvider } from './contexts/ProfileContext';
-import Layout from './components/Layout';
+import Home from './pages/Home';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import Features from './pages/Features';
+import LearningStyles from './pages/LearningStyles';
+import LearningPlan from './pages/LearningPlan';
+import NotFound from './pages/NotFound';
+import PrivateRoute from './components/auth/PrivateRoute';
+import './App.css';
 
-// Lazy load other components
+// Lazy load components
 const SignUp = React.lazy(() => import('./components/auth/SignUp'));
 const TakeAssessment = React.lazy(() => import('./pages/TakeAssessment'));
 const StudentProfile = React.lazy(() => import('./pages/profile/StudentProfile/StudentProfile'));
 const StudentDashboard = React.lazy(() => import('./pages/profile/StudentProfile/StudentDashboard'));
+const LearningStyleChat = React.lazy(() => import('./components/chat/LearningStyleChat'));
+const ParentDashboard = React.lazy(() => import('./pages/profile/ParentProfile/ParentDashboard'));
 
 const App: React.FC = () => {
   return (
@@ -23,31 +33,29 @@ const App: React.FC = () => {
         <AppContainer>
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              
-              {/* Auth routes */}
-              <Route path="/login" element={
-                <AuthRoute>
-                  <Login />
-                </AuthRoute>
-              } />
-              <Route path="/signup" element={
-                <AuthRoute>
-                  <SignUp />
-                </AuthRoute>
-              } />
-
-              {/* Protected routes */}
               <Route element={<Layout />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/take-assessment" element={<TakeAssessment />} />
-                <Route path="/student-profile" element={<StudentProfile />} />
-                <Route path="/student-dashboard/:id" element={<StudentDashboard />} />
-              </Route>
+                {/* Public Routes */}
+                <Route path="/" element={<Home />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/learning-styles" element={<LearningStyles />} />
+                
+                {/* Protected Routes */}
+                <Route element={<PrivateRoute />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/parent-dashboard" element={<ParentDashboard />} />
+                  <Route path="/student-dashboard/:id" element={<StudentDashboard />} />
+                  <Route path="/student-profile/:id" element={<StudentProfile />} />
+                  <Route path="/learning-plan" element={<LearningPlan />} />
+                  <Route path="/assessment/:studentId" element={<TakeAssessment />} />
+                  <Route path="/learning-style-chat/:studentId" element={<LearningStyleChat />} />
+                </Route>
 
-              {/* Catch-all route */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
             </Routes>
           </Suspense>
         </AppContainer>

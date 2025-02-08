@@ -1,26 +1,15 @@
 /src/components/features/learning/LearningStyleInsightsWrapper.tsx
 
-import React, { useEffect, useRef } from 'react';
-import { createApp } from 'vue';
+import React from 'react';
+import VueWrapper from '../vue/VueWrapper';
 import LearningStyleInsights from './LearningStyleInsights.vue';
 
 interface LearningStyleInsightsWrapperProps {
-  // Add any props if needed
+  studentData?: any; // Add proper typing based on your Vue component props
 }
 
-const LearningStyleInsightsWrapper: React.FC<LearningStyleInsightsWrapperProps> = () => {
-  const vueContainer = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!vueContainer.current) return;
-    
-    const app = createApp(LearningStyleInsights);
-    app.mount(vueContainer.current);
-
-    return () => app.unmount();
-  }, []);
-
-  return <div ref={vueContainer}></div>;
+const LearningStyleInsightsWrapper: React.FC<LearningStyleInsightsWrapperProps> = ({ studentData }) => {
+  return <VueWrapper component={LearningStyleInsights} props={{ studentData }} />;
 };
 
 export default LearningStyleInsightsWrapper;

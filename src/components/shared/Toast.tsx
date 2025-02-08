@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './styles/Toast.css';
+import styles from './shared.module.css';
 
 type ToastType = 'info' | 'success' | 'warning' | 'error';
 
@@ -22,11 +22,13 @@ const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration = 3000, 
     return () => clearTimeout(timer);
   }, [duration, onClose]);
 
-  return isVisible ? (
-    <div className={`toast toast-${type}`}>
+  if (!isVisible) return null;
+
+  return (
+    <div className={`${styles.toast} ${styles[`toast-${type}`]}`}>
       <p>{message}</p>
     </div>
-  ) : null;
+  );
 };
 
 export default Toast;

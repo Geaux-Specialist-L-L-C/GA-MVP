@@ -1,67 +1,70 @@
-import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
-import styled from "styled-components";
-import { useAuth } from "../../contexts/AuthContext";
-import { FaPaperPlane } from "react-icons/fa";
+import React, { useState, useRef, useEffect } from 'react';
+import styled from 'styled-components';
+import { FaPaperPlane } from 'react-icons/fa';
+import { useAuth } from '../../contexts/AuthContext';
+import Message from '../Message';
+import { saveLearningStyle, updateStudentAssessmentStatus } from '../../services/profileService';
+import axios from 'axios';
 
-const API_URL = "https://cheshire.geaux.app/api/chat";
+interface ChatMessage {
+  text: string;
+  sender: 'user' | 'bot';
+}
 
-const LearningStyleChat: React.FC = () => {
-  const { currentUser } = useAuth();
-  const [messages, setMessages] = useState<{ text: string; sender: "user" | "bot" }[]>([
-    { text: "Hello! I'm here to help identify your learning style. Let's begin!", sender: "bot" }
-  ]);
-  const [input, setInput] = useState("");
+const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const { currentUser } = useAuth();
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const handleResponse = async (response: any) => {
+    try {
+      if (response.learningStyle && studentId) {
+        await saveLearningStyle(studentId, response.learningStyle);
+        await updateStudentAssessmentStatus(studentId, "completed");
+      }
+    } catch (error) {
+      console.error('Error saving learning style:', error);
+      setMessages(prev => [...prev, { 
+        text: "There was an error saving your learning style. Please try again.", 
+        sender: "bot" 
+      }]);
+    }
+  };
 
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMessage: { text: string; sender: "user" | "bot" } = { text: input, sender: "user" };
-    setMessages([...messages, userMessage]);
-    setInput("");
-    setLoading(true);
+    const userMessage = input.trim();
+    setInput('');
+    setMessages(prev => [...prev, { text: userMessage, sender: 'user' }]);
 
     try {
-      const response = await axios.post(API_URL, {
-        user_id: currentUser?.uid,
-        message: input
+      setLoading(true);
+      const response = await axios.post('https://cheshire.geaux.app/api/chat', {
+        message: userMessage,
+        userId: currentUser?.uid,
+        studentId
       });
 
-      const botMessage: { text: string; sender: "user" | "bot" } = { text: response.data.reply, sender: "bot" };
-      setMessages([...messages, userMessage, botMessage]);
-
-      if (response.data.learningStyle) {
-        saveLearningStyle(response.data.learningStyle);
-      }
+      setMessages(prev => [...prev, { text: response.data.message, sender: 'bot' }]);
+      await handleResponse(response.data);
     } catch (error) {
-      console.error("Chat API Error:", error);
-      setMessages([...messages, { text: "Oops! Something went wrong.", sender: "bot" }]);
+      console.error('Error sending message:', error);
+      setMessages(prev => [...prev, { text: "Oops! Something went wrong.", sender: "bot" }]);
     } finally {
       setLoading(false);
     }
   };
 
-  const saveLearningStyle = async (learningStyle: string) => {
-    try {
-      await axios.post("https://cheshire.geaux.app/api/save-style", {
-        user_id: currentUser?.uid,
-        learningStyle
-      });
-      setMessages([...messages, { text: `Your learning style has been saved as: ${learningStyle}`, sender: "bot" }]);
-    } catch (error) {
-      console.error("Error saving learning style:", error);
-    }
-  };
-
   return (
-    <ChatContainer>
-      <ChatHeader>🎓 Learning Style Chat</ChatHeader>
+    <ChatContainer className="card">
+      <ChatHeader>🎓 Learning Style Assessment</ChatHeader>
       <ChatBody>
         {messages.map((msg, index) => (
           <Message key={index} sender={msg.sender}>{msg.text}</Message>
@@ -76,72 +79,50 @@ const LearningStyleChat: React.FC = () => {
           placeholder="Type your response..."
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+          className="form-input"
         />
-        <SendButton onClick={sendMessage}><FaPaperPlane /></SendButton>
+        <SendButton onClick={sendMessage} className="btn btn-primary">
+          <FaPaperPlane />
+        </SendButton>
       </ChatFooter>
     </ChatContainer>
   );
 };
 
 const ChatContainer = styled.div`
-  max-width: 500px;
-  margin: auto;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  height: 500px;
   display: flex;
   flex-direction: column;
 `;
 
 const ChatHeader = styled.div`
-  background: #007bff;
-  color: white;
-  padding: 15px;
-  text-align: center;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid #eee;
   font-weight: bold;
-  border-radius: 8px 8px 0 0;
 `;
 
 const ChatBody = styled.div`
-  padding: 15px;
-  height: 400px;
+  flex: 1;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-`;
-
-const Message = styled.div<{ sender: "user" | "bot" }>`
-  background: ${({ sender }) => (sender === "user" ? "#007bff" : "#f1f1f1")};
-  color: ${({ sender }) => (sender === "user" ? "white" : "black")};
-  align-self: ${({ sender }) => (sender === "user" ? "flex-end" : "flex-start")};
-  padding: 10px;
-  border-radius: 8px;
-  margin: 5px 0;
-  max-width: 75%;
+  padding: var(--spacing-md);
 `;
 
 const ChatFooter = styled.div`
   display: flex;
-  padding: 10px;
-  border-top: 1px solid #ddd;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-top: 1px solid #eee;
 `;
 
 const ChatInput = styled.input`
   flex: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
 `;
 
 const SendButton = styled.button`
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 10px;
-  margin-left: 5px;
-  border-radius: 4px;
-  cursor: pointer;
+  padding: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 export default LearningStyleChat;

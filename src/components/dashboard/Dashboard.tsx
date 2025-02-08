@@ -4,8 +4,19 @@ import { useAuth } from '../../contexts/AuthContext';
 import ParentProfileForm from '../../pages/profile/ParentProfile/ParentProfileForm';
 import CreateStudent from '../../pages/profile/ParentProfile/CreateStudent';
 import StudentCard from '../../components/student/StudentCard';
-import { getParentProfile } from '../../services/profileService';
+import { getParentProfile, getStudentProfile } from '../../services/profileService';
 import styled from 'styled-components';
+
+interface Student {
+  id: string;
+  name: string;
+  grade: string;
+  parentId: string;
+  hasTakenAssessment: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  assessmentStatus?: string;
+}
 
 interface UserData {
   name: string;
@@ -26,6 +37,7 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
+  const [students, setStudents] = useState<Student[]>([]);
 
   useEffect(() => {
     const fetchUserData = async (): Promise<void> => {
@@ -45,6 +57,24 @@ const Dashboard: React.FC = () => {
         const profile = await getParentProfile(currentUser.uid);
         console.log('📋 Parent profile loaded:', profile);
         setParentProfile(profile);
+
+        if (profile?.students?.length) {
+          const studentsData = await Promise.all(
+            profile.students.map(async (studentId) => {
+              try {
+                const student = await getStudentProfile(studentId);
+                return {
+                  ...student,
+                  id: studentId
+                };
+              } catch (err) {
+                console.error(`Error fetching student ${studentId}:`, err);
+                return null;
+              }
+            })
+          );
+          setStudents(studentsData.filter((s): s is Student => s !== null));
+        }
       } catch (err) {
         console.error('❌ Error fetching user data:', err);
         setError('Failed to fetch user data');
@@ -55,6 +85,14 @@ const Dashboard: React.FC = () => {
 
     fetchUserData();
   }, [currentUser, navigate]);
+
+  const handleStudentSelect = (student: Student) => {
+    if (!student.hasTakenAssessment) {
+      navigate(`/learning-style-chat/${student.id}`);
+    } else {
+      navigate(`/student-profile/${student.id}`);
+    }
+  };
 
   const handleLogout = async (): Promise<void> => {
     try {
@@ -91,32 +129,32 @@ const Dashboard: React.FC = () => {
       </DashboardHeader>
 
       <DashboardGrid>
-        <DashboardCard>
-          <h3>Last Login</h3>
-          <p>{userData?.lastLogin}</p>
-        </DashboardCard>
-
         <ParentSection>
           <h2>Parent Dashboard</h2>
-          {parentProfile ? (
-            <>
-              <CreateStudent />
-              {parentProfile.students && parentProfile.students.length > 0 ? (
-                <StudentsList>
-                  <h3>Your Students</h3>
-                  {parentProfile.students.map(studentId => (
-                    <StudentCard key={studentId} studentId={studentId} />
-                  ))}
-                </StudentsList>
-              ) : (
-                <EmptyState>
-                  <p>No students added yet. Add your first student to get started!</p>
-                </EmptyState>
-              )}
-            </>
-          ) : (
-            <ParentProfileForm />
-          )}
+          <CreateStudent />
+          <StudentsList>
+            <h3>Your Students</h3>
+            {students.length > 0 ? (
+              <StudentGrid>
+                {students.map((student) => (
+                  <StudentCardWrapper key={student.id} onClick={() => handleStudentSelect(student)}>
+                    <StudentName>{student.name}</StudentName>
+                    <StudentInfo>Grade: {student.grade}</StudentInfo>
+                    <AssessmentStatus $completed={student.hasTakenAssessment}>
+                      {student.hasTakenAssessment ? 'Assessment Complete' : 'Take Assessment'}
+                    </AssessmentStatus>
+                    <ActionButton>
+                      {student.hasTakenAssessment ? 'View Profile' : 'Start Assessment'}
+                    </ActionButton>
+                  </StudentCardWrapper>
+                ))}
+              </StudentGrid>
+            ) : (
+              <EmptyState>
+                <p>No students added yet. Add your first student to get started!</p>
+              </EmptyState>
+            )}
+          </StudentsList>
         </ParentSection>
       </DashboardGrid>
     </DashboardContainer>
@@ -142,13 +180,6 @@ const DashboardGrid = styled.div`
   gap: 2rem;
 `;
 
-const DashboardCard = styled.div`
-  background-color: white;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-`;
-
 const ParentSection = styled.section`
   background-color: white;
   padding: 1.5rem;
@@ -158,6 +189,61 @@ const ParentSection = styled.section`
 
 const StudentsList = styled.div`
   margin-top: 1rem;
+`;
+
+const StudentGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+`;
+
+const StudentCardWrapper = styled.div`
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const StudentName = styled.h3`
+  margin: 0 0 0.5rem 0;
+  color: #2d3748;
+`;
+
+const StudentInfo = styled.p`
+  color: #4a5568;
+  margin: 0 0 0.5rem 0;
+`;
+
+const AssessmentStatus = styled.div<{ $completed: boolean }>`
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  background-color: ${props => props.$completed ? '#48BB78' : '#4299E1'};
+  color: white;
+  margin-bottom: 1rem;
+`;
+
+const ActionButton = styled.button`
+  width: 100%;
+  background-color: #3B82F6;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  
+  &:hover {
+    background-color: #2563EB;
+  }
 `;
 
 const EmptyState = styled.div`

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import './styles/Modal.css';
+import styles from './shared.module.css';
 
 interface ModalProps {
   isOpen: boolean;
@@ -20,13 +20,13 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-        <div className="modal-header">
+    <div className={styles['modal-overlay']} onClick={onClose}>
+      <div className={styles['modal-content']} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+        <div className={styles['modal-header']}>
           <h2>{title}</h2>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+          <button className={styles['modal-close']} onClick={onClose}>&times;</button>
         </div>
-        <div className="modal-body">{children}</div>
+        <div className={styles['modal-body']}>{children}</div>
       </div>
     </div>
   );

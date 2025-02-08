@@ -5,6 +5,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/layout/Header';
+import Card from '../../components/common/Card';
 
 interface FormData {
   name: string;
@@ -93,21 +94,18 @@ const Contact: React.FC = () => {
           </ContactForm>
 
           <ContactInfo>
-            <InfoCard>
-              <h3>Office Hours</h3>
+            <Card title="Office Hours">
               <p>Monday - Friday: 9:00 AM - 5:00 PM</p>
               <p>Weekend: Closed</p>
-            </InfoCard>
-            <InfoCard>
-              <h3>Our Office</h3>
+            </Card>
+            <Card title="Our Office">
               <p>Location: 123 Main St, Anytown, USA</p>
               <p>Hours: Mon-Fri, 9am-5pm</p>
-            </InfoCard>
-            <InfoCard>
-              <h3>Support</h3>
+            </Card>
+            <Card title="Support">
               <p>Email: support@geauxacademy.com</p>
               <p>Phone: (123) 456-7890</p>
-            </InfoCard>
+            </Card>
           </ContactInfo>
         </ContentGrid>
 
@@ -185,23 +183,6 @@ const ContactInfo = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
-`;
-
-const InfoCard = styled.div`
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-
-  h3 {
-    color: var(--primary-color);
-    margin-bottom: 1rem;
-  }
-
-  p {
-    color: var(--text-color);
-    margin-bottom: 0.5rem;
-  }
 `;
 
 const SubmitButton = styled.button`

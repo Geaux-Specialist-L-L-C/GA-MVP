@@ -1,103 +1,63 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import styled from 'styled-components';
+import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
+import styles from './layout.module.css';
 
 const Header = () => {
   const location = useLocation();
+  const { currentUser } = useAuth();
   
   return (
-    <StyledHeaderContainer>
-      <LogoContainer>
-        <StyledLogo src="/images/logo.svg" alt="Geaux Academy Logo" />
-      </LogoContainer>
-      
-      <NavWrapper>
-        <StyledNav>
-          <StyledNavLink to="/" $active={location.pathname === '/'}>
-            Home
-          </StyledNavLink>
-          <StyledNavLink to="/about" $active={location.pathname === '/about'}>
-            About
-          </StyledNavLink>
-          <StyledNavLink to="/features" $active={location.pathname === '/features'}>
-            Features
-          </StyledNavLink>
-          <StyledNavLink to="/curriculum" $active={location.pathname === '/curriculum'}>
-            Curriculum
-          </StyledNavLink>
-          <StyledNavLink to="/contact" $active={location.pathname === '/contact'}>
-            Contact
-          </StyledNavLink>
-        </StyledNav>
-      </NavWrapper>
+    <header className={styles.header}>
+      <div className={styles.navigation}>
+        <Link to="/">
+          <img src="/images/logo.svg" alt="Geaux Academy Logo" height="50" />
+        </Link>
+        
+        <nav>
+          <ul className={styles['navigation-list']}>
+            <li>
+              <Link to="/" className={location.pathname === '/' ? styles.active : ''}>
+                Home
+              </Link>
+            </li>
+            <li>
+              <Link to="/about" className={location.pathname === '/about' ? styles.active : ''}>
+                About
+              </Link>
+            </li>
+            <li>
+              <Link to="/features" className={location.pathname === '/features' ? styles.active : ''}>
+                Features
+              </Link>
+            </li>
+            <li>
+              <Link to="/curriculum" className={location.pathname === '/curriculum' ? styles.active : ''}>
+                Curriculum
+              </Link>
+            </li>
+            <li>
+              <Link to="/contact" className={location.pathname === '/contact' ? styles.active : ''}>
+                Contact
+              </Link>
+            </li>
+          </ul>
+        </nav>
 
-      <AuthButtons>
-        <Button to="/login" $variant="secondary">Login</Button>
-        <Button to="/signup" $variant="primary">Sign Up</Button>
-      </AuthButtons>
-    </StyledHeaderContainer>
+        <div className="auth-buttons">
+          {!currentUser ? (
+            <>
+              <Button to="/login" className="btn btn-secondary">Login</Button>
+              <Button to="/signup" className="btn btn-primary">Sign Up</Button>
+            </>
+          ) : (
+            <Button to="/dashboard" className="btn btn-primary">Dashboard</Button>
+          )}
+        </div>
+      </div>
+    </header>
   );
 };
-
-const StyledHeaderContainer = styled.header`
-  position: fixed;
-  width: 100%;
-  height: 64px;
-  background: black;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-`;
-
-const LogoContainer = styled.div`
-  flex: 0.7;
-`;
-
-const StyledLogo = styled.img`
-  height: 50px;
-  object-fit: contain;
-`;
-
-const NavWrapper = styled.div`
-  flex: 2;
-  display: flex;
-  justify-content: flex-start;
-  margin-left: 4%;
-`;
-
-const StyledNav = styled.nav`
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-`;
-
-const StyledNavLink = styled(Link)<{ $active?: boolean }>`
-  color: ${(props) => (props.$active ? "gold" : "white")};
-  font-weight: 500;
-  text-decoration: none;
-  padding: 0.5rem 1rem;
-  transition: color 0.3s ease-in-out;
-
-  &:hover {
-    color: gold;
-  }
-`;
-
-const AuthButtons = styled.div`
-  display: flex;
-  gap: 1rem;
-  margin-right: 1.5rem;
-`;
-
-export const PageContainer = styled.main`
-  max-width: 1200px;
-  margin: auto;
-  padding: 4rem 2rem;
-  text-align: center;
-`;
 
 export default Header;

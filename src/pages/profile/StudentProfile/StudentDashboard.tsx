@@ -7,6 +7,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { getStudentProfile } from '../../../services/profileService';
 import { Student } from '../../../types/auth';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
+import LearningStyleChat from '../../../components/chat/LearningStyleChat';
 
 interface StudentData extends Student {
   recentActivities: Array<{
@@ -80,94 +81,39 @@ const StudentDashboard: React.FC = () => {
       >
         <StyledHeader>
           <StyledHeaderLeft>
-            <StyledBackButton onClick={() => navigate('/dashboard')}>
-              ← Back to Parent Dashboard
-            </StyledBackButton>
-            <h1>{studentData?.name}'s Dashboard</h1>
+            <h1>Welcome, {studentData?.name}!</h1>
+            <p>Grade {studentData?.grade}</p>
           </StyledHeaderLeft>
-          {studentData?.hasTakenAssessment ? (
-            <StyledAssessmentBadge $complete>
-              Assessment Complete
-            </StyledAssessmentBadge>
-          ) : (
-            <StyledAssessmentBadge>
-              <StyledAssessmentButton onClick={() => navigate('/take-assessment')}>
-                Take Assessment
-              </StyledAssessmentButton>
-            </StyledAssessmentBadge>
-          )}
         </StyledHeader>
 
-        <StyledDashboardGrid>
-          <StyledCard>
-            <StyledCardHeader>
-              <FaGraduationCap />
-              <h3>Learning Style</h3>
-            </StyledCardHeader>
-            <StyledCardContent>
-              {studentData?.learningStyle ? (
-                <StyledLearningStyleInfo>
-                  {studentData.learningStyle}
-                </StyledLearningStyleInfo>
-              ) : (
-                <StyledEmptyState>
-                  Complete the assessment to discover your learning style
-                </StyledEmptyState>
-              )}
-            </StyledCardContent>
-          </StyledCard>
+        <DashboardGrid>
+          <MainSection>
+            {!studentData?.hasTakenAssessment && (
+              <AssessmentSection>
+                <h2>Learning Style Assessment</h2>
+                <p>Take your learning style assessment to get personalized recommendations.</p>
+                <LearningStyleChat />
+              </AssessmentSection>
+            )}
 
-          <StyledCard>
-            <StyledCardHeader>
-              <FaChartLine />
-              <h3>Progress</h3>
-            </StyledCardHeader>
-            <StyledCardContent>
-              {studentData?.progress?.length ? (
-                <StyledProgressGrid>
-                  {studentData.progress.map((item, index) => (
-                    <StyledProgressItem key={index}>
-                      <StyledProgressLabel>{item.type}</StyledProgressLabel>
-                      <StyledProgressBar>
-                        <StyledProgressFill $width={item.value} />
-                      </StyledProgressBar>
-                      <StyledProgressValue>{item.value}%</StyledProgressValue>
-                    </StyledProgressItem>
-                  ))}
-                </StyledProgressGrid>
-              ) : (
-                <StyledEmptyState>No progress data available yet</StyledEmptyState>
-              )}
-            </StyledCardContent>
-          </StyledCard>
+            {studentData?.hasTakenAssessment && studentData.learningStyle && (
+              <LearningStyleSection>
+                <h2>Your Learning Style: {studentData.learningStyle}</h2>
+                <p>Based on your assessment, we've customized your learning experience.</p>
+              </LearningStyleSection>
+            )}
 
-          <StyledCard>
-            <StyledCardHeader>
-              <FaBook />
-              <h3>Recent Activities</h3>
-            </StyledCardHeader>
-            <StyledCardContent>
-              {studentData?.recentActivities?.length ? (
-                <StyledActivityList>
-                  {studentData.recentActivities.map((activity, index) => (
-                    <StyledActivityItem key={activity.id || index}>
-                      <StyledActivityName>{activity.name}</StyledActivityName>
-                      <StyledActivityDate>{activity.date}</StyledActivityDate>
-                    </StyledActivityItem>
-                  ))}
-                </StyledActivityList>
-              ) : (
-                <StyledEmptyState>No recent activities</StyledEmptyState>
-              )}
-            </StyledCardContent>
-          </StyledCard>
-        </StyledDashboardGrid>
+            <ProgressSection>
+              <h2>Recent Progress</h2>
+              {/* Add progress visualization here */}
+            </ProgressSection>
+          </MainSection>
+        </DashboardGrid>
       </motion.div>
     </StyledDashboardContainer>
   );
 };
 
-// Styled Components
 const StyledDashboardContainer = styled.div`
   padding: 2rem;
   max-width: 1200px;
@@ -188,142 +134,49 @@ const StyledErrorContainer = styled.div`
 `;
 
 const StyledHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 2rem;
 `;
 
 const StyledHeaderLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-`;
-
-const StyledBackButton = styled.button`
-  background: none;
-  border: none;
-  color: var(--primary-color);
-  cursor: pointer;
-  
-  &:hover {
-    text-decoration: underline;
+  h1 {
+    margin: 0;
+    color: var(--primary-color);
+  }
+  p {
+    margin: 0.5rem 0 0;
+    color: var(--text-secondary);
   }
 `;
 
-const StyledAssessmentBadge = styled.div<{ $complete?: boolean }>`
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  background-color: ${props => props.$complete ? '#4CAF50' : '#FFF'};
-  color: ${props => props.$complete ? '#FFF' : 'inherit'};
-  border: ${props => props.$complete ? 'none' : '1px solid #ddd'};
-`;
-
-const StyledAssessmentButton = styled.button`
-  background: none;
-  border: none;
-  color: var(--primary-color);
-  cursor: pointer;
-  
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const StyledDashboardGrid = styled.div`
+const DashboardGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
 `;
 
-const StyledCard = styled.div`
+const MainSection = styled.div`
+  display: grid;
+  gap: 2rem;
+`;
+
+const AssessmentSection = styled.div`
   background: white;
+  padding: 2rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  padding: 1.5rem;
 `;
 
-const StyledCardHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  color: var(--primary-color);
-  
-  h3 {
-    margin: 0;
-  }
-`;
-
-const StyledCardContent = styled.div`
-  min-height: 200px;
-`;
-
-const StyledEmptyState = styled.div`
-  text-align: center;
-  color: #666;
+const LearningStyleSection = styled.div`
+  background: white;
   padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 `;
 
-const StyledLearningStyleInfo = styled.div`
-  font-size: 1.2rem;
-  color: var(--primary-color);
-  text-align: center;
-  padding: 1rem;
-`;
-
-const StyledProgressGrid = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
-
-const StyledProgressItem = styled.div``;
-
-const StyledProgressLabel = styled.div`
-  margin-bottom: 0.5rem;
-`;
-
-const StyledProgressBar = styled.div`
-  background: #f0f0f0;
-  height: 8px;
-  border-radius: 4px;
-  overflow: hidden;
-`;
-
-const StyledProgressFill = styled.div<{ $width: number }>`
-  background: var(--primary-color);
-  height: 100%;
-  width: ${props => props.$width}%;
-  transition: width 0.3s ease;
-`;
-
-const StyledProgressValue = styled.div`
-  text-align: right;
-  font-size: 0.875rem;
-  color: #666;
-  margin-top: 0.25rem;
-`;
-
-const StyledActivityList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
-
-const StyledActivityItem = styled.div`
-  padding: 0.75rem;
-  border-radius: 4px;
-  background: #f8f9fa;
-`;
-
-const StyledActivityName = styled.div`
-  font-weight: 500;
-`;
-
-const StyledActivityDate = styled.div`
-  font-size: 0.875rem;
-  color: #666;
+const ProgressSection = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 `;
 
 export default StudentDashboard;
