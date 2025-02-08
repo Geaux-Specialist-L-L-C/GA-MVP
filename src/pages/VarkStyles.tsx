@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FaEye, FaHeadphones, FaBookReader, FaRunning } from 'react-icons/fa';
-import useAuth from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LearningStyle {
   icon: JSX.Element;

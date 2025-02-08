@@ -19,7 +19,7 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
+function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -123,37 +123,9 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     try {
       setAuthError(null);
       console.log("🔄 Starting Google sign-in process...");
-
-      try {
-        const result = await signInWithPopup(auth, googleProvider);
-        if (result?.user) {
-          setCurrentUser(result.user as User);
-          console.log("✅ Google login successful!");
-          return;
-        }
-      } catch (popupError: any) {
-        console.warn("⚠️ Popup login failed:", popupError);
-        
-        // Handle various popup-related errors
-        if (popupError?.code === 'auth/popup-blocked' || 
-            popupError?.code === 'auth/popup-closed-by-user' ||
-            popupError?.code === 'auth/cancelled-popup-request') {
-          console.log("🔄 Switching to redirect auth method...");
-          await signInWithRedirect(auth, googleProvider);
-          return;
-        }
-
-        // Re-throw other errors
-        throw popupError;
-      }
+      await signInWithRedirect(auth, googleProvider);
     } catch (error: any) {
       console.error("❌ Google login error:", error);
-
-      if (error?.code === 'auth/network-request-failed') {
-        setAuthError("Network error. Please check your connection and try again.");
-        return;
-      }
-
       setAuthError("Unable to sign in with Google. Please try again.");
       throw error;
     }
@@ -209,5 +181,4 @@ const useAuth = (): AuthContextType => {
   return context;
 };
 
-export { useAuth };
-export default useAuth;
+export { AuthProvider, useAuth };

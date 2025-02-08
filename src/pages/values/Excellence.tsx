@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FaTrophy } from 'react-icons/fa';
-import useAuth from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Excellence = () => {
   const { loginWithGoogle } = useAuth();

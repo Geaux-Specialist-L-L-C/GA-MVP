@@ -1,7 +1,7 @@
 import React, { useState, memo } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import useAuth from "../contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import styled from "styled-components";
 import { FaGraduationCap, FaChartLine, FaLightbulb } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";

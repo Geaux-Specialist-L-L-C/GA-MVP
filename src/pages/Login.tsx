@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Location } from 'react-router-dom';
-import useAuth from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
 

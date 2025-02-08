@@ -5,7 +5,7 @@ import LearningStyleInsights from '../components/LearningStyleInsights';
 import CurriculumApproval from './dashboard/components/CurriculumApproval';
 import styled from 'styled-components';
 import { useNavigate, useLocation } from "react-router-dom";
-import useAuth from "../../../contexts/AuthContext";
+import { useAuth } from "../../../contexts/AuthContext";
 import { FcGoogle } from "react-icons/fc";
 import { getParentProfile } from '../../../services/profileService';
 import { Parent, Student } from '../../../types/auth';

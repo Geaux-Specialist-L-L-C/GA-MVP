@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../config/firebase";
 import { getDoc, doc, updateDoc } from "firebase/firestore";
-import useAuth from "../contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { FcGoogle } from "react-icons/fc";
 import { useNavigate } from "react-router-dom";

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Link, useNavigate } from 'react-router-dom';
-import useAuth from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { FcGoogle } from 'react-icons/fc';
 
 const NotFound: React.FC = () => {

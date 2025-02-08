@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FaBalanceScale } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import useAuth from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { FcGoogle } from 'react-icons/fc';
 
 const Integrity: React.FC = () => {

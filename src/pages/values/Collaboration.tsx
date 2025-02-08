@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FaUsers } from 'react-icons/fa';
-import useAuth from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Collaboration = () => {
   const { loginWithGoogle } = useAuth();

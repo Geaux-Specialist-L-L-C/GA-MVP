@@ -1,10 +1,9 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import styled, { ThemeProvider } from 'styled-components';
 import { ProfileProvider } from './contexts/ProfileContext';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import AuthRoute from './components/auth/AuthRoute';
-import { ThemeProvider } from 'styled-components';
 import theme from './theme/theme';
 import PrivateRoute from './components/PrivateRoute';
 import Layout from './components/Layout';
@@ -28,12 +27,18 @@ const LoadingFallback: React.FC = () => (
   </div>
 );
 
+const AppContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+`;
+
 const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <ThemeProvider theme={theme}>
-        <AuthProvider>
-          <ProfileProvider>
+        <ProfileProvider>
+          <AppContainer>
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 <Route element={<Layout />}>
@@ -64,8 +69,8 @@ const App: React.FC = () => {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
-          </ProfileProvider>
-        </AuthProvider>
+          </AppContainer>
+        </ProfileProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

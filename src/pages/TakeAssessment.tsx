@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import useAuth from "../contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { getStudentProfile, updateStudentAssessmentStatus } from "../services/profileService";
 import type { Student } from '../types/student';

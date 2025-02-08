@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import styled from "styled-components";
 import { FaChartLine, FaChalkboardTeacher, FaGamepad, FaBullseye, FaBrain, FaUsers } from "react-icons/fa";
-import useAuth from "../contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/layout/Header";
 

@@ -1,33 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { addStudent } from '../../../store/slices/profileSlice';
 import { RootState } from '../../../store';
-import type { Student } from '../../../types/student';
-import useAuth from '../../../contexts/AuthContext';
+import { Student } from '../../../types/auth';  // Using the auth Student type consistently
+import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import styled from 'styled-components';
+import { getStudentProfile } from '../../../services/profileService';
 
 const ParentProfile: React.FC = () => {
   const dispatch = useDispatch();
   const parent = useSelector((state: RootState) => state.profile.parent);
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [newStudent, setNewStudent] = useState<Partial<Student>>({});
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, currentUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [error, setError] = useState("");
+  const [studentsData, setStudentsData] = useState<Student[]>([]);
 
   const handleAddStudent = () => {
     if (newStudent.name) {
       dispatch(addStudent({
         id: Date.now().toString(),
         name: newStudent.name || '',
-        age: newStudent.age || 0,
         grade: newStudent.grade || '',
-        hasTakenAssessment: false,
         parentId: parent?.id || '',
-        progress: [],
+        hasTakenAssessment: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }));
       setShowAddStudent(false);
       setNewStudent({});
@@ -38,13 +40,39 @@ const ParentProfile: React.FC = () => {
     try {
       setError("");
       await loginWithGoogle();
-      const destination = location.state?.from?.pathname || "/dashboard";
-      navigate(destination, { replace: true });
+      // No need to navigate here since the redirect will happen automatically
+      // The AuthContext useEffect will handle the redirect result and user state
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to login");
       console.error("Login error:", err);
     }
   };
+
+  // Automatically redirect to dashboard when user is authenticated
+  useEffect(() => {
+    if (currentUser) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [currentUser, navigate]);
+
+  useEffect(() => {
+    const fetchStudentsData = async () => {
+      if (parent?.students) {
+        try {
+          const studentsPromises = parent.students.map(async studentId => {
+            const student = await getStudentProfile(studentId);
+            return student as Student;  // Ensure type consistency
+          });
+          const fetchedStudents = await Promise.all(studentsPromises);
+          setStudentsData(fetchedStudents.filter((s): s is Student => s !== null));
+        } catch (error) {
+          console.error('Error fetching students:', error);
+        }
+      }
+    };
+
+    fetchStudentsData();
+  }, [parent?.students]);
 
   return (
     <Container>
@@ -71,10 +99,10 @@ const ParentProfile: React.FC = () => {
                 onChange={(e) => setNewStudent({...newStudent, name: e.target.value})}
               />
               <input
-                type="number"
-                placeholder="Age"
-                value={newStudent.age || ''}
-                onChange={(e) => setNewStudent({...newStudent, age: Number(e.target.value)})}
+                type="text"
+                placeholder="Grade"
+                value={newStudent.grade || ''}
+                onChange={(e) => setNewStudent({...newStudent, grade: e.target.value})}
               />
               <button onClick={handleAddStudent}>Save</button>
               <button onClick={() => setShowAddStudent(false)}>Cancel</button>
@@ -82,24 +110,20 @@ const ParentProfile: React.FC = () => {
           )}
 
           <div className="students-list">
-            {parent?.students?.map((studentId: string) => {
-              const student = parent.studentProfiles?.[studentId] as Student;
-              if (!student) return null;
-              return (
-                <div key={student.id} className="student-card">
-                  <h4>{student.name}</h4>
-                  {student.age && <p>Age: {student.age}</p>}
-                  <p>Learning Style: {student.learningStyle || 'Not assessed'}</p>
-                  <div className="progress-summary">
-                    {student.progress?.map((p, index) => (
-                      <div key={index} className="progress-item">
-                        {p.type}: {p.name}
-                      </div>
-                    ))}
-                  </div>
+            {studentsData.map((student) => (
+              <div key={student.id} className="student-card">
+                <h4>{student.name}</h4>
+                {student.grade && <p>Grade: {student.grade}</p>}
+                <p>Learning Style: {student.learningStyle || 'Not assessed'}</p>
+                <div className="progress-summary">
+                  {student.hasTakenAssessment ? (
+                    <div className="assessment-status">Assessment Complete</div>
+                  ) : (
+                    <div className="assessment-status">Assessment Needed</div>
+                  )}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
       </ProfileBox>

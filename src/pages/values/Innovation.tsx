@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FaLightbulb } from 'react-icons/fa';
-import useAuth from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { FcGoogle } from 'react-icons/fc';
 import { useNavigate } from 'react-router-dom';
 

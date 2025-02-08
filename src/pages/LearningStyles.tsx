@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { FaBook, FaHeadphones, FaEye, FaRunning, FaBrain, FaUsers } from "react-icons/fa";
-import useAuth from "../contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/layout/Header";
 import Button from "../components/common/Button";
 
