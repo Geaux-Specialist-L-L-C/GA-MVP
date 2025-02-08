@@ -22,7 +22,7 @@ const LearningStyleChat: React.FC = () => {
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMessage = { text: input, sender: "user" };
+    const userMessage: { text: string; sender: "user" | "bot" } = { text: input, sender: "user" };
     setMessages([...messages, userMessage]);
     setInput("");
     setLoading(true);
@@ -33,7 +33,7 @@ const LearningStyleChat: React.FC = () => {
         message: input
       });
 
-      const botMessage = { text: response.data.reply, sender: "bot" };
+      const botMessage: { text: string; sender: "user" | "bot" } = { text: response.data.reply, sender: "bot" };
       setMessages([...messages, userMessage, botMessage]);
 
       if (response.data.learningStyle) {
