@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Message from '../Message';
 import { saveLearningStyle, updateStudentAssessmentStatus } from '../../services/profileService';
 import axios from 'axios';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 interface ChatMessage {
   text: string;
