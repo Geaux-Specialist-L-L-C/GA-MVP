@@ -90,56 +90,45 @@ This section provides guidelines for setting up and using React in this project.
 ## Updated File Structure
 
 ```plaintext
-/src/
-├── components/                    # /src/components/* - Reusable components
-│   ├── auth/                     # /src/components/auth/* - Authentication components
-│   │   ├── AuthRoute.tsx
-│   │   ├── LoginForm.tsx
-│   │   └── SignUpForm.tsx
-│   ├── common/                   # /src/components/common/* - Shared UI components
-│   │   ├── Button/
-│   │   │   ├── Button.tsx
-│   │   │   ├── Button.test.tsx
-│   │   │   └── Button.styles.ts
-│   │   └── Card/
-│   │       ├── Card.tsx
-│   │       └── Card.styles.ts
-│   ├── layout/                   # /src/components/layout/* - Layout components
-│   │   ├── Header/
-│   │   ├── Footer/
-│   │   ├── Navigation/
-│   │   └── Sidebar/
-│   └── features/                 # /src/components/features/* - Feature-specific components
-│       ├── home/
-│       ├── profile/
-│       └── dashboard/
-├── pages/                        # /src/pages/* - Page components
-│   ├── Home/
-│   │   ├── index.tsx
-│   │   └── Home.styles.ts
-│   └── Dashboard/
-│       ├── index.tsx
-│       └── Dashboard.styles.ts
-├── hooks/                        # /src/hooks/* - Custom React hooks
-│   └── useAuth.ts
-├── services/                     # /src/services/* - API and external services
-│   ├── api/
-│   │   └── index.ts
-│   └── firebase/
-│       └── config.ts
-├── store/                        # /src/store/* - State management
-│   ├── slices/
-│   └── index.ts
-├── types/                        # /src/types/* - TypeScript types/interfaces
-│   └── index.ts
-├── utils/                        # /src/utils/* - Utility functions
-│   └── helpers.ts
-├── styles/                       # /src/styles/* - Global styles
-│   ├── theme.ts
-│   └── global.ts
-└── config/                       # /src/config/* - Configuration files
-    └── env.ts
-```
+├───components
+│   ├───auth
+│   ├───chat
+│   ├───common
+│   │   └───types
+│   ├───dashboard
+│   ├───features
+│   │   ├───learning
+│   │   └───vue
+│   ├───home
+│   ├───layout
+│   ├───shared
+│   │   └───styles
+│   ├───student
+│   └───styles
+├───config
+├───contexts
+├───firebase
+├───pages
+│   ├───profile
+│   │   ├───components
+│   │   ├───ParentProfile
+│   │   │   ├───components
+│   │   │   └───dashboard
+│   │   │       └───components
+│   │   └───StudentProfile
+│   ├───styles
+│   └───values
+├───server
+│   └───routes
+├───services
+├───store
+│   └───slices
+├───styles
+│   ├───components
+│   └───pages
+├───theme
+├───types
+└───utils
 
 ## Notes on Merged Files
 
