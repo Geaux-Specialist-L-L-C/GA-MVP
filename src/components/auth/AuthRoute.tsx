@@ -21,11 +21,7 @@ const AuthRoute: React.FC<AuthRouteProps> = ({ children }) => {
   const location = useLocation();
 
   if (loading) {
-    return (
-      <LoadingContainer>
-        <LoadingSpinner />
-      </LoadingContainer>
-    );
+    return <LoadingSpinner />;
   }
 
   if (currentUser) {
@@ -38,6 +34,7 @@ const AuthRoute: React.FC<AuthRouteProps> = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Allow access to auth pages if not authenticated
   return <>{children}</>;
 };
 

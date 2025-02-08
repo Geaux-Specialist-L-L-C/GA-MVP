@@ -1,13 +1,19 @@
-import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { FcGoogle } from "react-icons/fc";
-import styled from "styled-components";
+import React, { useState } from 'react';
+import { useLocation, Location } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import styled from 'styled-components';
+import { FcGoogle } from 'react-icons/fc';
+
+interface LocationState {
+  from?: {
+    pathname: string;
+  };
+  error?: string;
+}
 
 const Login: React.FC = () => {
   const { loginWithGoogle, login } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const location = useLocation() as Location & { state: LocationState };
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -21,27 +27,23 @@ const Login: React.FC = () => {
       setError("");
       setLoading(true);
       await loginWithGoogle();
-      const destination = location.state?.from?.pathname || "/dashboard";
-      navigate(destination, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to login");
-      console.error("Google Login Error:", err);
+      console.error("Login error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
-    
     try {
+      setError("");
+      setLoading(true);
       await login(formData.email, formData.password);
-      navigate("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid email or password");
-      console.error("Email Login Error:", err);
+      setError(err instanceof Error ? err.message : "Failed to login");
+      console.error("Login error:", err);
     } finally {
       setLoading(false);
     }
@@ -51,19 +53,22 @@ const Login: React.FC = () => {
     <Container>
       <LoginBox>
         <Title>Welcome Back</Title>
-
+        
         {error && <ErrorMessage>{error}</ErrorMessage>}
+        {location.state?.error && (
+          <ErrorMessage>{location.state.error}</ErrorMessage>
+        )}
 
-        <Form onSubmit={handleLogin}>
+        <Form onSubmit={handleSubmit}>
           <FormGroup>
             <Label htmlFor="email">Email</Label>
             <Input 
               type="email" 
               id="email" 
-              placeholder="Enter your email"
               value={formData.email}
               onChange={handleChange}
               required
+              disabled={loading}
             />
           </FormGroup>
 
@@ -72,16 +77,16 @@ const Login: React.FC = () => {
             <Input 
               type="password" 
               id="password" 
-              placeholder="Enter your password"
               value={formData.password}
               onChange={handleChange}
               required
+              disabled={loading}
             />
           </FormGroup>
 
-          <SubmitButton type="submit" disabled={loading}>
+          <LoginButton type="submit" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
-          </SubmitButton>
+          </LoginButton>
         </Form>
 
         <Divider>or</Divider>
@@ -95,40 +100,29 @@ const Login: React.FC = () => {
   );
 };
 
+// Styled components
 const Container = styled.div`
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   min-height: 100vh;
-  padding: 20px;
-  background-color: #f5f5f5;
+  background-color: var(--background);
+  padding: 1rem;
 `;
 
 const LoginBox = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   width: 100%;
   max-width: 400px;
-  background: white;
-  border-radius: 8px;
-  padding: 2rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 `;
 
 const Title = styled.h2`
   text-align: center;
-  color: #2C3E50;
+  color: var(--primary-color);
   margin-bottom: 1.5rem;
-  font-size: 1.75rem;
-`;
-
-const ErrorMessage = styled.div`
-  background-color: #fee2e2;
-  color: #dc2626;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-  text-align: center;
 `;
 
 const Form = styled.form`
@@ -149,37 +143,35 @@ const Label = styled.label`
 `;
 
 const Input = styled.input`
-  width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
-  transition: border-color 0.2s ease;
 
   &:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
   }
 
-  &::placeholder {
-    color: #a0aec0;
+  &:disabled {
+    background-color: #f5f5f5;
   }
 `;
 
-const SubmitButton = styled.button`
+const LoginButton = styled.button`
   width: 100%;
   padding: 0.75rem;
-  background: var(--primary-color);
+  background-color: var(--primary-color);
   color: white;
   border: none;
   border-radius: 4px;
   font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background-color 0.2s;
 
-  &:hover:not(:disabled) {
-    background: var(--primary-dark);
+  &:hover {
+    background-color: var(--primary-dark);
   }
 
   &:disabled {
@@ -189,11 +181,27 @@ const SubmitButton = styled.button`
 `;
 
 const Divider = styled.div`
-  text-align: center;
   margin: 1.5rem 0;
-  color: #666;
-  font-size: 0.9rem;
-  font-weight: bold;
+  text-align: center;
+  position: relative;
+  
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 45%;
+    height: 1px;
+    background-color: #ddd;
+  }
+  
+  &::before {
+    left: 0;
+  }
+  
+  &::after {
+    right: 0;
+  }
 `;
 
 const GoogleButton = styled.button`
@@ -203,22 +211,31 @@ const GoogleButton = styled.button`
   justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  background-color: white;
-  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  color: var(--text-color);
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #f8fafc;
+    background-color: #f8f8f8;
   }
 
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;
   }
+`;
+
+const ErrorMessage = styled.div`
+  color: #dc2626;
+  background-color: #fee2e2;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
 `;
 
 export default Login;

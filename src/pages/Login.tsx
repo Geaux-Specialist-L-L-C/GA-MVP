@@ -1,51 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Location } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
-
-interface LocationState {
-  from?: {
-    pathname: string;
-  };
-  error?: string;
-}
+import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const Login: React.FC = () => {
-  const { currentUser, loginWithGoogle, loading } = useAuth();
+  const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation() as Location & { state: LocationState };
   const [error, setError] = useState<string>('');
-  const [isRedirecting, setIsRedirecting] = useState(false);
-  const errorMessage = location.state?.error || null;
-
-  useEffect(() => {
-    if (currentUser) {
-      const redirectPath = location.state?.from?.pathname || '/dashboard';
-      navigate(redirectPath, { replace: true });
-    }
-  }, [currentUser, navigate, location]);
+  const [loading, setLoading] = useState(false);
 
   const handleGoogleLogin = async (): Promise<void> => {
     try {
       setError('');
-      setIsRedirecting(true);
+      setLoading(true);
       await loginWithGoogle();
-    } catch (err: any) {
-      setIsRedirecting(false);
-      setError(err?.message || 'Failed to sign in with Google');
+      // Navigation is handled in AuthContext after successful login
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sign in with Google');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (loading || isRedirecting) {
+  if (loading) {
     return (
       <LoadingContainer>
-        <LoadingOverlay>
-          <LoadingSpinner />
-          <LoadingText>
-            Connecting to Google...
-          </LoadingText>
-        </LoadingOverlay>
+        <LoadingSpinner />
       </LoadingContainer>
     );
   }
@@ -55,11 +38,10 @@ const Login: React.FC = () => {
       <LoginBox>
         <Title>Welcome Back</Title>
         {error && <ErrorMessage>{error}</ErrorMessage>}
-        {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
         
         <GoogleButton 
           onClick={handleGoogleLogin} 
-          disabled={loading || isRedirecting}
+          disabled={loading}
         >
           <FcGoogle />
           Sign in with Google
@@ -74,22 +56,39 @@ const LoginContainer = styled.div`
   justify-content: center;
   align-items: center;
   min-height: calc(100vh - 60px);
-  padding: 2rem;
+  padding: 20px;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 60px);
 `;
 
 const LoginBox = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 400px;
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
 const Title = styled.h1`
   text-align: center;
-  color: var(--text-color);
+  color: #333;
   margin-bottom: 2rem;
+`;
+
+const ErrorMessage = styled.div`
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  text-align: center;
 `;
 
 const GoogleButton = styled.button<{ disabled?: boolean }>`
@@ -103,62 +102,17 @@ const GoogleButton = styled.button<{ disabled?: boolean }>`
   border-radius: 4px;
   background: white;
   cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
-  transition: background 0.2s;
   opacity: ${props => props.disabled ? 0.7 : 1};
+  transition: all 0.2s;
 
-  &:hover {
-    background: ${props => props.disabled ? 'white' : '#f5f5f5'};
+  &:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #c8c9ca;
   }
-`;
 
-const ErrorMessage = styled.div`
-  color: #dc2626;
-  background: #fee2e2;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-`;
-
-const RedirectMessage = styled.p`
-  text-align: center;
-  color: #4b5563;
-  margin-top: 1rem;
-  font-size: 0.875rem;
-`;
-
-const LoadingContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: white;
-`;
-
-const LoadingOverlay = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-`;
-
-const LoadingSpinner = styled.div`
-  width: 50px;
-  height: 50px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid var(--primary-color, #4CAF50);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  svg {
+    font-size: 1.5rem;
   }
-`;
-
-const LoadingText = styled.div`
-  color: var(--primary-color, #4CAF50);
-  font-size: 1.1rem;
-  font-weight: 500;
 `;
 
 export default Login;
