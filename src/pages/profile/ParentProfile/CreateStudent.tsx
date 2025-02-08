@@ -3,19 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { addStudentProfile } from '../../../services/profileService';
 import { useAuth } from '../../../contexts/AuthContext';
-import type { CreateStudentInput } from '../../../types/profiles';
 
-const CreateStudent = () => {
-  const [studentName, setStudentName] = useState('');
-  const [gradeLevel, setGradeLevel] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const { user } = useAuth();
+interface NewStudent {
+  name: string;
+  grade: string;
+  parentId: string;
+  hasTakenAssessment: boolean;
+}
+
+const CreateStudent: React.FC = () => {
+  const [studentName, setStudentName] = useState<string>('');
+  const [grade, setGrade] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user) {
+    if (!currentUser) {
       navigate('/login');
       return;
     }
@@ -24,71 +30,72 @@ const CreateStudent = () => {
     setError('');
 
     try {
-      const newStudent: CreateStudentInput = { 
+      const newStudent: NewStudent = { 
         name: studentName, 
-        grade: gradeLevel, 
-        parentId: user.uid,
+        grade, 
+        parentId: currentUser.uid,
         hasTakenAssessment: false
       };
 
-      await addStudentProfile(user.uid, newStudent);
-      // Clear form
+      await addStudentProfile(currentUser.uid, newStudent);
       setStudentName('');
-      setGradeLevel('');
-      // Force refresh of parent dashboard
-      window.location.reload();
+      setGrade('');
+      navigate('/dashboard');
     } catch (err) {
-      console.error('Failed to create student:', err);
       setError('Failed to create student profile. Please try again.');
+      console.error('Error creating student:', err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Container>
+    <FormContainer>
       <h2>Add a New Student</h2>
       {error && <ErrorMessage>{error}</ErrorMessage>}
       
       <Form onSubmit={handleSubmit}>
         <FormGroup>
-          <Label>Student Name:</Label>
-          <Input 
-            type="text" 
-            value={studentName} 
-            onChange={(e) => setStudentName(e.target.value)} 
-            placeholder="Enter student's name"
-            required 
-          />
+          <Label>
+            Student Name:
+            <Input
+              type="text"
+              value={studentName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStudentName(e.target.value)}
+              placeholder="Enter student's name"
+              required
+            />
+          </Label>
         </FormGroup>
 
         <FormGroup>
-          <Label>Grade Level:</Label>
-          <Select 
-            value={gradeLevel} 
-            onChange={(e) => setGradeLevel(e.target.value)} 
-            required
-          >
-            <option value="">Select Grade</option>
-            <option value="K">Kindergarten</option>
-            <option value="1">Grade 1</option>
-            <option value="2">Grade 2</option>
-            <option value="3">Grade 3</option>
-            <option value="4">Grade 4</option>
-            <option value="5">Grade 5</option>
-            <option value="6">Grade 6</option>
-          </Select>
+          <Label>
+            Grade Level:
+            <Select 
+              value={grade} 
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGrade(e.target.value)}
+              required
+            >
+              <option value="">Select Grade</option>
+              <option value="K">Kindergarten</option>
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i + 1} value={String(i + 1)}>
+                  Grade {i + 1}
+                </option>
+              ))}
+            </Select>
+          </Label>
         </FormGroup>
 
         <SubmitButton type="submit" disabled={loading}>
-          {loading ? 'Creating...' : 'Add Student'}
+          {loading ? 'Creating Profile...' : 'Save Profile'}
         </SubmitButton>
       </Form>
-    </Container>
+    </FormContainer>
   );
 };
 
-const Container = styled.div`
+const FormContainer = styled.div`
   max-width: 500px;
   margin: 2rem auto;
   padding: 2rem;

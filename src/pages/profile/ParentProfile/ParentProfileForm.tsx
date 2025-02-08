@@ -3,20 +3,26 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { createParentProfile } from '../../../services/profileService';
 import styled from 'styled-components';
 
-export const ParentProfileForm = () => {
-  const { user } = useAuth();
-  const [formData, setFormData] = useState({
-    displayName: user?.displayName || '',
-    phone: '',
-    email: user?.email || ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+interface FormData {
+  displayName: string;
+  phone: string;
+  email: string;
+}
 
-  const handleSubmit = async (e) => {
+export const ParentProfileForm: React.FC = () => {
+  const { currentUser } = useAuth();
+  const [formData, setFormData] = useState<FormData>({
+    displayName: currentUser?.displayName || '',
+    phone: '',
+    email: currentUser?.email || ''
+  });
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<boolean>(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user) {
+    if (!currentUser) {
       setError('You must be logged in to create a profile');
       return;
     }
@@ -24,9 +30,9 @@ export const ParentProfileForm = () => {
     setLoading(true);
     setError('');
     try {
-      console.log('📝 Creating parent profile for:', user.uid);
+      console.log('📝 Creating parent profile for:', currentUser.uid);
       await createParentProfile({
-        uid: user.uid,
+        uid: currentUser.uid,
         email: formData.email,
         displayName: formData.displayName,
         phone: formData.phone
@@ -62,7 +68,7 @@ export const ParentProfileForm = () => {
             type="text"
             placeholder="Your full name"
             value={formData.displayName}
-            onChange={(e) => setFormData({
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({
               ...formData,
               displayName: e.target.value
             })}
@@ -77,7 +83,7 @@ export const ParentProfileForm = () => {
             type="tel"
             placeholder="Your phone number"
             value={formData.phone}
-            onChange={(e) => setFormData({
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({
               ...formData,
               phone: e.target.value
             })}
@@ -92,12 +98,12 @@ export const ParentProfileForm = () => {
             type="email"
             placeholder="Your email"
             value={formData.email}
-            onChange={(e) => setFormData({
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({
               ...formData,
               email: e.target.value
             })}
             required
-            disabled={!!user?.email}
+            disabled={!!currentUser?.email}
           />
         </FormGroup>
 
