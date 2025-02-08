@@ -41,6 +41,7 @@ const App: React.FC = () => {
           <AppContainer>
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
+                {/* Public routes */}
                 <Route element={<Layout />}>
                   <Route path="/" element={<Home />} />
                   <Route path="/features" element={<Features />} />
@@ -48,24 +49,40 @@ const App: React.FC = () => {
                   <Route path="/curriculum" element={<Curriculum />} />
                   <Route path="/learning-styles" element={<LearningStyles />} />
                   <Route path="/contact" element={<Contact />} />
-                  <Route path="/take-assessment" element={<TakeAssessment />} />
-                  <Route path="/student-profile" element={
-                    <AuthRoute>
-                      <StudentProfile />
-                    </AuthRoute>
+                </Route>
+
+                {/* Auth routes */}
+                <Route path="/login" element={
+                  <AuthRoute>
+                    <Login />
+                  </AuthRoute>
+                } />
+                <Route path="/signup" element={
+                  <AuthRoute>
+                    <SignUp />
+                  </AuthRoute>
+                } />
+
+                {/* Protected routes */}
+                <Route element={<Layout />}>
+                  <Route path="/take-assessment" element={
+                    <PrivateRoute>
+                      <TakeAssessment />
+                    </PrivateRoute>
                   } />
                   <Route path="/dashboard" element={
                     <PrivateRoute>
                       <Dashboard />
                     </PrivateRoute>
                   } />
+                  <Route path="/student-profile" element={
+                    <PrivateRoute>
+                      <StudentProfile />
+                    </PrivateRoute>
+                  } />
                 </Route>
-                
-                {/* Auth routes outside of Layout */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<SignUp />} />
 
-                {/* Fallback route */}
+                {/* Catch-all route */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

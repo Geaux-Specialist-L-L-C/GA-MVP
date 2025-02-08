@@ -17,13 +17,12 @@ const Login: React.FC = () => {
   const location = useLocation() as Location & { state: LocationState };
   const [error, setError] = useState<string>('');
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [authMethod, setAuthMethod] = useState<'popup' | 'redirect'>('popup');
   const errorMessage = location.state?.error || null;
 
   useEffect(() => {
     if (currentUser) {
       const redirectPath = location.state?.from?.pathname || '/dashboard';
-      navigate(redirectPath);
+      navigate(redirectPath, { replace: true });
     }
   }, [currentUser, navigate, location]);
 
@@ -31,21 +30,25 @@ const Login: React.FC = () => {
     try {
       setError('');
       setIsRedirecting(true);
-      setAuthMethod('popup');
       await loginWithGoogle();
-      const redirectPath = location.state?.from?.pathname || '/dashboard';
-      navigate(redirectPath);
     } catch (err: any) {
-      if (err?.code === 'auth/popup-blocked') {
-        setAuthMethod('redirect');
-        setError('Popup was blocked. Trying redirect method...');
-        // The redirect will happen automatically from AuthContext
-      } else if (err?.code !== 'auth/popup-closed-by-user') {
-        setIsRedirecting(false);
-        setError((err?.message as string) || 'Failed to sign in with Google. Please try again later.');
-      }
+      setIsRedirecting(false);
+      setError(err?.message || 'Failed to sign in with Google');
     }
   };
+
+  if (loading || isRedirecting) {
+    return (
+      <LoadingContainer>
+        <LoadingOverlay>
+          <LoadingSpinner />
+          <LoadingText>
+            Connecting to Google...
+          </LoadingText>
+        </LoadingOverlay>
+      </LoadingContainer>
+    );
+  }
 
   return (
     <LoginContainer>
@@ -59,18 +62,8 @@ const Login: React.FC = () => {
           disabled={loading || isRedirecting}
         >
           <FcGoogle />
-          {isRedirecting 
-            ? authMethod === 'redirect' 
-              ? 'Redirecting to Google...' 
-              : 'Signing in...'
-            : 'Sign in with Google'
-          }
+          Sign in with Google
         </GoogleButton>
-        {isRedirecting && authMethod === 'redirect' && (
-          <RedirectMessage>
-            You'll be redirected to Google to complete sign-in...
-          </RedirectMessage>
-        )}
       </LoginBox>
     </LoginContainer>
   );
@@ -131,6 +124,41 @@ const RedirectMessage = styled.p`
   color: #4b5563;
   margin-top: 1rem;
   font-size: 0.875rem;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: white;
+`;
+
+const LoadingOverlay = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+`;
+
+const LoadingSpinner = styled.div`
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--primary-color, #4CAF50);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+const LoadingText = styled.div`
+  color: var(--primary-color, #4CAF50);
+  font-size: 1.1rem;
+  font-weight: 500;
 `;
 
 export default Login;

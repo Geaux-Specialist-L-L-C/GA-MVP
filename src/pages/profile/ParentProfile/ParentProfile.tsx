@@ -14,7 +14,7 @@ const ParentProfile: React.FC = () => {
   const parent = useSelector((state: RootState) => state.profile.parent);
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [newStudent, setNewStudent] = useState<Partial<Student>>({});
-  const { loginWithGoogle, currentUser } = useAuth();
+  const { loginWithGoogle, currentUser, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [error, setError] = useState("");
@@ -40,20 +40,18 @@ const ParentProfile: React.FC = () => {
     try {
       setError("");
       await loginWithGoogle();
-      // No need to navigate here since the redirect will happen automatically
-      // The AuthContext useEffect will handle the redirect result and user state
+      // Removed manual navigation - will be handled by AuthContext
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to login");
       console.error("Login error:", err);
     }
   };
 
-  // Automatically redirect to dashboard when user is authenticated
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && !loading) {
       navigate("/dashboard", { replace: true });
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, loading, navigate]);
 
   useEffect(() => {
     const fetchStudentsData = async () => {

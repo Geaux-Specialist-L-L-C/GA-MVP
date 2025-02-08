@@ -2,12 +2,12 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithPopup,
   signInWithRedirect,
   onAuthStateChanged,
   getIdToken,
   UserCredential,
-  getRedirectResult
+  getRedirectResult,
+  GoogleAuthProvider
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
 import { getParentProfile } from '../services/profileService';
@@ -25,16 +25,19 @@ function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    let isSubscribed = true;
-
-    const checkRedirectAndAuthState = async () => {
+    const handleRedirectResult = async () => {
       try {
-        console.log("🔄 Checking for redirect result...");
+        setLoading(true);
+        console.log("🔄 Checking redirect result...");
         const result = await getRedirectResult(auth);
-        if (result?.user && isSubscribed) {
+        
+        if (result) {
+          console.log("✅ Redirect result received");
+          // Get ID token and store it
           const token = await getIdToken(result.user);
           localStorage.setItem('token', token);
-          
+
+          // Get parent profile
           try {
             const parentProfile = await getParentProfile(result.user.uid);
             setCurrentUser({
@@ -53,57 +56,51 @@ function AuthProvider({ children }: AuthProviderProps): JSX.Element {
               photoURL: result.user.photoURL
             });
           }
-          console.log("✅ Redirect sign-in successful!");
         }
-      } catch (error: any) {
-        console.error("❌ Redirect sign-in error:", error);
-        if (error?.code !== 'auth/credential-already-in-use' && isSubscribed) {
-          setAuthError("Failed to complete sign-in. Please try again.");
-        }
-      }
-
-      // Set up auth state listener after checking redirect result
-      const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        if (!isSubscribed) return;
-
-        if (user) {
-          try {
-            const token = await getIdToken(user);
-            localStorage.setItem('token', token);
-            
-            const parentProfile = await getParentProfile(user.uid);
-            setCurrentUser({
-              uid: user.uid,
-              email: user.email,
-              displayName: user.displayName,
-              photoURL: user.photoURL,
-              ...parentProfile
-            });
-          } catch (error) {
-            console.error("Error fetching parent profile:", error);
-            setCurrentUser({
-              uid: user.uid,
-              email: user.email,
-              displayName: user.displayName,
-              photoURL: user.photoURL
-            });
-          }
-        } else {
-          setCurrentUser(null);
-          localStorage.removeItem('token');
-        }
+      } catch (error) {
+        console.error("❌ Error handling redirect result:", error);
+        setAuthError("Sign-in failed. Please try again.");
+      } finally {
         setLoading(false);
-      });
-
-      return unsubscribe;
+      }
     };
 
-    const unsubscribePromise = checkRedirectAndAuthState();
-    
-    return () => {
-      isSubscribed = false;
-      unsubscribePromise.then(unsubscribe => unsubscribe());
-    };
+    // Handle redirect result when component mounts
+    handleRedirectResult();
+
+    // Set up auth state listener
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log("🔄 Auth state changed:", user?.email);
+      if (user) {
+        try {
+          const token = await getIdToken(user);
+          localStorage.setItem('token', token);
+          
+          const parentProfile = await getParentProfile(user.uid);
+          setCurrentUser({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            ...parentProfile
+          });
+        } catch (error) {
+          console.error("Error fetching parent profile:", error);
+          setCurrentUser({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL
+          });
+        }
+      } else {
+        setCurrentUser(null);
+        localStorage.removeItem('token');
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = async (email: string, password: string): Promise<UserCredential> => {
@@ -122,11 +119,17 @@ function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const loginWithGoogle = async (): Promise<void> => {
     try {
       setAuthError(null);
-      console.log("🔄 Starting Google sign-in process...");
+      setLoading(true);
+      console.log("🔄 Starting Google sign-in...");
+      // Configure OAuth prompt behavior
+      googleProvider.setCustomParameters({
+        prompt: 'select_account'
+      });
       await signInWithRedirect(auth, googleProvider);
-    } catch (error: any) {
+    } catch (error) {
       console.error("❌ Google login error:", error);
-      setAuthError("Unable to sign in with Google. Please try again.");
+      setAuthError("Failed to start Google sign-in.");
+      setLoading(false);
       throw error;
     }
   };
