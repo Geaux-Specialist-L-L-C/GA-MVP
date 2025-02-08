@@ -1,13 +1,20 @@
-export default {
-  colors: {
-    primary: '#D4AF37',
-    secondary: '#2C3E50',
-    text: '#333333',
-    textLight: '#FFFFFF',
-    background: '#FFFFFF',
-    accent: '#E67E22',
-    error: '#E74C3C',
-    success: '#2ECC71'
+import { createTheme } from '@mui/material/styles';
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#C29A47', // Primary gold
+    },
+    secondary: {
+      main: '#8C6B4D', // Deep gold accent
+    },
+    background: {
+      default: '#F5F3F0', // Neutral background
+      paper: '#FFF8E7',   // Highlight background
+    },
+    text: {
+      primary: '#000000', // Black
+    },
   },
   breakpoints: {
     mobile: '320px',
@@ -22,4 +29,6 @@ export default {
     lg: '2rem',
     xl: '3rem',
   },
-};
+});
+
+export default theme;

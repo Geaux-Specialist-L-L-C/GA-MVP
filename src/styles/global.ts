@@ -1,18 +1,12 @@
 import { createGlobalStyle } from 'styled-components';
 
 const GlobalStyle = createGlobalStyle`
-  :root {
-    --primary-color: ${props => props.theme.palette.primary.main};
-    --secondary-color: ${props => props.theme.palette.secondary.main};
-    --background: ${props => props.theme.palette.background.default};
-    --paper-background: ${props => props.theme.palette.background.paper};
-    --text-color: ${props => props.theme.palette.text.primary};
-  }
-
-  * {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
   }
 
   html {
@@ -21,25 +15,11 @@ const GlobalStyle = createGlobalStyle`
   }
 
   body {
-    font-family: 'Arial', sans-serif;
-    line-height: 1.6;
-    color: var(--text-color);
-    background-color: var(--background);
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    margin-bottom: 1rem;
-    line-height: 1.2;
-  }
-
-  a {
-    color: var(--primary-color);
-    text-decoration: none;
-    transition: color 0.3s ease;
-
-    &:hover {
-      color: var(--secondary-color);
-    }
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+      Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: ${({ theme }) => theme.palette.background.default};
+    color: ${({ theme }) => theme.palette.text.primary};
+    line-height: 1.5;
   }
 
   img {
@@ -47,11 +27,31 @@ const GlobalStyle = createGlobalStyle`
     height: auto;
   }
 
-  .container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1rem;
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+  }
+
+  ul, ol {
+    list-style: none;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
+    html {
+      font-size: 14px;
+    }
   }
 `;
 
