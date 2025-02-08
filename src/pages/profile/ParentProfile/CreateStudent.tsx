@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { addStudentProfile } from '../../../services/profileService';
 import { useAuth } from '../../../contexts/AuthContext';
+import StudentCard from '../../../components/student/StudentCard';
 
 interface NewStudent {
   name: string;

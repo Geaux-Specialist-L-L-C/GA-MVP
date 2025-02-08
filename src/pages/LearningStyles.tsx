@@ -2,8 +2,8 @@ import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FaHeadphones, FaBook, FaRunning, FaBrain, FaUsers, FaEye } from 'react-icons/fa';
-import { Header } from '../components/layout/Header';
-import { GoogleLoginButton } from '../components/GoogleLoginButton';
+import Header from '../components/layout/Header';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 import Card from '../components/common/Card';
 
 const LearningStyles = () => {
