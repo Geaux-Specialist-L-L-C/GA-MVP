@@ -1,5 +1,7 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 from typing import List, Dict
 import openai
@@ -21,10 +23,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add security middleware
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+security = HTTPBearer()
+
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Request: {request.method} {request.url}")
+    response = await call_next(request)
+    return response
+
 # Azure OpenAI Configuration
 openai.api_type = "azure"
-openai.api_base = os.getenv("VITE_AZUREAI_ENDPOINT_URL")
-openai.api_key = os.getenv("VITE_AZUREAI_ENDPOINT_KEY")
+openai.api_base = os.getenv("VITE_AZURE_ENDPOINT", "https://ai-geauxacademy8942ai219453410909.openai.azure.com/")
+openai.api_key = os.getenv("VITE_AZURE_API_KEY", "DYLWvom1rGV6o6eOaVmuOGMAlb3oPwdlgYfFLBRoirTufjfdnBSlJQQJ99AKACHYHv6XJ3w3AAAAACOGkQBU")
 openai.api_version = "2023-07-01-preview"
 
 class ChatMessage(BaseModel):
@@ -33,6 +46,11 @@ class ChatMessage(BaseModel):
 @app.post("/chat")
 async def get_chat_response(chat: ChatMessage):
     try:
+        if not openai.api_key:
+            raise HTTPException(
+                status_code=500,
+                detail="OpenAI API key not configured"
+            )
         response = openai.ChatCompletion.create(
             engine=os.getenv("VITE_AZURE_DEPLOYMENT_NAME", "gpt-35-turbo"),
             messages=chat.messages,
@@ -45,6 +63,12 @@ async def get_chat_response(chat: ChatMessage):
             "response": response.choices[0].message.content,
             "usage": response.usage
         }
+    except openai.error.OpenAIError as e:
+        logger.error(f"OpenAI API error: {str(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail="Service temporarily unavailable"
+        )
     except Exception as e:
         logger.error(f"Error in chat completion: {str(e)}")
         raise HTTPException(
@@ -55,3 +79,44 @@ async def get_chat_response(chat: ChatMessage):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+class StudentCreate(BaseModel):
+    name: str
+
+class StudentUpdate(BaseModel):
+    name: str
+
+class Student(StudentCreate):
+    id: int
+
+students_db = {}
+
+@app.post("/students", response_model=Student)
+async def create_student(student: StudentCreate):
+    new_id = len(students_db) + 1
+    new_student = Student(id=new_id, name=student.name)
+    students_db[new_id] = new_student
+    return new_student
+
+@app.get("/students/{student_id}", response_model=Student)
+async def get_student(student_id: int):
+    student = students_db.get(student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student
+
+@app.put("/students/{student_id}", response_model=Student)
+async def update_student(student_id: int, student_update: StudentUpdate):
+    student = students_db.get(student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    updated_student = Student(id=student_id, name=student_update.name)
+    students_db[student_id] = updated_student
+    return updated_student
+
+@app.delete("/students/{student_id}")
+async def delete_student(student_id: int):
+    student = students_db.pop(student_id, None)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return {"detail": "Student deleted successfully"}

@@ -1,67 +1,119 @@
-import { db } from '../config/firebase';
-import { collection, doc, setDoc, updateDoc, getDoc } from 'firebase/firestore';
-import { ParentProfile, StudentProfile } from '../types/userTypes';
-import { Parent, Student } from '../types/profiles';
+import { db } from '../firebase/config';
+import { doc, getDoc, setDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
+import { Parent, Student } from "../types/profiles";
 
-export const createParentProfile = async (parentData: Partial<ParentProfile>) => {
-  const profileRef = doc(db, 'parents', parentData.uid!);
-  await setDoc(profileRef, {
-    ...parentData,
-    role: 'parent',
-    students: [],
-    createdAt: new Date(),
-    updatedAt: new Date()
-  });
-};
-
-export const addStudentToParent = async (
-  parentId: string, 
-  studentData: Partial<StudentProfile>
-) => {
-  const studentRef = doc(db, 'students', studentData.uid!);
-  const parentRef = doc(db, 'parents', parentId);
-
-  await setDoc(studentRef, {
-    ...studentData,
-    role: 'student',
-    parentId,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  });
-
-  const parentDoc = await getDoc(parentRef);
-  const parentData = parentDoc.data();
-  
-  await updateDoc(parentRef, {
-    students: [...(parentData?.students || []), studentData.uid]
-  });
-};
-
-export const profileService = {
-  async createStudent(parentId: string, student: Student) {
-    const parentRef = doc(db, 'parents', parentId);
-    const parentDoc = await getDoc(parentRef);
+// ✅ Create Parent Profile
+export const createParentProfile = async (parentData: Partial<Parent>): Promise<string> => {
+  try {
+    if (!parentData.uid) throw new Error('User ID is required');
     
-    if (parentDoc.exists()) {
-      const parent = parentDoc.data() as Parent;
-      const updatedStudents = [...parent.students, student];
-      await updateDoc(parentRef, { students: updatedStudents });
-      return student;
-    }
-    throw new Error('Parent not found');
-  },
-
-  async updateStudentProgress(parentId: string, studentId: string, progress: any) {
-    const parentRef = doc(db, 'parents', parentId);
-    const parentDoc = await getDoc(parentRef);
+    const parentRef = doc(db, 'parents', parentData.uid);
+    await setDoc(parentRef, {
+      ...parentData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      students: []
+    });
     
-    if (parentDoc exists()) {
-      const parent = parentDoc.data() as Parent;
-      const studentIndex = parent.students.findIndex(s => s.id === studentId);
-      if (studentIndex !== -1) {
-        parent.students[studentIndex].progress = progress;
-        await updateDoc(parentRef, { students: parent.students });
-      }
-    }
+    console.log('✅ Parent profile created successfully:', parentData.uid);
+    return parentData.uid;
+  } catch (error) {
+    console.error('❌ Error creating parent profile:', error);
+    throw error;
   }
+};
+
+// ✅ Fetch Parent Profile
+export const getParentProfile = async (userId: string): Promise<Parent | null> => {
+  try {
+    console.log('🔍 Fetching parent profile for:', userId);
+    const docRef = doc(db, 'parents', userId);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = { id: docSnap.id, ...docSnap.data() } as Parent;
+      console.log('✅ Parent profile found:', data);
+      return data;
+    }
+    
+    console.log('ℹ️ No parent profile found, creating one...');
+    // If no profile exists, create one
+    await createParentProfile({ uid: userId });
+    return getParentProfile(userId); // Retry fetch after creation
+    
+  } catch (error) {
+    console.error('❌ Error fetching parent profile:', error);
+    throw error;
+  }
+};
+
+// ✅ Fetch Student Profile
+export const getStudentProfile = async (studentId: string): Promise<Student> => {
+  const studentRef = doc(db, "students", studentId);
+  const studentDoc = await getDoc(studentRef);
+
+  if (!studentDoc.exists()) {
+    throw new Error("Student profile not found");
+  }
+
+  return studentDoc.data() as Student;
+};
+
+// ✅ Add Student Profile
+export const addStudentProfile = async (parentId: string, studentData: {
+  name: string;
+  grade: string;
+  parentId: string;
+  hasTakenAssessment: boolean;
+}) => {
+  try {
+    console.log('📝 Adding student profile for parent:', parentId);
+    
+    // Add the student to the students collection
+    const studentRef = await addDoc(collection(db, 'students'), {
+      ...studentData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+
+    // Update the parent's students array
+    const parentRef = doc(db, 'parents', parentId);
+    const parentDoc = await getDoc(parentRef);
+
+    if (parentDoc.exists()) {
+      const currentStudents = parentDoc.data().students || [];
+      await updateDoc(parentRef, {
+        students: [...currentStudents, studentRef.id],
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    console.log('✅ Student profile added successfully:', studentRef.id);
+    return studentRef.id;
+  } catch (error) {
+    console.error('❌ Error adding student profile:', error);
+    throw error;
+  }
+};
+
+// ✅ Update Student's Assessment Status
+export const updateStudentAssessmentStatus = async (studentId: string, status: string) => {
+  const studentRef = doc(db, "students", studentId);
+  try {
+    await updateDoc(studentRef, {
+      assessmentStatus: status,
+      updatedAt: new Date(),
+    });
+    console.log(`Assessment status updated to: ${status}`);
+  } catch (error) {
+    console.error("Error updating assessment status:", error);
+    throw new Error("Failed to update assessment status");
+  }
+};
+
+export default {
+  getParentProfile,
+  getStudentProfile,
+  addStudentProfile,
+  updateStudentAssessmentStatus,
 };

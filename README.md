@@ -82,3 +82,79 @@ To deploy the application to Firebase:
      Description: "Set up the database schema and models."
    - Title: "API setup"
      Description: "Develop the API endpoints."
+
+## React Setup
+
+This section provides guidelines for setting up and using React in this project.
+
+## Updated File Structure
+
+```plaintext
+/src/
+├── components/                    # /src/components/* - Reusable components
+│   ├── auth/                     # /src/components/auth/* - Authentication components
+│   │   ├── AuthRoute.tsx
+│   │   ├── LoginForm.tsx
+│   │   └── SignUpForm.tsx
+│   ├── common/                   # /src/components/common/* - Shared UI components
+│   │   ├── Button/
+│   │   │   ├── Button.tsx
+│   │   │   ├── Button.test.tsx
+│   │   │   └── Button.styles.ts
+│   │   └── Card/
+│   │       ├── Card.tsx
+│   │       └── Card.styles.ts
+│   ├── layout/                   # /src/components/layout/* - Layout components
+│   │   ├── Header/
+│   │   ├── Footer/
+│   │   ├── Navigation/
+│   │   └── Sidebar/
+│   └── features/                 # /src/components/features/* - Feature-specific components
+│       ├── home/
+│       ├── profile/
+│       └── dashboard/
+├── pages/                        # /src/pages/* - Page components
+│   ├── Home/
+│   │   ├── index.tsx
+│   │   └── Home.styles.ts
+│   └── Dashboard/
+│       ├── index.tsx
+│       └── Dashboard.styles.ts
+├── hooks/                        # /src/hooks/* - Custom React hooks
+│   └── useAuth.ts
+├── services/                     # /src/services/* - API and external services
+│   ├── api/
+│   │   └── index.ts
+│   └── firebase/
+│       └── config.ts
+├── store/                        # /src/store/* - State management
+│   ├── slices/
+│   └── index.ts
+├── types/                        # /src/types/* - TypeScript types/interfaces
+│   └── index.ts
+├── utils/                        # /src/utils/* - Utility functions
+│   └── helpers.ts
+├── styles/                       # /src/styles/* - Global styles
+│   ├── theme.ts
+│   └── global.ts
+└── config/                       # /src/config/* - Configuration files
+    └── env.ts
+```
+
+## Notes on Merged Files
+
+- `src/components/auth/AuthRoute.tsx` now contains the merged content from `src/components/AuthRoute.tsx` and `public/JSX/AuthRoute.jsx`.
+- `src/theme/theme.js` now contains the merged content from `src/components/layout/styles/theme.js`.
+
+## Updated Import Paths
+
+- Ensure all import paths in your components are updated to reflect the new structure. For example:
+  ```jsx
+  // Before
+  import AuthRoute from '../AuthRoute';
+
+  // After
+  import AuthRoute from '../components/auth/AuthRoute';
+  ```
+
+- Similarly, update any other import paths that have changed due to the restructuring.

@@ -1,24 +1,33 @@
+export interface CreateStudentInput {
+  name: string;
+  grade: string;
+  parentId: string;
+  hasTakenAssessment: boolean;
+}
 
 export interface Student {
-  id: string;
+  id?: string;
   name: string;
-  age: number;
-  learningStyle?: string;
-  assessmentResults?: {
-    date: string;
-    score: number;
-    style: string;
-  }[];
-  progress: {
-    moduleId: string;
-    completion: number;
-    lastAccessed: string;
-  }[];
+  grade: string;
+  parentId: string;
+  hasTakenAssessment: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  assessmentStatus?: string;
 }
 
 export interface Parent {
-  id: string;
-  name: string;
+  id?: string;
+  uid: string;
   email: string;
-  students: Student[];
+  displayName: string;
+  phone: string;
+  students: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+export type UserProfile = {
+  name: string;
+  lastLogin: string;
+};

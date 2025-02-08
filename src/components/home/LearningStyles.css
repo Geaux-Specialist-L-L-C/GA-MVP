@@ -1,3 +1,14 @@
+:root {
+  --primary-color: #2C3E50;
+  --text-color: #333;
+  --background-alt: #f8f9fa;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
 .learning-styles-section {
   padding: 4rem 2rem;
   background-color: var(--light-bg);
@@ -28,6 +39,8 @@
 
 .style-card:hover {
   transform: translateY(-5px);
+  background-color: #e6b800; /* P4a73 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* P4a73 */
 }
 
 .style-icon {
@@ -46,6 +59,12 @@
   line-height: 1.5;
 }
 
+.main-content {
+  margin-left: 250px;
+  padding: 2rem;
+  min-height: 100vh;
+}
+
 @media (max-width: 768px) {
   .styles-grid {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -53,5 +72,10 @@
   
   .learning-styles-section {
     padding: 2rem 1rem;
+  }
+
+  .main-content {
+    margin-left: 0;
+    padding: 1rem;
   }
 }
