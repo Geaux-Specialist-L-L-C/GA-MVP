@@ -4,42 +4,27 @@ import styled from 'styled-components';
 
 const Header = () => {
   const location = useLocation();
-  const isLoggedIn = false; // This will need to be dynamic based on your auth logic
+  const isLoggedIn = false; // Replace with authentication logic
 
   return (
     <StyledHeaderContainer>
-      <StyledLogoSection>
-        <Link to="/">
-          <StyledLogoImage src="/images/logo.png" alt="Geaux Academy Logo" />
-          <h1>Geaux Academy</h1>
-        </Link>
-      </StyledLogoSection>
-      <StyledNavSection>
-        <StyledNavLinks>
-          <StyledNavItem>
-            <StyledNavLink to="/" $isActive={location.pathname === "/"}>Home</StyledNavLink>
-          </StyledNavItem>
-          <StyledNavItem>
-            <StyledNavLink to="/about" $isActive={location.pathname === "/about"}>About</StyledNavLink>
-          </StyledNavItem>
-          <StyledNavItem>
-            <StyledNavLink to="/features" $isActive={location.pathname.startsWith("/features")}>Features</StyledNavLink>
-          </StyledNavItem>
-          <StyledNavItem>
-            <StyledNavLink to="/learning-styles" $isActive={location.pathname.startsWith("/learning-styles")}>Learning Styles</StyledNavLink>
-          </StyledNavItem>
-          <StyledNavItem>
-            <StyledNavLink to="/contact" $isActive={location.pathname === "/contact"}>Contact</StyledNavLink>
-          </StyledNavItem>
-        </StyledNavLinks>
-      </StyledNavSection>
+      <Link to="/">
+        <StyledLogo src="/images/logo.svg" alt="Geaux Academy Logo" />
+      </Link>
+      <StyledNav>
+        <StyledNavLink to="/" active={location.pathname === "/"}>Home</StyledNavLink>
+        <StyledNavLink to="/about" active={location.pathname === "/about"}>About</StyledNavLink>
+        <StyledNavLink to="/features" active={location.pathname.startsWith("/features")}>Features</StyledNavLink>
+        <StyledNavLink to="/learning-styles" active={location.pathname.startsWith("/learning-styles")}>Learning Styles</StyledNavLink>
+        <StyledNavLink to="/contact" active={location.pathname === "/contact"}>Contact</StyledNavLink>
+      </StyledNav>
       <StyledAuthButtons>
         {isLoggedIn ? (
           <LogoutButton>Logout</LogoutButton>
         ) : (
           <>
-            <Link to="/login" className="btn btn-login">Login</Link>
-            <Link to="/signup" className="btn btn-signup">Sign Up</Link>
+            <StyledButton to="/login">Login</StyledButton>
+            <StyledButton to="/signup" primary>Sign Up</StyledButton>
           </>
         )}
       </StyledAuthButtons>
@@ -50,76 +35,59 @@ const Header = () => {
 // Styled Components
 const StyledHeaderContainer = styled.header`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  width: 100%;
   height: 64px;
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  background: black;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
   padding: 0 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
-const StyledLogoSection = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+const StyledLogo = styled.img`
+  height: 50px;
+  object-fit: contain;
 `;
 
-const StyledLogoImage = styled.img`
-  height: 40px;
-  width: auto;
-`;
-
-const StyledNavSection = styled.nav`
-  flex: 1;
-  display: flex;
-  justify-content: center;
-`;
-
-const StyledNavLinks = styled.ul`
+const StyledNav = styled.nav`
   display: flex;
   gap: 2rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  align-items: center;
 `;
 
-const StyledNavItem = styled.li`
-  position: relative;
-`;
-
-const StyledNavLink = styled(Link)<{ $isActive: boolean }>`
-  color: var(--text-color, #333);
-  text-decoration: none;
+const StyledNavLink = styled(Link)`
+  color: ${(props) => (props.active ? "gold" : "white")};
   font-weight: 500;
-  transition: color 0.2s ease;
+  text-decoration: none;
   padding: 0.5rem 1rem;
-  border-radius: 4px;
 
   &:hover {
-    color: var(--primary-color, #646cff);
-    background: rgba(100, 108, 255, 0.08);
+    color: gold;
   }
-
-  ${(props) => props.$isActive && `
-    color: var(--primary-color, #646cff);
-    background: rgba(100, 108, 255, 0.08);
-  `}
 `;
 
 const StyledAuthButtons = styled.div`
   display: flex;
   gap: 1rem;
-  margin-left: auto;
+`;
+
+const StyledButton = styled(Link)`
+  padding: 0.5rem 1rem;
+  color: white;
+  background: ${(props) => (props.primary ? "gold" : "transparent")};
+  border: 2px solid gold;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: bold;
+
+  &:hover {
+    background: white;
+    color: black;
+  }
 `;
 
 const LogoutButton = styled.button`
-  background: #dc3545;
+  background: red;
   color: white;
   padding: 0.5rem 1rem;
   border: none;
@@ -127,7 +95,7 @@ const LogoutButton = styled.button`
   cursor: pointer;
 
   &:hover {
-    background: #c82333;
+    background: darkred;
   }
 `;
 

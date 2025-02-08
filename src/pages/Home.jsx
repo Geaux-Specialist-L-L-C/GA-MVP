@@ -1,31 +1,18 @@
 import React, { useState, memo } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import styled from "styled-components";
 import { FaGraduationCap, FaChartLine, FaLightbulb } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import Header from "../components/layout/Header";
+import Button from '../components/common/Button'; // ✅ Make sure this path is correct!
 
-// Flip Animation for Cards
-const CardVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-};
-
+// ✅ Flip Card Component
 const FlipCard = ({ icon, title, description }) => {
-  const [flipped, setFlipped] = useState(false);
-
   return (
-    <FlipContainer
-      as={motion.div}
-      variants={CardVariants}
-      initial="hidden"
-      animate="visible"
-      whileHover={{ scale: 1.05 }}
-      onClick={() => setFlipped(!flipped)}
-    >
-      <FlipInner className={flipped ? "flipped" : ""}>
+    <FlipContainer>
+      <FlipInner className="flip">
         <FlipFront>
           <IconWrapper>{icon}</IconWrapper>
           <h3>{title}</h3>
@@ -38,6 +25,7 @@ const FlipCard = ({ icon, title, description }) => {
   );
 };
 
+// Features Data
 const features = [
   { icon: <FaGraduationCap />, title: "Expert Instruction", description: "Learn from industry professionals." },
   { icon: <FaChartLine />, title: "Track Progress", description: "Monitor your growth with analytics." },
@@ -81,7 +69,9 @@ const Home = () => {
       <CallToAction>
         <h2>Ready to Start Your Learning Journey?</h2>
         <p>Join Geaux Academy today and discover your unique learning style.</p>
-        <StyledButton to="/signup">Get Started</StyledButton> {/* ✅ FIXED REDIRECT */}
+        <Link to="/signup">
+          <Button variant="primary">Get Started</Button>
+        </Link>
       </CallToAction>
 
       <GoogleLoginSection>
@@ -157,7 +147,7 @@ const FlipInner = styled.div`
   transform-style: preserve-3d;
   transition: transform 0.6s;
   
-  &.flipped {
+  &:hover {
     transform: rotateY(180deg);
   }
 `;
@@ -170,12 +160,11 @@ const FlipFront = styled.div`
   background: white;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   border-radius: 10px;
   text-align: center;
-  flex-direction: column;
-  gap: 1rem;
 `;
 
 const FlipBack = styled.div`
@@ -184,7 +173,7 @@ const FlipBack = styled.div`
   height: 100%;
   backface-visibility: hidden;
   background: white;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);   
   display: flex;
   align-items: center;
   justify-content: center;
@@ -209,21 +198,6 @@ const CallToAction = styled.section`
 
   p {
     margin-bottom: 2rem;
-  }
-`;
-
-const StyledButton = styled(Link)`
-  display: inline-block;
-  background: var(--primary-color);
-  color: white;
-  padding: 1rem 2rem;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: bold;
-  transition: background 0.2s;
-
-  &:hover {
-    background: var(--secondary-color);
   }
 `;
 

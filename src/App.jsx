@@ -9,6 +9,7 @@ import theme from './theme/theme';
 import PrivateRoute from './components/PrivateRoute';
 import Header from './components/layout/Header';
 import Dashboard from './components/dashboard/Dashboard';
+import TakeAssessment from './pages/TakeAssessment';
 
 // Lazy load components
 const Home = React.lazy(() => import('./pages/Home'));
@@ -19,6 +20,7 @@ const About = React.lazy(() => import('./pages/About'));
 const Curriculum = React.lazy(() => import('./pages/Curriculum'));
 const LearningStyles = React.lazy(() => import('./pages/LearningStyles'));
 const Contact = React.lazy(() => import('./pages/Contact'));
+const SignUp = React.lazy(() => import('./components/auth/SignUp'));
 
 // Loading component
 const LoadingFallback = () => (
@@ -43,6 +45,8 @@ const App = () => {
                 <Route path="/curriculum" element={<Curriculum />} />
                 <Route path="/learning-styles" element={<LearningStyles />} />
                 <Route path="/contact" element={<Contact />} />
+                {/* New TakeAssessment Route */}
+                <Route path="/take-assessment" element={<TakeAssessment />} />
                 
                 {/* Protected Routes */}
                 <Route path="/student-profile" element={
@@ -51,6 +55,7 @@ const App = () => {
                   </AuthRoute>
                 } />
                 
+                <Route path="/signup" element={<SignUp />} />
                 <Route path="/dashboard" element={
                   <PrivateRoute>
                     <Dashboard />

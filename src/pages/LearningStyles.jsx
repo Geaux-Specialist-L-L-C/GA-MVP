@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FaBook, FaHeadphones, FaEye, FaRunning, FaBrain, FaUsers } from "react-icons/fa";
 import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/layout/Header";
@@ -51,7 +51,9 @@ const LearningStyles = () => {
 
           <CTASection>
             <h2>Want to know your learning style?</h2>
-            <StyledButton to="/take-assessment">Take the Assessment</StyledButton>
+            <StyledButton onClick={() => navigate('/take-assessment')}>
+              Take the Assessment
+            </StyledButton>
           </CTASection>
 
           <GoogleLoginSection>
@@ -126,15 +128,16 @@ const CTASection = styled.div`
   }
 `;
 
-const StyledButton = styled(Link)`
+const StyledButton = styled.button`
   background: var(--primary-color);
   color: white;
   padding: 1rem 2rem;
   border-radius: 8px;
-  text-decoration: none;
+  border: none;
+  font-size: 1rem;
   font-weight: bold;
   transition: background-color 0.2s;
-  display: inline-block;
+  cursor: pointer;
 
   &:hover {
     background: var(--secondary-color);

@@ -8,6 +8,8 @@ import {
   getIdToken
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
+import { useNavigate } from 'react-router-dom';
+import { getParentProfile } from '../services/profileService';
 
 const AuthContext = createContext();
 
@@ -16,6 +18,8 @@ export const useAuth = () => useContext(AuthContext);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  const navigate = useNavigate(); // Added navigate initialization
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -49,7 +53,17 @@ export function AuthProvider({ children }) {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const token = await getIdToken(result.user, true);
-      localStorage.setItem('token', token);
+      localStorage.setItem("token", token);
+
+      // Check if parent profile exists
+      const parentProfile = await getParentProfile(result.user.uid);
+
+      if (parentProfile) {
+        navigate("/parent-dashboard"); // Redirect parent users
+      } else {
+        navigate("/create-parent-profile"); // Redirect to create parent profile if missing
+      }
+
       return result;
     } catch (error) {
       console.error("Google login error:", error);

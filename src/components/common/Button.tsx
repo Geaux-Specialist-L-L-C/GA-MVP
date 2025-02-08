@@ -1,6 +1,7 @@
 // filepath: /src/components/common/Button.tsx
 import React from 'react';
 import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * ButtonProps interface
@@ -12,6 +13,7 @@ import styled from 'styled-components';
 interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
+  to?: string;  // ✅ NEW: Allows navigation
   variant?: 'primary' | 'secondary';
   style?: React.CSSProperties;
 }
@@ -26,14 +28,19 @@ interface ButtonProps {
  *   </Button>
  * )
  */
-const Button: React.FC<ButtonProps> = ({
-  children,
-  onClick,
-  variant = 'primary',
-  style,
-}) => {
+const Button: React.FC<ButtonProps> = ({ children, onClick, to, variant = 'primary', style }) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (to) {
+      navigate(to); // ✅ Navigate to specified route
+    } else if (onClick) {
+      onClick(); // ✅ Call custom onClick if provided
+    }
+  };
+
   return (
-    <StyledButton onClick={onClick} variant={variant} style={style}>
+    <StyledButton onClick={handleClick} variant={variant} style={style}>
       {children}
     </StyledButton>
   );

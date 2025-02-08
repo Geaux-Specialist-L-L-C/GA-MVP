@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import styled from 'styled-components';
+import { FcGoogle } from 'react-icons/fc';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const SignUp = () => {
   };
 
   return (
-    <FormContainer>
+    <Container>
       <FormBox>
         <h2>Sign Up</h2>
         {error && <ErrorMessage>{error}</ErrorMessage>}
@@ -61,71 +62,128 @@ const SignUp = () => {
               minLength="6"
             />
           </FormGroup>
-          <Button type="submit" disabled={loading}>
+          <SignUpButton type="submit" disabled={loading}>
             {loading ? 'Signing up...' : 'Sign Up'}
-          </Button>
+          </SignUpButton>
         </form>
         
         <Divider>
           <span>OR</span>
         </Divider>
         
-        <GoogleButton 
-          type="button"
-          onClick={handleGoogleSignUp}
-          disabled={loading}
-        >
+        <GoogleButton onClick={handleGoogleSignUp} disabled={loading}>
+          <FcGoogle size={20} />
           Sign up with Google
         </GoogleButton>
         
         <LoginLink>
-          Already have an account? <Link to="/login">Log In</Link>
+          Already have an account? <StyledLink to="/login">Log In</StyledLink>
         </LoginLink>
       </FormBox>
-    </FormContainer>
+    </Container>
   );
 };
 
-const FormContainer = styled.div`
-  max-width: 400px;
-  margin: 2rem auto;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+export default SignUp;
+
+/* ------------------ Styled Components ------------------ */
+
+const Container = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f9f9f9;
 `;
 
 const FormBox = styled.div`
-  // ...existing code...
+  width: 380px;
+  padding: 2rem;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  
+  h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    color: #333;
+  }
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 1rem;
+  text-align: left;
+  margin-bottom: 1.2rem;
   
   label {
-    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
     margin-bottom: 0.5rem;
+    display: block;
   }
   
   input {
     width: 100%;
-    padding: 0.5rem;
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 6px;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    transition: 0.2s;
+    
+    &:focus {
+      border-color: #007bff;
+      outline: none;
+    }
   }
 `;
 
-const Button = styled.button`
+const SignUpButton = styled.button`
   width: 100%;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  background-color: #007bff;
+  padding: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  background: #007bff;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  
+  transition: 0.2s;
+
+  &:hover {
+    background: #0056b3;
+  }
+
   &:disabled {
-    background-color: #ccc;
+    background: #ccc;
+    cursor: not-allowed;
+  }
+`;
+
+const GoogleButton = styled.button`
+  width: 100%;
+  padding: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+  
+  svg {
+    margin-right: 10px;
+  }
+
+  &:hover {
+    background: #f5f5f5;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `;
 
@@ -139,27 +197,37 @@ const Divider = styled.div`
   &::after {
     content: '';
     flex: 1;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #ddd;
   }
   
   span {
     padding: 0 10px;
-    color: #64748b;
-    font-size: 0.875rem;
+    color: #777;
+    font-size: 0.9rem;
   }
 `;
 
-const GoogleButton = styled.button`
-  // ...existing code...
+const LoginLink = styled.div`
+  font-size: 0.9rem;
+  margin-top: 1rem;
 `;
 
-const LoginLink = styled.div`
-  // ...existing code...
+const StyledLink = styled(Link)`
+  color: #007bff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: 0.2s;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 const ErrorMessage = styled.div`
-  color: red;
+  background: #ffdddd;
+  color: #d8000c;
+  padding: 10px;
+  border-radius: 6px;
   margin-bottom: 1rem;
+  font-size: 0.9rem;
 `;
-
-export default SignUp;
