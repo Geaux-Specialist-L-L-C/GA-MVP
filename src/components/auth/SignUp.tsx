@@ -17,27 +17,21 @@ const SignUp: React.FC = () => {
     password: '',
     confirmPassword: ''
   });
-  const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  
-  const { signup, loginWithGoogle } = useAuth();
+  const { signup, loginWithGoogle, authError } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
-      return setError('Passwords do not match');
+      return;
     }
 
     try {
-      setError('');
       setLoading(true);
       await signup(formData.email, formData.password);
       navigate('/dashboard');
-    } catch (err) {
-      console.error('Signup error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create account');
     } finally {
       setLoading(false);
     }
@@ -45,13 +39,8 @@ const SignUp: React.FC = () => {
 
   const handleGoogleSignup = async () => {
     try {
-      setError('');
       setLoading(true);
       await loginWithGoogle();
-      navigate('/dashboard');
-    } catch (err) {
-      console.error('Google signup error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to sign up with Google');
     } finally {
       setLoading(false);
     }
@@ -61,7 +50,7 @@ const SignUp: React.FC = () => {
     <SignUpContainer>
       <SignUpCard>
         <h2>Create an Account</h2>
-        {error && <ErrorMessage>{error}</ErrorMessage>}
+        {authError && <ErrorMessage>{authError}</ErrorMessage>}
         
         <Form onSubmit={handleSubmit}>
           <FormGroup>
@@ -100,9 +89,9 @@ const SignUp: React.FC = () => {
             />
           </FormGroup>
 
-          <SignUpButton type="submit" disabled={loading}>
+          <StyledButton disabled={loading}>
             {loading ? 'Creating Account...' : 'Sign Up'}
-          </SignUpButton>
+          </StyledButton>
         </Form>
 
         <Divider>
@@ -115,10 +104,7 @@ const SignUp: React.FC = () => {
         </GoogleButton>
 
         <LoginPrompt>
-          Already have an account?{' '}
-          <Button to="/login" $variant="secondary">
-            Login
-          </Button>
+          Already have an account? <Link href="/login">Log In</Link>
         </LoginPrompt>
       </SignUpCard>
     </SignUpContainer>
@@ -129,15 +115,16 @@ const SignUpContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background-color: #f5f5f5;
+  min-height: 100vh;
+  padding: 1rem;
+  background-color: var(--background);
 `;
 
 const SignUpCard = styled.div`
   background: white;
   padding: 2rem;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   width: 100%;
   max-width: 400px;
 
@@ -148,28 +135,24 @@ const SignUpCard = styled.div`
   }
 `;
 
-const ErrorMessage = styled.div`
-  color: red;
-  margin-bottom: 1rem;
-`;
-
 const Form = styled.form`
   display: flex;
   flex-direction: column;
+  gap: 1rem;
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 `;
 
 const Label = styled.label`
-  margin-bottom: 0.5rem;
-  display: block;
-  font-weight: bold;
+  font-weight: 500;
+  color: var(--text-color);
 `;
 
 const Input = styled.input`
-  width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
@@ -178,18 +161,23 @@ const Input = styled.input`
   &:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+  }
+
+  &:disabled {
+    background-color: #f5f5f5;
   }
 `;
 
-const SignUpButton = styled.button`
+const StyledButton = styled.button`
   width: 100%;
+  margin-top: 1rem;
   padding: 0.75rem;
   background-color: var(--primary-color);
   color: white;
   border: none;
   border-radius: 4px;
   font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
 
@@ -198,58 +186,78 @@ const SignUpButton = styled.button`
   }
 
   &:disabled {
-    background-color: #ccc;
+    opacity: 0.7;
     cursor: not-allowed;
   }
 `;
 
-const GoogleButton = styled.button`
-  width: 100%;
+const ErrorMessage = styled.div`
+  color: #dc2626;
+  background-color: #fee2e2;
   padding: 0.75rem;
-  background-color: white;
-  color: #333;
-  border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #f5f5f5;
-  }
-
-  &:disabled {
-    background-color: #f5f5f5;
-    cursor: not-allowed;
-  }
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
 `;
 
 const Divider = styled.div`
   display: flex;
   align-items: center;
-  margin: 1rem 0;
-  
+  text-align: center;
+  margin: 1.5rem 0;
+
   &::before,
   &::after {
     content: '';
     flex: 1;
-    height: 1px;
-    background: #ddd;
+    border-bottom: 1px solid #ddd;
   }
 
   span {
-    padding: 0 1rem;
+    padding: 0 0.5rem;
     color: #666;
+    font-size: 0.875rem;
   }
 `;
 
-const LoginPrompt = styled.div`
+const GoogleButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f8f8f8;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`;
+
+const LoginPrompt = styled.p`
   text-align: center;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--text-color);
+`;
+
+const Link = styled.a`
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 export default SignUp;

@@ -4,7 +4,6 @@ import { addStudent } from '../../../store/slices/profileSlice';
 import { RootState } from '../../../store';
 import { Student } from '../../../types/auth';  // Using the auth Student type consistently
 import { useAuth } from '../../../contexts/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import styled from 'styled-components';
 import { getStudentProfile } from '../../../services/profileService';
@@ -14,9 +13,7 @@ const ParentProfile: React.FC = () => {
   const parent = useSelector((state: RootState) => state.profile.parent);
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [newStudent, setNewStudent] = useState<Partial<Student>>({});
-  const { loginWithGoogle, currentUser, loading } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { loginWithGoogle } = useAuth();
   const [error, setError] = useState("");
   const [studentsData, setStudentsData] = useState<Student[]>([]);
 
@@ -40,18 +37,11 @@ const ParentProfile: React.FC = () => {
     try {
       setError("");
       await loginWithGoogle();
-      // Removed manual navigation - will be handled by AuthContext
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to login");
       console.error("Login error:", err);
     }
   };
-
-  useEffect(() => {
-    if (currentUser && !loading) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [currentUser, loading, navigate]);
 
   useEffect(() => {
     const fetchStudentsData = async () => {

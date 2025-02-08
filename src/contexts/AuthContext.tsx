@@ -10,7 +10,8 @@ import {
   getRedirectResult,
   GoogleAuthProvider,
   setPersistence,
-  browserLocalPersistence
+  browserSessionPersistence,
+  signOut
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
 import { getParentProfile } from '../services/profileService';
@@ -22,7 +23,7 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-function AuthProvider({ children }: AuthProviderProps): JSX.Element {
+export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -32,76 +33,111 @@ function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     const initAuth = async () => {
       try {
         console.log("🔄 Setting Firebase auth persistence...");
-        await setPersistence(auth, browserLocalPersistence); // ✅ Ensures login is remembered across reloads
+        await setPersistence(auth, browserSessionPersistence);
 
         const result = await getRedirectResult(auth);
-        
         if (result) {
           console.log("✅ Redirect result received");
-          const token = await getIdToken(result.user);
-          localStorage.setItem('token', token);
-
-          try {
-            const parentProfile = await getParentProfile(result.user.uid);
-            setCurrentUser({
-              uid: result.user.uid,
-              email: result.user.email,
-              displayName: result.user.displayName,
-              photoURL: result.user.photoURL,
-              ...parentProfile
-            });
-            navigate('/dashboard', { replace: true });
-          } catch (profileError) {
-            console.error("Error fetching parent profile:", profileError);
-            setCurrentUser({
-              uid: result.user.uid,
-              email: result.user.email,
-              displayName: result.user.displayName,
-              photoURL: result.user.photoURL
-            });
-            navigate('/dashboard', { replace: true });
-          }
+          await handleAuthResult(result);
         }
 
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-          console.log("🔄 Auth state changed:", user ? "User logged in" : "No user");
-          
-          if (user) {
-            const token = await getIdToken(user);
-            localStorage.setItem('token', token);
+        const unsubscribe = onAuthStateChanged(auth, handleAuthStateChange);
+        return () => unsubscribe();
 
-            const parentProfile = await getParentProfile(user.uid);
-            setCurrentUser({
-              uid: user.uid,
-              email: user.email,
-              displayName: user.displayName,
-              photoURL: user.photoURL,
-              ...parentProfile
-            });
-          } else {
-            setCurrentUser(null);
-            localStorage.removeItem('token');
-          }
-          setLoading(false);
-        });
-
-        return unsubscribe;
       } catch (error) {
-        console.error("🔥 Auth persistence error:", error);
+        console.error("❌ Auth initialization error:", error);
+        setAuthError("Failed to initialize authentication");
         setLoading(false);
       }
     };
 
     initAuth();
-  }, [navigate]);
+  }, []);
 
-  const login = async (email: string, password: string): Promise<UserCredential> => {
+  const handleAuthResult = async (result: UserCredential) => {
+    try {
+      const token = await getIdToken(result.user);
+      localStorage.setItem('token', token);
+
+      const parentProfile = await getParentProfile(result.user.uid);
+      const userData: User = {
+        uid: result.user.uid,
+        email: result.user.email || null,
+        displayName: result.user.displayName || null,
+        photoURL: result.user.photoURL || null,
+        ...parentProfile
+      };
+
+      setCurrentUser(userData);
+      setLoading(false);
+      
+    } catch (error) {
+      console.error("❌ Error processing auth result:", error);
+      setCurrentUser({
+        uid: result.user.uid,
+        email: result.user.email || null,
+        displayName: result.user.displayName || null,
+        photoURL: result.user.photoURL || null
+      });
+      setLoading(false);
+    }
+  };
+
+  const handleAuthStateChange = async (user: any) => {
+    console.log("🔄 Auth state changed:", user ? "User logged in" : "No user");
+    
+    if (!user) {
+      setCurrentUser(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const token = await getIdToken(user);
+      localStorage.setItem('token', token);
+
+      const parentProfile = await getParentProfile(user.uid);
+      setCurrentUser({
+        uid: user.uid,
+        email: user.email || null,
+        displayName: user.displayName || null,
+        photoURL: user.photoURL || null,
+        ...parentProfile
+      });
+    } catch (error) {
+      console.error("❌ Error updating user state:", error);
+      setCurrentUser({
+        uid: user.uid,
+        email: user.email || null,
+        displayName: user.displayName || null,
+        photoURL: user.photoURL || null
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGetRedirectResult = async (): Promise<void> => {
+    try {
+      setLoading(true);
+      const result = await getRedirectResult(auth);
+      if (result) {
+        await handleAuthResult(result);
+      }
+    } catch (error) {
+      console.error("❌ Error getting redirect result:", error);
+      setAuthError("Failed to complete authentication");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const login = async (email: string, password: string): Promise<void> => {
     try {
       setAuthError(null);
       const result = await signInWithEmailAndPassword(auth, email, password);
-      setCurrentUser(result.user as User);
-      navigate('/dashboard', { replace: true });
-      return result;
+      const token = await getIdToken(result.user);
+      localStorage.setItem('token', token);
     } catch (error) {
       console.error("❌ Login error:", error);
       setAuthError((error as Error).message);
@@ -112,27 +148,27 @@ function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const loginWithGoogle = async (): Promise<void> => {
     try {
       setAuthError(null);
-      setLoading(true);
       console.log("🔄 Starting Google sign-in...");
-      // Configure OAuth prompt behavior
       googleProvider.setCustomParameters({
         prompt: 'select_account'
       });
       await signInWithRedirect(auth, googleProvider);
+      // Note: No need to set loading false here as it will be handled by
+      // the auth state change listener when the redirect completes
     } catch (error) {
       console.error("❌ Google login error:", error);
-      setAuthError("Failed to start Google sign-in.");
+      setAuthError("Failed to start Google sign-in. Please try again.");
       setLoading(false);
       throw error;
     }
   };
 
-  const signup = async (email: string, password: string): Promise<UserCredential> => {
+  const signup = async (email: string, password: string): Promise<void> => {
     try {
       setAuthError(null);
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      setCurrentUser(result.user as User);
-      return result;
+      const token = await getIdToken(result.user);
+      localStorage.setItem('token', token);
     } catch (error) {
       console.error("❌ Signup error:", error);
       setAuthError((error as Error).message);
@@ -142,9 +178,10 @@ function AuthProvider({ children }: AuthProviderProps): JSX.Element {
 
   const logout = async (): Promise<void> => {
     try {
-      await auth.signOut();
+      await signOut(auth);
       localStorage.removeItem('token');
       setCurrentUser(null);
+      navigate('/', { replace: true });
     } catch (error) {
       console.error("❌ Logout error:", error);
       setAuthError((error as Error).message);
@@ -152,14 +189,15 @@ function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     }
   };
 
-  const value: AuthContextType = {
+  const value = {
     currentUser,
     loading,
     authError,
     login,
     loginWithGoogle,
     signup,
-    logout
+    logout,
+    getRedirectResult: handleGetRedirectResult
   };
 
   return (
@@ -169,12 +207,10 @@ function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   );
 }
 
-const useAuth = (): AuthContextType => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
-
-export { AuthProvider, useAuth };

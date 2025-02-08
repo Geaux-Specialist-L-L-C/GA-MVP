@@ -1,55 +1,36 @@
-import './styles/Footer.css';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import styles from './layout.module.css';
 
 const Footer = () => {
   return (
-    <footer className="footer">
-      <div className="footer-container">
-        <div className="footer-grid">
-          <div className="footer-section">
-            <h3 className="footer-title">Geaux Academy</h3>
-            <p className="footer-description">Empowering personalized learning journeys</p>
-            <div className="social-links">
-              <a href="#" aria-label="Facebook"><i className="fab fa-facebook"></i></a>
-              <a href="#" aria-label="Twitter"><i className="fab fa-twitter"></i></a>
-              <a href="#" aria-label="LinkedIn"><i className="fab fa-linkedin"></i></a>
-            </div>
-          </div>
-          
-          <div className="footer-section">
-            <h4 className="footer-subtitle">Quick Links</h4>
-            <ul className="footer-links">
-              <li><a href="/about">About Us</a></li>
-              <li><a href="/features">Features</a></li>
-              <li><a href="/curriculum">Curriculum</a></li>
-            </ul>
-          </div>
-          
-          <div className="footer-section">
-            <h4 className="footer-subtitle">Resources</h4>
-            <ul className="footer-links">
-              <li><a href="/blog">Blog</a></li>
-              <li><a href="/faq">FAQ</a></li>
-              <li><a href="/support">Support</a></li>
-            </ul>
-          </div>
-          
-          <div className="footer-section">
-            <h4 className="footer-subtitle">Newsletter</h4>
-            <form className="newsletter-form">
-              <input 
-                type="email" 
-                placeholder="Enter your email" 
-                className="newsletter-input"
-              />
-              <button type="submit" className="newsletter-button">
-                Subscribe
-              </button>
-            </form>
-          </div>
+    <footer className={styles.footer}>
+      <div className={styles['footer-content']}>
+        <div className={styles['footer-column']}>
+          <h3>About</h3>
+          <ul className={styles['footer-links']}>
+            <li><Link to="/about">Our Story</Link></li>
+            <li><Link to="/features">Features</Link></li>
+            <li><Link to="/curriculum">Curriculum</Link></li>
+          </ul>
         </div>
-        
-        <div className="footer-bottom">
-          <p>&copy; {new Date().getFullYear()} Geaux Academy. All rights reserved.</p>
+
+        <div className={styles['footer-column']}>
+          <h3>Learning</h3>
+          <ul className={styles['footer-links']}>
+            <li><Link to="/learning-styles">Learning Styles</Link></li>
+            <li><Link to="/learning-plan">Learning Plan</Link></li>
+            <li><Link to="/assessment">Assessment</Link></li>
+          </ul>
+        </div>
+
+        <div className={styles['footer-column']}>
+          <h3>Support</h3>
+          <ul className={styles['footer-links']}>
+            <li><Link to="/contact">Contact Us</Link></li>
+            <li><a href="mailto:support@geauxacademy.com">Email Support</a></li>
+            <li><Link to="/help">Help Center</Link></li>
+          </ul>
         </div>
       </div>
     </footer>

@@ -1,7 +1,7 @@
 import React from 'react';
-import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
+import styles from '../shared/shared.module.css';
 
 /**
  * CardProps interface
@@ -10,13 +10,15 @@ import { IconProp } from '@fortawesome/fontawesome-svg-core';
  * @property {string} [description] - Card description text
  * @property {React.ReactNode} [children] - Elements to render inside the card
  * @property {string} [className] - Optional additional class names for styling
+ * @property {() => void} [onClick] - Optional click handler for the card
  */
 interface CardProps {
-  icon?: IconProp;
+  icon?: IconProp | string;
   title?: string;
-  description?: string;
+  description?: string | string[];
   children?: React.ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 
 /**
@@ -35,56 +37,45 @@ const Card: React.FC<CardProps> = ({
   description,
   children,
   className,
+  onClick
 }) => {
+  const isImagePath = typeof icon === 'string' && (icon.startsWith('/') || icon.startsWith('http'));
+  
   return (
-    <StyledCard className={className}>
+    <div 
+      className={`${styles.card} ${className || ''}`} 
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+    >
       {icon && (
-        <IconWrapper>
-          <FontAwesomeIcon icon={icon} />
-        </IconWrapper>
+        <div className={styles['card-icon']}>
+          {isImagePath ? (
+            <img 
+              src={icon} 
+              alt={title || 'Card icon'}
+              crossOrigin={icon.startsWith('http') ? "anonymous" : undefined}
+            />
+          ) : (
+            typeof icon === 'object' && <FontAwesomeIcon icon={icon} />
+          )}
+        </div>
       )}
-      {title && <CardTitle>{title}</CardTitle>}
-      {description && <CardDescription>{description}</CardDescription>}
+      {title && <h3 className={styles['card-title']}>{title}</h3>}
+      {description && (
+        Array.isArray(description) ? (
+          <ul className={styles['card-list']}>
+            {description.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className={styles['card-description']}>{description}</p>
+        )
+      )}
       {children}
-    </StyledCard>
+    </div>
   );
 };
 
 export default Card;
-
-/* ------------------------------------------
-   Styled Components
------------------------------------------- */
-const StyledCard = styled.div`
-  background: #ffffff;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease;
-
-  &:hover {
-    transform: translateY(-4px);
-  }
-
-  @media (max-width: 768px) {
-    padding: 1rem;
-  }
-`;
-
-const IconWrapper = styled.div`
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-  color: var(--primary-color);
-`;
-
-const CardTitle = styled.h3`
-  margin: 0 0 0.5rem;
-  color: #333;
-  font-size: 1.25rem;
-`;
-
-const CardDescription = styled.p`
-  margin: 0 0 1rem;
-  color: #666;
-  line-height: 1.4;
-`;

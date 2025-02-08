@@ -1,96 +1,72 @@
 import React, { Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import styled, { ThemeProvider } from 'styled-components';
-import { ProfileProvider } from './contexts/ProfileContext';
-import ErrorBoundary from './components/shared/ErrorBoundary';
-import AuthRoute from './components/auth/AuthRoute';
+import { Routes, Route } from 'react-router-dom';
+import styled from 'styled-components';
+import { ThemeProvider } from 'styled-components';
 import theme from './theme/theme';
-import PrivateRoute from './components/PrivateRoute';
-import Layout from './components/Layout';
+import LoadingSpinner from './components/common/LoadingSpinner';
+import Layout from './components/layout/Layout';
+import Login from './pages/Login';
 import Dashboard from './components/dashboard/Dashboard';
-import TakeAssessment from './pages/TakeAssessment';
+import { ProfileProvider } from './contexts/ProfileContext';
+import Home from './pages/Home';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import Features from './pages/Features';
+import LearningStyles from './pages/LearningStyles';
+import LearningPlan from './pages/LearningPlan';
+import NotFound from './pages/NotFound';
+import PrivateRoute from './components/auth/PrivateRoute';
+import './App.css';
 
 // Lazy load components
-const Home = React.lazy(() => import('./pages/Home'));
-const Features = React.lazy(() => import('./pages/Features'));
-const Login = React.lazy(() => import('./components/Login'));
-const StudentProfile = React.lazy(() => import('./pages/profile/StudentProfile/StudentProfile'));
-const About = React.lazy(() => import('./pages/About'));
-const Curriculum = React.lazy(() => import('./pages/Curriculum'));
-const LearningStyles = React.lazy(() => import('./pages/LearningStyles'));
-const Contact = React.lazy(() => import('./pages/Contact'));
 const SignUp = React.lazy(() => import('./components/auth/SignUp'));
-
-const LoadingFallback: React.FC = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-  </div>
-);
-
-const AppContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-`;
+const TakeAssessment = React.lazy(() => import('./pages/TakeAssessment'));
+const StudentProfile = React.lazy(() => import('./pages/profile/StudentProfile/StudentProfile'));
+const StudentDashboard = React.lazy(() => import('./pages/profile/StudentProfile/StudentDashboard'));
+const LearningStyleChat = React.lazy(() => import('./components/chat/LearningStyleChat'));
+const ParentDashboard = React.lazy(() => import('./pages/profile/ParentProfile/ParentDashboard'));
 
 const App: React.FC = () => {
   return (
-    <ErrorBoundary>
-      <ThemeProvider theme={theme}>
-        <ProfileProvider>
-          <AppContainer>
-            <Suspense fallback={<LoadingFallback />}>
-              <Routes>
-                {/* Public routes */}
-                <Route element={<Layout />}>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/features" element={<Features />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/curriculum" element={<Curriculum />} />
-                  <Route path="/learning-styles" element={<LearningStyles />} />
-                  <Route path="/contact" element={<Contact />} />
+    <ThemeProvider theme={theme}>
+      <ProfileProvider>
+        <AppContainer>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              <Route element={<Layout />}>
+                {/* Public Routes */}
+                <Route path="/" element={<Home />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/learning-styles" element={<LearningStyles />} />
+                
+                {/* Protected Routes */}
+                <Route element={<PrivateRoute />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/parent-dashboard" element={<ParentDashboard />} />
+                  <Route path="/student-dashboard/:id" element={<StudentDashboard />} />
+                  <Route path="/student-profile/:id" element={<StudentProfile />} />
+                  <Route path="/learning-plan" element={<LearningPlan />} />
+                  <Route path="/assessment/:studentId" element={<TakeAssessment />} />
+                  <Route path="/learning-style-chat/:studentId" element={<LearningStyleChat />} />
                 </Route>
 
-                {/* Auth routes */}
-                <Route path="/login" element={
-                  <AuthRoute>
-                    <Login />
-                  </AuthRoute>
-                } />
-                <Route path="/signup" element={
-                  <AuthRoute>
-                    <SignUp />
-                  </AuthRoute>
-                } />
-
-                {/* Protected routes */}
-                <Route element={<Layout />}>
-                  <Route path="/take-assessment" element={
-                    <PrivateRoute>
-                      <TakeAssessment />
-                    </PrivateRoute>
-                  } />
-                  <Route path="/dashboard" element={
-                    <PrivateRoute>
-                      <Dashboard />
-                    </PrivateRoute>
-                  } />
-                  <Route path="/student-profile" element={
-                    <PrivateRoute>
-                      <StudentProfile />
-                    </PrivateRoute>
-                  } />
-                </Route>
-
-                {/* Catch-all route */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Suspense>
-          </AppContainer>
-        </ProfileProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </Suspense>
+        </AppContainer>
+      </ProfileProvider>
+    </ThemeProvider>
   );
 };
+
+const AppContainer = styled.div`
+  min-height: 100vh;
+  background-color: ${({ theme }) => theme.colors.background};
+`;
 
 export default App;

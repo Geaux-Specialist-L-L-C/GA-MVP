@@ -1,29 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import styled from 'styled-components';
-
-const LoadingContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: rgba(255, 255, 255, 0.8);
-`;
-
-const LoadingSpinner = styled.div`
-  width: 50px;
-  height: 50px;
-  border: 5px solid #f3f3f3;
-  border-top: 5px solid var(--primary-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-`;
+import LoadingSpinner from '../common/LoadingSpinner';
 
 interface AuthRouteProps {
   children: React.ReactNode;
@@ -34,18 +12,16 @@ const AuthRoute: React.FC<AuthRouteProps> = ({ children }) => {
   const location = useLocation();
 
   if (loading) {
-    return (
-      <LoadingContainer>
-        <LoadingSpinner />
-      </LoadingContainer>
-    );
+    return <LoadingSpinner />;
   }
 
   if (currentUser) {
-    // If user is already logged in, redirect to dashboard
-    return <Navigate to="/dashboard" state={{ from: location }} replace />;
+    // If user is already authenticated, redirect to intended destination or dashboard
+    const destination = location.state?.from?.pathname || '/dashboard';
+    return <Navigate to={destination} replace />;
   }
 
+  // Allow access to auth pages if not authenticated
   return <>{children}</>;
 };
 
