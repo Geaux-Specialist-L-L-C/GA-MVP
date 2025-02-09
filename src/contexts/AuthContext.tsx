@@ -132,12 +132,13 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     }
   };
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (email: string, password: string): Promise<UserCredential> => {
     try {
       setAuthError(null);
       const result = await signInWithEmailAndPassword(auth, email, password);
       const token = await getIdToken(result.user);
       localStorage.setItem('token', token);
+      return result;
     } catch (error) {
       console.error("❌ Login error:", error);
       setAuthError((error as Error).message);
@@ -153,24 +154,22 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
         prompt: 'select_account'
       });
       await signInWithRedirect(auth, googleProvider);
-      // Note: No need to set loading false here as it will be handled by
-      // the auth state change listener when the redirect completes
+      // Note: The actual auth result will be handled by getRedirectResult in the useEffect
     } catch (error) {
       console.error("❌ Google login error:", error);
       setAuthError("Failed to start Google sign-in. Please try again.");
       setLoading(false);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const signup = async (email: string, password: string): Promise<void> => {
+  const signup = async (email: string, password: string): Promise<UserCredential> => {
     try {
       setAuthError(null);
       const result = await createUserWithEmailAndPassword(auth, email, password);
       const token = await getIdToken(result.user);
       localStorage.setItem('token', token);
+      return result;
     } catch (error) {
       console.error("❌ Signup error:", error);
       setAuthError((error as Error).message);

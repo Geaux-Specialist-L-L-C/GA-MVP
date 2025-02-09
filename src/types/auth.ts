@@ -1,3 +1,5 @@
+import { UserCredential } from 'firebase/auth';
+
 // Common types for auth context and components
 export interface User {
   uid: string;
@@ -19,9 +21,9 @@ export interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   authError: string | null;
-  login: (email: string, password: string) => Promise<any>;
-  loginWithGoogle: () => Promise<void>;
-  signup: (email: string, password: string) => Promise<any>;
+  login: (email: string, password: string) => Promise<UserCredential>;
+  loginWithGoogle: () => Promise<void>;  // Changed return type to Promise<void>
+  signup: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
   getRedirectResult?: () => Promise<void>;
 }

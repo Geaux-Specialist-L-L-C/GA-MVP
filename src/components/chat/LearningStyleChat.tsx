@@ -12,8 +12,6 @@ interface ChatMessage {
   sender: 'user' | 'bot';
 }
 
-const CHESHIRE_API_URL = import.meta.env.VITE_CHESHIRE_API_URL || 'http://localhost:1865'; // Update this for production
-
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
 

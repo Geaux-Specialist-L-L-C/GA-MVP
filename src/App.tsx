@@ -27,6 +27,7 @@ const StudentProfile = React.lazy(() => import('./pages/profile/StudentProfile/S
 const StudentDashboard = React.lazy(() => import('./pages/profile/StudentProfile/StudentDashboard'));
 const LearningStyleChat = React.lazy(() => import('./components/chat/LearningStyleChat'));
 const ParentDashboard = React.lazy(() => import('./pages/profile/ParentProfile/ParentDashboard'));
+const TestChat = React.lazy(() => import('./components/chat/TestChat'));
 
 const App: React.FC = () => {
   return (
@@ -56,6 +57,7 @@ const App: React.FC = () => {
                     <Route path="/learning-plan" element={<LearningPlan />} />
                     <Route path="/assessment/:studentId" element={<TakeAssessment />} />
                     <Route path="/learning-style-chat/:studentId" element={<LearningStyleChat />} />
+                    <Route path="/test-chat" element={<TestChat />} />
                   </Route>
 
                   <Route path="*" element={<NotFound />} />

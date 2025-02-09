@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
 import { useAuth } from '../../contexts/AuthContext';
+import { CheshireService } from '../../services/cheshireService';
 import Button from '../common/Button';
 
 interface FormData {
@@ -18,20 +19,40 @@ const SignUp: React.FC = () => {
     confirmPassword: ''
   });
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
   const { signup, loginWithGoogle, authError } = useAuth();
   const navigate = useNavigate();
 
+  const createCheshireAccount = async (uid: string, email: string) => {
+    try {
+      await CheshireService.createCheshireUser(uid, email);
+    } catch (error) {
+      console.error('Error creating Cheshire account:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     
     if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
 
     try {
       setLoading(true);
-      await signup(formData.email, formData.password);
+      const userCredential = await signup(formData.email, formData.password);
+      
+      // Create Cheshire account after successful Firebase signup
+      if (userCredential?.user) {
+        await createCheshireAccount(userCredential.user.uid, userCredential.user.email || '');
+      }
+      
       navigate('/dashboard');
+    } catch (error: any) {
+      setError(error.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
@@ -40,7 +61,15 @@ const SignUp: React.FC = () => {
   const handleGoogleSignup = async () => {
     try {
       setLoading(true);
-      await loginWithGoogle();
+      setError('');
+      const userCredential = await loginWithGoogle();
+      
+      // Create Cheshire account after successful Google signup
+      if (userCredential?.user) {
+        await createCheshireAccount(userCredential.user.uid, userCredential.user.email || '');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to sign up with Google');
     } finally {
       setLoading(false);
     }
@@ -50,7 +79,7 @@ const SignUp: React.FC = () => {
     <SignUpContainer>
       <SignUpCard>
         <h2>Create an Account</h2>
-        {authError && <ErrorMessage>{authError}</ErrorMessage>}
+        {(error || authError) && <ErrorMessage>{error || authError}</ErrorMessage>}
         
         <Form onSubmit={handleSubmit}>
           <FormGroup>
@@ -89,7 +118,7 @@ const SignUp: React.FC = () => {
             />
           </FormGroup>
 
-          <StyledButton disabled={loading}>
+          <StyledButton type="submit" disabled={loading}>
             {loading ? 'Creating Account...' : 'Sign Up'}
           </StyledButton>
         </Form>
