@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styles from '../shared/shared.module.css';
+import styled, { css } from 'styled-components';
 
 type ToastType = 'info' | 'success' | 'warning' | 'error';
 
@@ -25,10 +25,62 @@ const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration = 3000, 
   if (!isVisible) return null;
 
   return (
-    <div className={`${styles.toast} ${styles[`toast-${type}`]}`}>
+    <ToastContainer $type={type}>
       <p>{message}</p>
-    </div>
+    </ToastContainer>
   );
 };
+
+const getToastColor = (type: ToastType) => {
+  switch (type) {
+    case 'success':
+      return css`
+        background-color: ${({ theme }) => theme.palette.success?.main || '#2ECC71'};
+        color: white;
+      `;
+    case 'warning':
+      return css`
+        background-color: ${({ theme }) => theme.palette.warning?.main || '#F1C40F'};
+        color: white;
+      `;
+    case 'error':
+      return css`
+        background-color: ${({ theme }) => theme.palette.error?.main || '#E74C3C'};
+        color: white;
+      `;
+    default:
+      return css`
+        background-color: ${({ theme }) => theme.palette.info?.main || '#3498DB'};
+        color: white;
+      `;
+  }
+};
+
+const ToastContainer = styled.div<{ $type: ToastType }>`
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out;
+  ${props => getToastColor(props.$type)}
+
+  p {
+    margin: 0;
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+`;
 
 export default Toast;

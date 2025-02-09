@@ -4,7 +4,7 @@ import { FaPaperPlane } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import Message from '../Message';
 import { saveLearningStyle, updateStudentAssessmentStatus } from '../../services/profileService';
-import axios from 'axios';
+import { CheshireService } from '../../services/cheshireService';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 interface ChatMessage {
@@ -12,21 +12,64 @@ interface ChatMessage {
   sender: 'user' | 'bot';
 }
 
+const CHESHIRE_API_URL = import.meta.env.VITE_CHESHIRE_API_URL || 'http://localhost:1865'; // Update this for production
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+
 const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const { currentUser } = useAuth();
+
+  // Initialize chat with assessment start message
+  useEffect(() => {
+    setMessages([{ 
+      text: "Hi! I'm here to help assess your learning style. Let's start with a few questions. How do you prefer to learn new things?", 
+      sender: "bot" 
+    }]);
+  }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Check API connection on mount and set up periodic checks
+  useEffect(() => {
+    checkApiConnection();
+    const intervalId = setInterval(checkApiConnection, 30000); // Check every 30 seconds
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const checkApiConnection = async () => {
+    const isConnected = await CheshireService.checkConnection();
+    setConnectionError(!isConnected);
+  };
+
+  const retryWithDelay = async (fn: () => Promise<any>, retries: number = MAX_RETRIES): Promise<any> => {
+    try {
+      return await fn();
+    } catch (error) {
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        return retryWithDelay(fn, retries - 1);
+      }
+      throw error;
+    }
+  };
+
   const handleResponse = async (response: any) => {
     try {
-      if (response.learningStyle && studentId) {
-        await saveLearningStyle(studentId, response.learningStyle);
+      // Check if response contains learning style data
+      const learningStyle = response?.data?.memories?.find((m: any) => 
+        m.metadata?.learning_style
+      )?.metadata?.learning_style;
+
+      if (learningStyle && studentId) {
+        await saveLearningStyle(studentId, learningStyle);
         await updateStudentAssessmentStatus(studentId, "completed");
       }
     } catch (error) {
@@ -47,17 +90,24 @@ const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
 
     try {
       setLoading(true);
-      const response = await axios.post('https://cheshire.geaux.app/api/chat', {
-        message: userMessage,
-        userId: currentUser?.uid,
-        studentId
-      });
+      const response = await CheshireService.sendChatMessage(
+        userMessage,
+        currentUser?.uid || 'anonymous',
+        studentId || 'default'
+      );
 
-      setMessages(prev => [...prev, { text: response.data.message, sender: 'bot' }]);
+      if (response.data) {
+        setMessages(prev => [...prev, { text: response.data, sender: 'bot' }]);
+      }
+      
       await handleResponse(response.data);
-    } catch (error) {
+      setConnectionError(false);
+    } catch (error: any) {
       console.error('Error sending message:', error);
-      setMessages(prev => [...prev, { text: "Oops! Something went wrong.", sender: "bot" }]);
+      const errorMessage = CheshireService.getErrorMessage(error);
+      setMessages(prev => [...prev, { text: errorMessage, sender: 'bot' }]);
+      setConnectionError(true);
+      checkApiConnection();
     } finally {
       setLoading(false);
     }
@@ -65,7 +115,14 @@ const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
 
   return (
     <ChatContainer className="card">
-      <ChatHeader>🎓 Learning Style Assessment</ChatHeader>
+      <ChatHeader>
+        🎓 Learning Style Assessment
+        {connectionError && (
+          <ConnectionError>
+            ⚠️ Connection Error - Check if the chat service is running
+          </ConnectionError>
+        )}
+      </ChatHeader>
       <ChatBody>
         {messages.map((msg, index) => (
           <Message key={index} sender={msg.sender}>{msg.text}</Message>
@@ -100,6 +157,12 @@ const ChatHeader = styled.div`
   padding: var(--spacing-md);
   border-bottom: 1px solid #eee;
   font-weight: bold;
+`;
+
+const ConnectionError = styled.div`
+  color: var(--color-error);
+  font-size: 0.8em;
+  margin-top: 4px;
 `;
 
 const ChatBody = styled.div`

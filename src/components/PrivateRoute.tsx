@@ -1,8 +1,7 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { PrivateRouteProps } from '../types/auth';
-import LoadingSpinner from '../common/LoadingSpinner';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import styled from 'styled-components';
 
 const LoadingContainer = styled.div`
@@ -13,7 +12,7 @@ const LoadingContainer = styled.div`
   background: rgba(255, 255, 255, 0.8);
 `;
 
-const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
+const PrivateRoute: React.FC = () => {
   const { currentUser, loading } = useAuth();
   const location = useLocation();
 
@@ -26,7 +25,6 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   }
 
   if (!currentUser) {
-    // Save the attempted location and redirect to login
     return (
       <Navigate 
         to="/login" 
@@ -39,7 +37,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
     );
   }
 
-  return <>{children}</>;
+  return <Outlet />;
 };
 
 export default PrivateRoute;

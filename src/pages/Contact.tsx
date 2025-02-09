@@ -5,7 +5,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/layout/Header';
-import Card from '../../components/common/Card';
+import Card from '../components/common/Card';
 
 interface FormData {
   name: string;

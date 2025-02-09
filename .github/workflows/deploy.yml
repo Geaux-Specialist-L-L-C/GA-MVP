@@ -17,10 +17,13 @@ jobs:
         node-version: '18.x'
         cache: 'npm'
         
-    - name: Install dependencies
+    - name: Install root dependencies
       run: npm ci
       
-    - name: Build
+    - name: Install functions dependencies
+      run: cd functions && npm ci
+        
+    - name: Build frontend
       run: npm run build
       env:
         VITE_API_URL: ${{ secrets.VITE_API_URL }}
@@ -31,16 +34,20 @@ jobs:
         VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
         VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
         VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+        VITE_OPENAI_API_KEY: ${{ secrets.VITE_OPENAI_API_KEY }}
         REACT_APP_AZURE_ENDPOINT: ${{ secrets.REACT_APP_AZURE_ENDPOINT }}
         REACT_APP_AZURE_COGNITIVE_ENDPOINT: ${{ secrets.REACT_APP_AZURE_COGNITIVE_ENDPOINT }}
         REACT_APP_AZURE_DEPLOYMENT_ENDPOINT: ${{ secrets.REACT_APP_AZURE_DEPLOYMENT_ENDPOINT }}
         REACT_APP_MODEL_NAME: ${{ secrets.REACT_APP_MODEL_NAME }}
         REACT_APP_AZURE_API_KEY: ${{ secrets.REACT_APP_AZURE_API_KEY }}
-        FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+
+    - name: Build functions
+      run: cd functions && npm run build
         
-    - name: Deploy to Firebase Hosting
-      uses: FirebaseExtended/action-hosting-deploy@v0
+    - name: Deploy to Firebase
+      uses: w9jds/firebase-action@master
       with:
-        repoToken: ${{ secrets.GITHUB_TOKEN }}
-        firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        channelId: live
+        args: deploy --only hosting,functions
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}

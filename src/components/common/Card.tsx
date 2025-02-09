@@ -1,17 +1,8 @@
 import React from 'react';
+import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
-import styles from '../shared/shared.module.css';
 
-/**
- * CardProps interface
- * @property {IconProp} [icon] - Optional FontAwesome icon
- * @property {string} [title] - Card title
- * @property {string} [description] - Card description text
- * @property {React.ReactNode} [children] - Elements to render inside the card
- * @property {string} [className] - Optional additional class names for styling
- * @property {() => void} [onClick] - Optional click handler for the card
- */
 interface CardProps {
   icon?: IconProp | string;
   title?: string;
@@ -21,16 +12,6 @@ interface CardProps {
   onClick?: () => void;
 }
 
-/**
- * Card component for displaying content in a card layout
- * @component
- * @example
- * return (
- *   <Card icon="coffee" title="Sample Title" description="Sample Description">
- *     <p>Any additional content can go here.</p>
- *   </Card>
- * )
- */
 const Card: React.FC<CardProps> = ({
   icon,
   title,
@@ -42,14 +23,14 @@ const Card: React.FC<CardProps> = ({
   const isImagePath = typeof icon === 'string' && (icon.startsWith('/') || icon.startsWith('http'));
   
   return (
-    <div 
-      className={`${styles.card} ${className || ''}`} 
+    <StyledCard 
+      className={className} 
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
       {icon && (
-        <div className={styles['card-icon']}>
+        <IconContainer>
           {isImagePath ? (
             <img 
               src={icon} 
@@ -59,23 +40,72 @@ const Card: React.FC<CardProps> = ({
           ) : (
             typeof icon === 'object' && <FontAwesomeIcon icon={icon} />
           )}
-        </div>
+        </IconContainer>
       )}
-      {title && <h3 className={styles['card-title']}>{title}</h3>}
+      {title && <CardTitle>{title}</CardTitle>}
       {description && (
         Array.isArray(description) ? (
-          <ul className={styles['card-list']}>
+          <CardList>
             {description.map((item, index) => (
               <li key={index}>{item}</li>
             ))}
-          </ul>
+          </CardList>
         ) : (
-          <p className={styles['card-description']}>{description}</p>
+          <CardDescription>{description}</CardDescription>
         )
       )}
       {children}
-    </div>
+    </StyledCard>
   );
 };
+
+const StyledCard = styled.div`
+  background: ${({ theme }) => theme.palette.background.paper};
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: ${({ theme }) => theme.spacing.lg};
+  cursor: ${props => props.onClick ? 'pointer' : 'default'};
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    ${props => props.onClick && `
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    `}
+  }
+`;
+
+const IconContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+  color: ${({ theme }) => theme.palette.primary.main};
+  
+  img {
+    max-width: 48px;
+    height: auto;
+  }
+`;
+
+const CardTitle = styled.h3`
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+  color: ${({ theme }) => theme.palette.text.primary};
+`;
+
+const CardDescription = styled.p`
+  color: ${({ theme }) => theme.palette.text.secondary};
+`;
+
+const CardList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: ${({ theme }) => theme.spacing.sm} 0;
+  
+  li {
+    margin-bottom: ${({ theme }) => theme.spacing.xs};
+    color: ${({ theme }) => theme.palette.text.secondary};
+  }
+`;
 
 export default Card;

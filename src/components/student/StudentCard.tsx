@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import styled from 'styled-components';
 import { getStudentProfile } from '../../services/profileService';
-import styles from '../shared/shared.module.css';
 import Card from '../common/Card';
 
 interface Student {
@@ -35,22 +35,48 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onClick }) => {
     fetchStudent();
   }, [studentId]);
 
-  if (loading) return <Card className={styles['student-card']}>Loading student data...</Card>;
-  if (error) return <Card className={styles['student-card']}>Error: {error}</Card>;
+  if (loading) return <StyledCard onClick={onClick}>Loading student data...</StyledCard>;
+  if (error) return <StyledCard onClick={onClick}>Error: {error}</StyledCard>;
   if (!student) return null;
 
   return (
-    <Card 
-      className={styles['student-card']}
-      onClick={onClick}
-    >
-      <h3 className={styles['student-name']}>{student.name}</h3>
-      <div className={styles['student-info']}>Grade: {student.grade}</div>
-      <div className={`${styles['assessment-status']} ${student.hasTakenAssessment ? styles['status-complete'] : styles['status-pending']}`}>
+    <StyledCard onClick={onClick}>
+      <StudentName>{student.name}</StudentName>
+      <StudentInfo>Grade: {student.grade}</StudentInfo>
+      <AssessmentStatus $isComplete={student.hasTakenAssessment}>
         {student.hasTakenAssessment ? 'Assessment Complete' : 'Assessment Needed'}
-      </div>
-    </Card>
+      </AssessmentStatus>
+    </StyledCard>
   );
 };
+
+const StyledCard = styled(Card)`
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+`;
+
+const StudentName = styled.h3`
+  color: ${({ theme }) => theme.palette.text.primary};
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+`;
+
+const StudentInfo = styled.div`
+  color: ${({ theme }) => theme.palette.text.secondary};
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+`;
+
+const AssessmentStatus = styled.div<{ $isComplete: boolean }>`
+  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
+  border-radius: 4px;
+  background-color: ${({ theme, $isComplete }) => 
+    $isComplete ? theme.palette.success?.main || '#2ECC71' : theme.palette.warning?.main || '#F1C40F'};
+  color: white;
+  font-size: 0.875rem;
+  text-align: center;
+`;
 
 export default StudentCard;

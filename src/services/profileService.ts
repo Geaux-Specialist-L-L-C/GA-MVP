@@ -1,6 +1,6 @@
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
-import { Parent, Student } from "../types/profiles";
+import { Parent, Student, LearningStyle } from "../types/profiles";
 
 // ✅ Create Parent Profile
 export const createParentProfile = async (parentData: Partial<Parent>): Promise<string> => {
@@ -31,9 +31,17 @@ export const getParentProfile = async (userId: string): Promise<Parent | null> =
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      const data = { id: docSnap.id, ...docSnap.data() } as Parent;
-      console.log('✅ Parent profile found:', data);
-      return data;
+      const data = docSnap.data();
+      const parentProfile: Parent = {
+        uid: data.uid || userId,
+        email: data.email || '',
+        displayName: data.displayName || '',
+        students: data.students || [],
+        createdAt: data.createdAt || new Date().toISOString(),
+        updatedAt: data.updatedAt || new Date().toISOString()
+      };
+      console.log('✅ Parent profile found:', parentProfile);
+      return parentProfile;
     }
     
     console.log('ℹ️ No parent profile found, creating one...');
@@ -108,6 +116,24 @@ export const updateStudentAssessmentStatus = async (studentId: string, status: s
   } catch (error) {
     console.error("Error updating assessment status:", error);
     throw new Error("Failed to update assessment status");
+  }
+};
+
+// ✅ Save Learning Style
+export const saveLearningStyle = async (studentId: string, learningStyle: LearningStyle): Promise<void> => {
+  try {
+    console.log('📝 Saving learning style for student:', studentId);
+    const studentRef = doc(db, 'students', studentId);
+    
+    await updateDoc(studentRef, {
+      learningStyle,
+      updatedAt: new Date().toISOString()
+    });
+    
+    console.log('✅ Learning style saved successfully');
+  } catch (error) {
+    console.error('❌ Error saving learning style:', error);
+    throw error;
   }
 };
 

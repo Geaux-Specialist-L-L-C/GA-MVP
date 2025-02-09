@@ -1,6 +1,7 @@
 import { createTheme } from '@mui/material/styles';
+import type { DefaultTheme } from 'styled-components';
 
-export const muiTheme = createTheme({
+const muiTheme = createTheme({
   palette: {
     primary: {
       main: '#C29A47', // Primary gold
@@ -38,25 +39,29 @@ export const muiTheme = createTheme({
     },
     divider: 'rgba(0, 0, 0, 0.12)',
   },
-  breakpoints: {
-    values: {
-      xs: 320,
-      sm: 768,
-      md: 1024,
-      lg: 1200,
-      xl: 1536,
-    },
-  },
-  spacing: 4, // This will multiply the spacing by 4px (MUI's default spacing unit)
 });
 
-// Create styled-components theme with the same values
-export const styledTheme = {
-  palette: {
-    ...muiTheme.palette,
-  },
-  breakpoints: {
-    ...muiTheme.breakpoints.values,
-  },
-  spacing: (factor) => `${0.25 * factor}rem`, // Keep rem units for styled-components
+const createSpacing = () => {
+  const spacingFn = (value: number) => `${0.25 * value}rem`;
+  return Object.assign(spacingFn, {
+    xs: '0.25rem',
+    sm: '0.5rem',
+    md: '1rem',
+    lg: '2rem',
+    xl: '3rem',
+  });
 };
+
+const styledTheme: DefaultTheme = {
+  ...muiTheme,
+  breakpoints: {
+    ...muiTheme.breakpoints,
+    mobile: '320px',
+    tablet: '768px',
+    desktop: '1024px',
+    large: '1200px',
+  },
+  spacing: createSpacing(),
+};
+
+export { muiTheme, styledTheme };
