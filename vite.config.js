@@ -36,7 +36,6 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    strictPort: true,
     cors: true,
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
@@ -50,9 +49,9 @@ export default defineConfig({
         ws: true
       },
       '/auth': {
-        target: process.env.VITE_CHESHIRE_API_URL,
+        target: process.env.VITE_CHESHIRE_API_URL || 'https://cheshire.geaux.app',
         changeOrigin: true,
-        secure: false,
+        secure: true,
         rewrite: (path) => path.replace(/^\/auth/, '/auth'),
         configure: (proxy) => {
           proxy.on('error', (err) => {
@@ -60,14 +59,20 @@ export default defineConfig({
           });
           proxy.on('proxyReq', (proxyReq, req) => {
             console.log('Proxying request:', req.method, req.url);
+            proxyReq.setHeader('Cookie', 'Global=Auth');
           });
         }
       },
       '/message': {
-        target: process.env.VITE_CHESHIRE_API_URL,
+        target: process.env.VITE_CHESHIRE_API_URL || 'https://cheshire.geaux.app',
         changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/message/, '/message')
+        secure: true,
+        rewrite: (path) => path.replace(/^\/message/, '/message'),
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('Cookie', 'Global=Auth');
+          });
+        }
       }
     },
     hmr: {

@@ -1,7 +1,8 @@
 import axios, { AxiosInstance } from 'axios';
 import { auth } from '../firebase/config';
 
-const CHESHIRE_API_URL = import.meta.env.VITE_CHESHIRE_API_URL;
+const CHESHIRE_API_URL = import.meta.env.VITE_CHESHIRE_API_URL || 'https://cheshire.geaux.app';
+const CHESHIRE_DEBUG = import.meta.env.VITE_CHESHIRE_DEBUG === 'true';
 
 // Create axios instance with default configuration
 const cheshireAxios: AxiosInstance = axios.create({
@@ -9,20 +10,33 @@ const cheshireAxios: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'Cookie': 'Global=Auth'
   },
-  withCredentials: false,
-  timeout: 10000
+  withCredentials: true,
+  timeout: 30000  // Increased timeout for development
 });
 
 // Add response interceptor for better error handling
 cheshireAxios.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (CHESHIRE_DEBUG) {
+      console.error('Cheshire API Error:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        data: error.response?.data,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers
+        }
+      });
+    }
+
     if (error.code === 'ERR_NETWORK') {
       console.error('Network error - Unable to connect to Cheshire API:', error);
-      if (error.message.includes('CORS')) {
-        console.error('CORS error detected. Please ensure the server allows requests from:', window.location.origin);
-      }
+      console.error('Please ensure the TIPI container is running and accessible at:', CHESHIRE_API_URL);
     }
     return Promise.reject(error);
   }
@@ -67,13 +81,8 @@ export class CheshireService {
       const response = await cheshireAxios.post<AuthResponse>(
         '/auth/token',
         {
-          username: 'Global',
-          password: 'Noagenda32@@!?!?'
-        },
-        {
-          headers: {
-            'Origin': window.location.origin,
-          }
+          username: 'admin',
+          password: import.meta.env.VITE_CHESHIRE_ADMIN_PASSWORD || 'admin'
         }
       );
       
@@ -96,7 +105,7 @@ export class CheshireService {
           await new Promise(resolve => setTimeout(resolve, 1000 * this.retryCount));
           return this.authenticateWithCheshire();
         }
-        console.error('Network error after max retries - Please ensure the Cheshire API is running and accessible');
+        console.error('Network error after max retries - Please ensure the TIPI container is running');
       }
       throw error;
     }
@@ -122,6 +131,37 @@ export class CheshireService {
     } catch (error) {
       console.error('Error getting Firebase token:', error);
       return null;
+    }
+  }
+
+  static async checkTipiHealth(): Promise<{ status: string; version: string }> {
+    try {
+      const response = await cheshireAxios.get('/');
+      return {
+        status: 'healthy',
+        version: response.data.version || 'unknown'
+      };
+    } catch (error: any) {
+      console.error('TIPI health check failed:', error);
+      if (error.code === 'ERR_NETWORK') {
+        throw new Error('TIPI container is not accessible. Please ensure it is running.');
+      }
+      throw error;
+    }
+  }
+
+  static async initialize(): Promise<void> {
+    try {
+      // Check TIPI container health
+      await this.checkTipiHealth();
+      
+      // Get initial auth token
+      await this.getAuthToken();
+      
+      console.log('✅ Cheshire Cat service initialized successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize Cheshire Cat service:', error);
+      throw error;
     }
   }
 
