@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { auth } from '../firebase/config';
 
-const CHESHIRE_API_URL = import.meta.env.VITE_CHESHIRE_API_URL || 'https://cheshire.geaux.app';
+const CHESHIRE_API_URL = import.meta.env.VITE_CHESHIRE_API_URL;
 const CHESHIRE_DEBUG = import.meta.env.VITE_CHESHIRE_DEBUG === 'true';
 
 // Create axios instance with default configuration
@@ -9,11 +9,25 @@ const cheshireAxios: AxiosInstance = axios.create({
   baseURL: CHESHIRE_API_URL,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'Cookie': 'Global=Auth'
+    'Accept': 'application/json'
   },
   withCredentials: true,
-  timeout: 30000  // Increased timeout for development
+  timeout: 30000
+});
+
+// Add authentication interceptor
+cheshireAxios.interceptors.request.use(async (config) => {
+  try {
+    const user = auth.currentUser;
+    if (user) {
+      const token = await user.getIdToken();
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  } catch (error) {
+    console.error('Auth interceptor error:', error);
+    return Promise.reject(error);
+  }
 });
 
 // Add response interceptor for better error handling
@@ -68,57 +82,15 @@ interface AuthResponse {
 }
 
 export class CheshireService {
-  private static cheshireToken: string | null = null;
-  private static retryCount = 0;
-  private static maxRetries = 3;
-
-  private static async authenticateWithCheshire(): Promise<string> {
-    try {
-      if (!CHESHIRE_API_URL) {
-        throw new Error('Missing Cheshire API configuration');
-      }
-
-      const response = await cheshireAxios.post<AuthResponse>(
-        '/auth/token',
-        {
-          username: 'admin',
-          password: import.meta.env.VITE_CHESHIRE_ADMIN_PASSWORD || 'admin'
-        }
-      );
-      
-      if (!response.data?.access_token) {
-        throw new Error('Invalid authentication response');
-      }
-
-      this.cheshireToken = response.data.access_token;
-      this.retryCount = 0;
-      return this.cheshireToken;
-    } catch (error: any) {
-      console.error('Cheshire authentication failed:', error);
-      
-      if (error.response?.status === 400) {
-        console.error('Invalid credentials or malformed request');
-      } else if (error.code === 'ERR_NETWORK') {
-        if (this.retryCount < this.maxRetries) {
-          this.retryCount++;
-          console.log(`Retrying authentication (attempt ${this.retryCount}/${this.maxRetries})...`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * this.retryCount));
-          return this.authenticateWithCheshire();
-        }
-        console.error('Network error after max retries - Please ensure the TIPI container is running');
-      }
-      throw error;
+  private static async getAuthHeaders() {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('Authentication required');
     }
-  }
-
-  private static async getAuthToken(): Promise<string> {
-    if (!this.cheshireToken) {
-      await this.authenticateWithCheshire();
-    }
-    if (!this.cheshireToken) {
-      throw new Error('Failed to obtain Cheshire auth token');
-    }
-    return this.cheshireToken;
+    const token = await user.getIdToken();
+    return {
+      Authorization: `Bearer ${token}`
+    };
   }
 
   private static async getFirebaseToken(): Promise<string | null> {
@@ -155,9 +127,6 @@ export class CheshireService {
       // Check TIPI container health
       await this.checkTipiHealth();
       
-      // Get initial auth token
-      await this.getAuthToken();
-      
       console.log('✅ Cheshire Cat service initialized successfully');
     } catch (error) {
       console.error('❌ Failed to initialize Cheshire Cat service:', error);
@@ -167,12 +136,8 @@ export class CheshireService {
 
   static async checkConnection(): Promise<boolean> {
     try {
-      const token = await this.getAuthToken();
-      await cheshireAxios.get('/', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const headers = await this.getAuthHeaders();
+      await cheshireAxios.get('/', { headers });
       return true;
     } catch (error) {
       console.error('Cheshire API Connection Error:', error);
@@ -181,66 +146,41 @@ export class CheshireService {
   }
 
   static async sendChatMessage(message: string, userId: string, chatId: string) {
-    const token = await this.getAuthToken();
-    const firebaseToken = await this.getFirebaseToken();
-
-    if (!firebaseToken) {
-      throw new Error('Authentication required');
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await cheshireAxios.post<CheshireResponse>(
+        '/message',
+        { text: message },
+        { headers }
+      );
+      
+      return {
+        data: response.data.response,
+        memories: response.data.memories
+      };
+    } catch (error) {
+      console.error('Error sending chat message:', error);
+      throw this.getErrorMessage(error);
     }
-
-    const response = await cheshireAxios.post<CheshireResponse>(
-      '/message', 
-      {
-        text: message,
-        firebase_token: firebaseToken
-      }, 
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
-    
-    return {
-      data: response.data.response,
-      memories: response.data.memories
-    };
   }
 
   static async createCheshireUser(firebaseUid: string, email: string): Promise<void> {
-    const token = await this.getAuthToken();
-    const firebaseToken = await this.getFirebaseToken();
-
-    if (!firebaseToken) {
-      throw new Error('Authentication required');
-    }
-
-    const payload: CheshireUser = {
-      username: email,
-      permissions: {
-        CONVERSATION: ["WRITE", "EDIT", "LIST", "READ", "DELETE"],
-        MEMORY: ["READ", "LIST"],
-        STATIC: ["READ"],
-        STATUS: ["READ"]
-      }
-    };
-
     try {
-      await cheshireAxios.post(
-        '/users/',
-        {
-          ...payload,
-          firebase_token: firebaseToken
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+      const headers = await this.getAuthHeaders();
+      const payload: CheshireUser = {
+        username: email,
+        permissions: {
+          CONVERSATION: ["WRITE", "EDIT", "LIST", "READ", "DELETE"],
+          MEMORY: ["READ", "LIST"],
+          STATIC: ["READ"],
+          STATUS: ["READ"]
         }
-      );
+      };
+
+      await cheshireAxios.post('/users/', payload, { headers });
     } catch (error) {
       console.error('Error creating Cheshire user:', error);
-      throw error;
+      throw this.getErrorMessage(error);
     }
   }
 
@@ -261,7 +201,6 @@ export class CheshireService {
       return "Network error - Unable to connect to the chat service. Please check your connection and try again.";
     }
     if (error.response?.status === 401) {
-      this.cheshireToken = null;
       return "Your session has expired. Please try again.";
     }
     if (error.response?.status === 403) {
