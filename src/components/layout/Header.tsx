@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext.tsx';
+import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
 import styles from './layout.module.css';
 

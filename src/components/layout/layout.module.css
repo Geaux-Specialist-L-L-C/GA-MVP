@@ -5,41 +5,46 @@
   left: 0;
   right: 0;
   height: var(--header-height);
-  background: var(--white);
+  background: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   z-index: 1000;
+  padding: 1rem;
 }
 
 .navigation {
+  max-width: var(--max-width);
+  margin: 0 auto;
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 0 var(--spacing-md);
   height: 100%;
 }
 
 .navigation-list {
   display: flex;
-  gap: var(--spacing-md);
+  gap: 2rem;
   list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .navigation-list a {
   color: var(--text-color);
   text-decoration: none;
+  font-weight: 500;
   padding: var(--spacing-sm);
   border-radius: var(--border-radius);
   transition: color 0.2s, background-color 0.2s;
 }
 
 .navigation-list a:hover {
-  color: var(--accent-color);
+  color: var(--primary-color);
   background-color: var(--light-bg);
 }
 
 .navigation-list a.active {
-  color: var(--accent-color);
-  font-weight: 500;
+  color: var(--primary-color);
 }
 
 .auth-buttons {
