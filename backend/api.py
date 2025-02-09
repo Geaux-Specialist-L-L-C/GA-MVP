@@ -14,24 +14,46 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+# Configure CORS with specific origins
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",     # Vite dev server
+    "http://localhost:3000",     # Alternative dev port
+    "https://cheshire.geaux.app" # Production URL
+]
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
-# Add security middleware
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+# Add security middleware with specific hosts
+app.add_middleware(
+    TrustedHostMiddleware, 
+    allowed_hosts=[
+        "localhost",
+        "cheshire.geaux.app",
+        "*"  # Remove this in production
+    ]
+)
+
 security = HTTPBearer()
 
 # Add request logging middleware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    logger.info(f"Request: {request.method} {request.url}")
+    logger.info(f"Incoming request: {request.method} {request.url}")
+    logger.info(f"Client host: {request.client.host if request.client else 'Unknown'}")
+    logger.info(f"Headers: {request.headers}")
+    
     response = await call_next(request)
+    
+    logger.info(f"Response status: {response.status_code}")
     return response
 
 # Azure OpenAI Configuration

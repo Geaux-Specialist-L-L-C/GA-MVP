@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithRedirect,
+  signInWithPopup,
   onAuthStateChanged,
   getIdToken,
   UserCredential,
-  getRedirectResult,
   GoogleAuthProvider,
   setPersistence,
   browserSessionPersistence,
@@ -34,16 +33,8 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       try {
         console.log("🔄 Setting Firebase auth persistence...");
         await setPersistence(auth, browserSessionPersistence);
-
-        const result = await getRedirectResult(auth);
-        if (result) {
-          console.log("✅ Redirect result received");
-          await handleAuthResult(result);
-        }
-
         const unsubscribe = onAuthStateChanged(auth, handleAuthStateChange);
         return () => unsubscribe();
-
       } catch (error) {
         console.error("❌ Auth initialization error:", error);
         setAuthError("Failed to initialize authentication");
@@ -69,8 +60,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       };
 
       setCurrentUser(userData);
-      setLoading(false);
-      
+      navigate('/dashboard');
     } catch (error) {
       console.error("❌ Error processing auth result:", error);
       setCurrentUser({
@@ -79,6 +69,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
         displayName: result.user.displayName || null,
         photoURL: result.user.photoURL || null
       });
+    } finally {
       setLoading(false);
     }
   };
@@ -117,47 +108,35 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     }
   };
 
-  const handleGetRedirectResult = async (): Promise<void> => {
-    try {
-      setLoading(true);
-      const result = await getRedirectResult(auth);
-      if (result) {
-        await handleAuthResult(result);
-      }
-    } catch (error) {
-      console.error("❌ Error getting redirect result:", error);
-      setAuthError("Failed to complete authentication");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const login = async (email: string, password: string): Promise<UserCredential> => {
     try {
       setAuthError(null);
+      setLoading(true);
       const result = await signInWithEmailAndPassword(auth, email, password);
-      const token = await getIdToken(result.user);
-      localStorage.setItem('token', token);
+      await handleAuthResult(result);
       return result;
     } catch (error) {
       console.error("❌ Login error:", error);
       setAuthError((error as Error).message);
+      setLoading(false);
       throw error;
     }
   };
 
-  const loginWithGoogle = async (): Promise<void> => {
+  const loginWithGoogle = async (): Promise<UserCredential> => {
     try {
       setAuthError(null);
+      setLoading(true);
       console.log("🔄 Starting Google sign-in...");
       googleProvider.setCustomParameters({
         prompt: 'select_account'
       });
-      await signInWithRedirect(auth, googleProvider);
-      // Note: The actual auth result will be handled by getRedirectResult in the useEffect
+      const result = await signInWithPopup(auth, googleProvider);
+      await handleAuthResult(result);
+      return result;
     } catch (error) {
       console.error("❌ Google login error:", error);
-      setAuthError("Failed to start Google sign-in. Please try again.");
+      setAuthError("Failed to sign in with Google. Please try again.");
       setLoading(false);
       throw error;
     }
@@ -166,13 +145,14 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const signup = async (email: string, password: string): Promise<UserCredential> => {
     try {
       setAuthError(null);
+      setLoading(true);
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      const token = await getIdToken(result.user);
-      localStorage.setItem('token', token);
+      await handleAuthResult(result);
       return result;
     } catch (error) {
       console.error("❌ Signup error:", error);
       setAuthError((error as Error).message);
+      setLoading(false);
       throw error;
     }
   };
@@ -197,8 +177,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     login,
     loginWithGoogle,
     signup,
-    logout,
-    getRedirectResult: handleGetRedirectResult
+    logout
   };
 
   return (

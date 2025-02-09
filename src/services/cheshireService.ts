@@ -1,16 +1,32 @@
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { auth } from '../firebase/config';
 
 const CHESHIRE_API_URL = import.meta.env.VITE_CHESHIRE_API_URL;
-const CHESHIRE_ADMIN_PASSWORD = import.meta.env.VITE_CHESHIRE_ADMIN_PASSWORD;
 
-// Validate environment variables
-if (!CHESHIRE_API_URL) {
-  console.error('VITE_CHESHIRE_API_URL environment variable is not set');
-}
-if (!CHESHIRE_ADMIN_PASSWORD) {
-  console.error('VITE_CHESHIRE_ADMIN_PASSWORD environment variable is not set');
-}
+// Create axios instance with default configuration
+const cheshireAxios: AxiosInstance = axios.create({
+  baseURL: CHESHIRE_API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+  withCredentials: false,
+  timeout: 10000
+});
+
+// Add response interceptor for better error handling
+cheshireAxios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ERR_NETWORK') {
+      console.error('Network error - Unable to connect to Cheshire API:', error);
+      if (error.message.includes('CORS')) {
+        console.error('CORS error detected. Please ensure the server allows requests from:', window.location.origin);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 interface CheshireResponse {
   text: string;
@@ -39,23 +55,24 @@ interface AuthResponse {
 
 export class CheshireService {
   private static cheshireToken: string | null = null;
+  private static retryCount = 0;
+  private static maxRetries = 3;
 
   private static async authenticateWithCheshire(): Promise<string> {
     try {
-      if (!CHESHIRE_API_URL || !CHESHIRE_ADMIN_PASSWORD) {
+      if (!CHESHIRE_API_URL) {
         throw new Error('Missing Cheshire API configuration');
       }
 
-      const response = await axios.post<AuthResponse>(
-        `${CHESHIRE_API_URL}/auth/token`,
+      const response = await cheshireAxios.post<AuthResponse>(
+        '/auth/token',
         {
-          username: 'admin',
-          password: CHESHIRE_ADMIN_PASSWORD
+          username: 'Global',
+          password: 'Noagenda32@@!?!?'
         },
         {
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+          headers: {
+            'Origin': window.location.origin,
           }
         }
       );
@@ -65,11 +82,21 @@ export class CheshireService {
       }
 
       this.cheshireToken = response.data.access_token;
+      this.retryCount = 0;
       return this.cheshireToken;
     } catch (error: any) {
       console.error('Cheshire authentication failed:', error);
+      
       if (error.response?.status === 400) {
         console.error('Invalid credentials or malformed request');
+      } else if (error.code === 'ERR_NETWORK') {
+        if (this.retryCount < this.maxRetries) {
+          this.retryCount++;
+          console.log(`Retrying authentication (attempt ${this.retryCount}/${this.maxRetries})...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * this.retryCount));
+          return this.authenticateWithCheshire();
+        }
+        console.error('Network error after max retries - Please ensure the Cheshire API is running and accessible');
       }
       throw error;
     }
@@ -101,7 +128,7 @@ export class CheshireService {
   static async checkConnection(): Promise<boolean> {
     try {
       const token = await this.getAuthToken();
-      await axios.get(`${CHESHIRE_API_URL}/`, {
+      await cheshireAxios.get('/', {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -121,17 +148,15 @@ export class CheshireService {
       throw new Error('Authentication required');
     }
 
-    const response = await axios.post<CheshireResponse>(
-      `${CHESHIRE_API_URL}/message`, 
+    const response = await cheshireAxios.post<CheshireResponse>(
+      '/message', 
       {
         text: message,
-        firebase_token: firebaseToken // Include Firebase token for user verification
+        firebase_token: firebaseToken
       }, 
       {
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': '*/*',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         }
       }
     );
@@ -161,16 +186,15 @@ export class CheshireService {
     };
 
     try {
-      await axios.post(
-        `${CHESHIRE_API_URL}/users/`,
+      await cheshireAxios.post(
+        '/users/',
         {
           ...payload,
-          firebase_token: firebaseToken // Include Firebase token for user verification
+          firebase_token: firebaseToken
         },
         {
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            Authorization: `Bearer ${token}`
           }
         }
       );
@@ -190,8 +214,14 @@ export class CheshireService {
     if (error.code === 'ECONNABORTED') {
       return "The request timed out. Please try again.";
     }
+    if (error.code === 'ERR_NETWORK') {
+      if (error.message.includes('CORS')) {
+        return "Unable to connect to the chat service due to CORS restrictions. Please contact support.";
+      }
+      return "Network error - Unable to connect to the chat service. Please check your connection and try again.";
+    }
     if (error.response?.status === 401) {
-      this.cheshireToken = null; // Clear invalid token
+      this.cheshireToken = null;
       return "Your session has expired. Please try again.";
     }
     if (error.response?.status === 403) {

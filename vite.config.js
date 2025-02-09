@@ -48,6 +48,26 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         ws: true
+      },
+      '/auth': {
+        target: process.env.VITE_CHESHIRE_API_URL,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/auth/, '/auth'),
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            console.error('Proxy error:', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req) => {
+            console.log('Proxying request:', req.method, req.url);
+          });
+        }
+      },
+      '/message': {
+        target: process.env.VITE_CHESHIRE_API_URL,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/message/, '/message')
       }
     },
     hmr: {

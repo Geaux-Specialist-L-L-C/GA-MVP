@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';  // Remove .tsx extension
 import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -11,7 +11,7 @@ interface FormData {
 }
 
 const Login: React.FC = () => {
-  const { loginWithGoogle, login } = useAuth();
+  const { loginWithGoogle, login, loading: authLoading } = useAuth();  // Destructure needed methods
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({ email: '', password: '' });
   const [error, setError] = useState<string>('');
@@ -46,7 +46,7 @@ const Login: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <LoadingContainer>
         <LoadingSpinner />
