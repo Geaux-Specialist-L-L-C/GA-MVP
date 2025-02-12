@@ -3,7 +3,7 @@
 // Author: GitHub Copilot
 // Created: 2023-10-10
 
-import { enableIndexedDbPersistence } from 'firebase/firestore';
+import { enableIndexedDbPersistence, type FirestoreSettings } from 'firebase/firestore';
 import { db } from './config';
 
 interface ServiceWorkerError extends Error {
@@ -86,11 +86,10 @@ export async function initializeAuthServiceWorker(retryAttempts = 3, retryDelay 
         throw new Error('HTTPS is required for secure authentication operations');
       }
 
-      // Enable Firestore persistence after service worker is ready
+      // Enable Firestore persistence with multi-tab support
       try {
-        await enableIndexedDbPersistence(db, {
-          synchronizeTabs: true
-        });
+        await enableIndexedDbPersistence(db);
+        console.debug('Firestore persistence enabled successfully');
       } catch (err: any) {
         if (err.code === 'failed-precondition') {
           // Multiple tabs open, persistence can only be enabled in one tab at a time

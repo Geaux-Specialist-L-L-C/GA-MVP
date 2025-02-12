@@ -1,5 +1,10 @@
 import { initializeApp, FirebaseOptions } from 'firebase/app';
-import { initializeAuth, indexedDBLocalPersistence, browserPopupRedirectResolver } from 'firebase/auth';
+import { 
+  initializeAuth, 
+  browserPopupRedirectResolver, 
+  GoogleAuthProvider, 
+  indexedDBLocalPersistence 
+} from 'firebase/auth';
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { initializeAnalytics, getAnalytics } from 'firebase/analytics';
 import { initializeAuthServiceWorker } from './auth-service-worker';
@@ -15,44 +20,43 @@ const firebaseConfig: FirebaseOptions = {
   databaseURL: process.env.VITE_FIREBASE_DATABASE_URL || ''
 };
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000;
+const app = initializeApp(firebaseConfig);
 
-export const app = initializeApp(firebaseConfig);
-
-// Initialize Firestore with persistent cache
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager()
   })
 });
 
-// Initialize Auth with indexed DB persistence
 export const auth = initializeAuth(app, {
   persistence: [indexedDBLocalPersistence],
   popupRedirectResolver: browserPopupRedirectResolver
 });
 
-// Initialize Analytics in production only
+// Export Google Auth Provider
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({
+  prompt: 'select_account'
+});
+export const googleProvider = provider;
+
+// Optionally initialize Analytics only in production
 export const analytics = process.env.NODE_ENV === 'production' ? getAnalytics(app) : null;
 
-// Initialize service worker with retry logic
-const initializeFirebaseWithRetry = async (retries = MAX_RETRIES): Promise<void> => {
+// Initialize Auth service worker with retry logic
+const initializeFirebaseWithRetry = async (retries = 3): Promise<void> => {
   try {
     await initializeAuthServiceWorker();
     console.log('✅ Firebase auth persistence configured');
   } catch (error) {
     if (retries > 0) {
-      console.log(`Service worker initialization failed, retrying in ${RETRY_DELAY}ms... (${MAX_RETRIES - retries + 1}/${MAX_RETRIES})`);
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      console.log(`Service worker initialization failed, retrying... (${retries})`);
       return initializeFirebaseWithRetry(retries - 1);
-    } else {
-      console.warn('Service worker initialization failed. Some features may be limited.');
-      // Still allow the app to function without service worker
-      return;
     }
+    console.warn('Service worker initialization failed after retries.');
   }
 };
 
-// Start initialization
 initializeFirebaseWithRetry();
+
+export { app };
