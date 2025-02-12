@@ -8,5 +8,71 @@
     "github.copilot.chat.enableUserPreferences": true,
     "github.copilot.chat.generateTests.codeLens": true,
     "github.copilot.chat.languageContext.typescript.enabled": true,
-    "github.copilot.chat.search.semanticTextResults": true
+    "github.copilot.chat.search.semanticTextResults": true,
+    "files.autoSave": "afterDelay",
+    "editor.wordWrap": "on",
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    "github.copilot.chat.edits.temporalContext.enabled": true,
+
+    "github.copilot.chat.testGeneration.instructions": [
+        {
+            "file": "",
+            "filePattern": "src/**/*.test.tsx",
+            "instructions": "Generate unit tests using Jest & React Testing Library. Cover both success and failure cases. Use Mock Service Worker (MSW) for API mocking."
+        },
+        {
+            "file": "",
+            "filePattern": "backend/tests/**/*.py",
+            "instructions": "Use FastAPI TestClient and Pytest for backend tests. Ensure JWT authentication and RBAC security tests are included."
+        },
+        {
+            "file": "",
+            "filePattern": "src/pages/**/*.test.tsx",
+            "instructions": "For integration tests, use Cypress with end-to-end scenarios covering user authentication, navigation, and API calls."
+        }
+    ],
+
+    "github.copilot.chat.commitMessageGeneration.instructions": [
+        {
+            "file": "",
+            "filePattern": "*",
+            "instructions": "Format commit messages using Conventional Commits: `feat:`, `fix:`, `chore:`, `test:`, `docs:`, `refactor:`. Provide a short, clear summary in the present tense."
+        }
+    ],
+
+    "github.copilot.chat.reviewSelection.instructions": [
+        {
+            "file": "",
+            "filePattern": "src/**/*.tsx",
+            "instructions": "Ensure TypeScript compliance, proper prop typing, and React best practices. Avoid inline styles; prefer Styled Components or Tailwind CSS."
+        },
+        {
+            "file": "",
+            "filePattern": "backend/**/*.py",
+            "instructions": "Ensure FastAPI routes use Pydantic models for validation, JWT authentication, and RBAC. Implement proper error handling and response models."
+        },
+        {
+            "file": "",
+            "filePattern": ".github/workflows/*.yml",
+            "instructions": "Validate CI/CD pipeline integrity. Ensure workflows include ESLint, Jest, Cypress, and dependency security scans."
+        }
+    ],
+
+    "github.copilot.chat.codeReview.instructions": [
+        {
+            "file": "",
+            "filePattern": "src/**/*.tsx",
+            "instructions": "Check for performance optimizations, React hooks best practices, and clean code formatting. Ensure absolute imports are used."
+        },
+        {
+            "file": "",
+            "filePattern": "backend/**/*.py",
+            "instructions": "Validate API endpoint security, response models, and authentication handling. Ensure database queries use ORM best practices."
+        },
+        {
+            "file": "",
+            "filePattern": "firestore.rules",
+            "instructions": "Ensure Firestore security rules enforce RBAC. No public read/write access unless explicitly required."
+        }
+    ]
 }
