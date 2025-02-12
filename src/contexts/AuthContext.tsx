@@ -1,29 +1,30 @@
 // File: /src/contexts/AuthContext.tsx
-// Description: Provides authentication state and methods via React context
-// Author: Copilot
+// Description: Authentication context provider with popup and redirect handling
+// Author: GitHub Copilot
 // Created: 2024-02-12
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { 
-  Auth,
   User,
-  browserPopupRedirectResolver,
   GoogleAuthProvider,
   signInWithPopup,
   signInWithRedirect,
-  getAuth,
-  setPersistence,
-  browserLocalPersistence,
+  getRedirectResult,
+  AuthError,
   onAuthStateChanged
 } from 'firebase/auth';
-import { debounce } from '@mui/material/utils';
+import { auth } from '../firebase/config';
+import { debounce } from 'lodash';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  error: Error | null;
-  googleSignIn: () => Promise<void>;
-  signOut: () => Promise<void>;
+  error: string | null;
+  signInWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
+  dismissError: () => void;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  isAuthReady: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,94 +33,108 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [auth] = useState<Auth>(getAuth());
-  const maxRetries = parseInt(process.env.VITE_MAX_AUTH_RETRIES || '3', 10);
+  const [error, setError] = useState<string | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
-  // Initialize auth persistence with retry logic
-  const initializePersistence = useCallback(async (retries = 0) => {
-    try {
-      await setPersistence(auth, browserLocalPersistence);
-    } catch (err) {
-      if (retries < maxRetries) {
-        setTimeout(() => initializePersistence(retries + 1), 1000);
-      } else {
-        console.error('Failed to initialize auth persistence:', err);
-      }
+  // Debounced navigation to prevent history API spam
+  const debouncedNavigate = debounce((path: string) => {
+    window.history.pushState({}, '', path);
+  }, 300);
+
+  const handleAuthError = (error: AuthError) => {
+    if (error.code === 'auth/popup-closed-by-user') {
+      setError('Sign-in window was closed. Please try again.');
+    } else if (error.code === 'auth/popup-blocked') {
+      setError('Pop-up was blocked by your browser. Please allow pop-ups and try again.');
+      // Fallback to redirect
+      return true;
+    } else {
+      setError(`Authentication error: ${error.message}`);
     }
-  }, [auth, maxRetries]);
+    return false;
+  };
 
-  useEffect(() => {
-    initializePersistence();
-  }, [initializePersistence]);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [auth]);
-
-  const debouncedNavigate = debounce((callback: () => void) => callback(), 300);
-
-  const googleSignIn = async () => {
+  const signInWithGoogle = async () => {
     try {
       setError(null);
       const provider = new GoogleAuthProvider();
       try {
-        // Try popup first
-        await signInWithPopup(auth, provider, browserPopupRedirectResolver);
-      } catch (popupError: any) {
-        if (popupError.code === 'auth/popup-blocked' || 
-            popupError.code === 'auth/popup-closed-by-user') {
-          // Fallback to redirect
+        await signInWithPopup(auth, provider);
+      } catch (error: any) {
+        if (handleAuthError(error)) {
+          // Fallback to redirect method
           await signInWithRedirect(auth, provider);
-        } else {
-          throw popupError;
         }
       }
-    } catch (err: any) {
-      setError(new Error(err.message || 'Failed to sign in with Google'));
-      throw err;
+    } catch (error: any) {
+      handleAuthError(error);
     }
   };
 
-  const signOut = async () => {
+  const logout = async () => {
     try {
       await auth.signOut();
-      debouncedNavigate(() => window.location.href = '/');
-    } catch (err: any) {
-      setError(new Error(err.message || 'Failed to sign out'));
-      throw err;
+      debouncedNavigate('/login');
+    } catch (error: any) {
+      setError(`Logout error: ${error.message}`);
     }
   };
 
-  const value = {
-    user,
-    loading,
-    error,
-    googleSignIn,
-    signOut
-  };
+  const dismissError = () => setError(null);
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+
+    const initializeAuth = async () => {
+      try {
+        const authInstance = await auth;
+        unsubscribe = onAuthStateChanged(authInstance, (firebaseUser: User | null) => {
+          setUser(firebaseUser);
+          setIsAuthReady(true);
+        });
+      } catch (error) {
+        console.error("Failed to initialize auth:", error);
+        setIsAuthReady(true); // Set to true even on error to prevent infinite loading
+      }
+    };
+
+    initializeAuth();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+      debouncedNavigate.cancel();
+    };
+  }, []);
 
   return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
+    <AuthContext.Provider 
+      value={{ 
+        user, 
+        loading, 
+        error,
+        signInWithGoogle, 
+        logout,
+        dismissError,
+        setUser,
+        isAuthReady
+      }}
+    >
+      {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
+function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
+}
 
-export default AuthProvider;
+export { AuthProvider, useAuth, AuthContext };

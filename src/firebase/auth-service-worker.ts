@@ -1,7 +1,7 @@
 // File: /src/firebase/auth-service-worker.ts
-// Description: Firebase auth service worker initialization and management
+// Description: Service worker registration for Firebase auth
 // Author: GitHub Copilot
-// Created: 2023-10-10
+// Created: 2024-02-12
 
 import { enableIndexedDbPersistence, type FirestoreSettings } from 'firebase/firestore';
 import { db } from './config';
@@ -22,117 +22,51 @@ interface AuthServiceWorkerMessage {
 
 const SW_TIMEOUT = 10000; // 10 seconds timeout for service worker registration
 
-export async function initializeAuthServiceWorker(retryAttempts = 3, retryDelay = 1000) {
-  if (!('serviceWorker' in navigator)) {
-    console.warn('Service workers are not supported in this browser');
-    return false;
-  }
-
-  if (!window.isSecureContext) {
-    console.warn('Service Worker registration requires a secure context (HTTPS or localhost)');
-    return false;
-  }
-
-  const registerWithRetry = async (attempt = 0): Promise<boolean> => {
+const registerAuthServiceWorker = async () => {
+  if ('serviceWorker' in navigator) {
     try {
-      // Clean up existing service workers
-      const existingRegistrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(existingRegistrations.map(reg => reg.unregister()));
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+        scope: '/__/auth/'
+      });
 
-      // Check if service worker file exists
-      const swResponse = await fetch('/firebase-messaging-sw.js');
-      if (!swResponse.ok) {
-        throw new Error('Service worker file not found');
-      }
-
-      // Register service worker with proper scope for auth
-      const registration = await Promise.race<ServiceWorkerRegistration>([
-        navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-          scope: '/__/auth/',
-          updateViaCache: 'none'
-        }),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Service worker registration timeout')), SW_TIMEOUT)
-        )
-      ]);
-
-      // Wait for the service worker to be ready with timeout
+      // Configure service worker timeout
+      const timeout = Number(import.meta.env.VITE_SERVICE_WORKER_TIMEOUT) || 10000;
+      
+      // Wait for the service worker to be ready
       await Promise.race([
         navigator.serviceWorker.ready,
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Service worker registration timeout')), 10000)
+          setTimeout(() => reject(new Error('Service Worker registration timeout')), timeout)
         )
       ]);
 
-      // Add message listener for service worker communication
-      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
-
-      // Wait for activation if needed
-      if (!registration.active || registration.active.state !== 'activated') {
-        await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            reject(new Error('Service worker activation timeout'));
-          }, 10000);
-
-          registration.addEventListener('activate', () => {
-            clearTimeout(timeout);
-            resolve();
-          });
-        });
-      }
-
-      // Verify https is available for auth operations
-      if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-        throw new Error('HTTPS is required for secure authentication operations');
-      }
-
-      // Enable Firestore persistence with multi-tab support
-      try {
-        await enableIndexedDbPersistence(db);
-        console.debug('Firestore persistence enabled successfully');
-      } catch (err: any) {
-        if (err.code === 'failed-precondition') {
-          // Multiple tabs open, persistence can only be enabled in one tab at a time
-          console.warn('Multiple tabs open, persistence enabled in first tab only');
-        } else if (err.code === 'unimplemented') {
-          // The current browser doesn't support persistence
-          console.warn('Current browser does not support persistence');
-        }
-      }
-
-      console.debug('Firebase auth service worker registered and activated successfully');
-      return true;
-
-    } catch (error: any) {
-      const serviceWorkerError = error as ServiceWorkerError;
-      
-      if (attempt < retryAttempts) {
-        const delay = retryDelay * Math.pow(2, attempt);
-        
-        if (serviceWorkerError.name === 'SecurityError') {
-          console.warn(`SSL certificate error, retrying in ${delay}ms... (${attempt + 1}/${retryAttempts})`);
-        } else if (serviceWorkerError.name === 'NetworkError') {
-          console.warn(`Network error during service worker registration, retrying in ${delay}ms... (${attempt + 1}/${retryAttempts})`);
-        } else {
-          console.warn(`Service worker registration failed, retrying in ${delay}ms... (${attempt + 1}/${retryAttempts})`);
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return registerWithRetry(attempt + 1);
-      }
-
-      console.error('Failed to register auth service worker:', {
-        error: serviceWorkerError.message,
-        name: serviceWorkerError.name,
-        code: serviceWorkerError.code
+      // Send initial configuration
+      registration.active?.postMessage({
+        type: 'FIREBASE_AUTH_POPUP',
+        origin: window.location.origin
       });
-      
-      return false;
-    }
-  };
 
-  return registerWithRetry();
-}
+      return registration;
+    } catch (error) {
+      console.error('Service worker registration failed:', error);
+      throw error;
+    }
+  }
+  throw new Error('Service workers are not supported in this browser');
+};
+
+export const initAuthServiceWorker = async () => {
+  try {
+    await registerAuthServiceWorker();
+  } catch (error) {
+    console.warn('Auth service worker initialization failed, falling back to redirect method:', error);
+    // Service worker failed, will use redirect method instead
+    return false;
+  }
+  return true;
+};
+
+export default initAuthServiceWorker;
 
 function handleServiceWorkerMessage(event: MessageEvent<AuthServiceWorkerMessage>) {
   const { type, status, ok, fallbackToRedirect, error } = event.data;

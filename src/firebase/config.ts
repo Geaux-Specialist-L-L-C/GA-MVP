@@ -1,67 +1,66 @@
 // File: /src/firebase/config.ts
-// Description: Firebase configuration and app initialization.
-// Author: [Your Name]
-// Created: [Date]
+// Description: Firebase configuration and initialization
+// Author: GitHub Copilot
+// Created: 2024-02-12
 
-import { initializeApp, FirebaseOptions } from 'firebase/app';
-import { 
-  initializeAuth, 
-  browserPopupRedirectResolver, 
-  GoogleAuthProvider, 
-  indexedDBLocalPersistence 
-} from 'firebase/auth';
-import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
-import { initializeAnalytics, getAnalytics } from 'firebase/analytics';
-import { initializeAuthServiceWorker } from './auth-service-worker';
+import { initializeApp } from 'firebase/app';
+import { getAuth, browserPopupRedirectResolver, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { initAuthServiceWorker } from './auth-service-worker';
 
-const firebaseConfig: FirebaseOptions = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY,
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.VITE_FIREBASE_APP_ID,
-  measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID,
+declare global {
+  interface ImportMetaEnv {
+    VITE_FIREBASE_API_KEY: string;
+    VITE_FIREBASE_AUTH_DOMAIN: string;
+    VITE_FIREBASE_PROJECT_ID: string;
+    VITE_FIREBASE_STORAGE_BUCKET: string;
+    VITE_FIREBASE_MESSAGING_SENDER_ID: string;
+    VITE_FIREBASE_APP_ID: string;
+    VITE_FIREBASE_MEASUREMENT_ID: string;
+    VITE_MAX_AUTH_RETRIES: string;
+  }
+}
+
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
   databaseURL: process.env.VITE_FIREBASE_DATABASE_URL || ''
 };
 
 const app = initializeApp(firebaseConfig);
 
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager()
-  })
-});
+const initAuth = async () => {
+  const maxRetries = Number(import.meta.env.VITE_MAX_AUTH_RETRIES) || 3;
+  let retryCount = 0;
 
-export const auth = initializeAuth(app, {
-  persistence: [indexedDBLocalPersistence],
-  popupRedirectResolver: browserPopupRedirectResolver
-});
-
-// Export Google Auth Provider
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({
-  prompt: 'select_account'
-});
-export const googleProvider = provider;
-
-// Optionally initialize Analytics only in production
-export const analytics = process.env.NODE_ENV === 'production' ? getAnalytics(app) : null;
-
-// Initialize Auth service worker with retry logic
-const initializeFirebaseWithRetry = async (retries = 3): Promise<void> => {
-  try {
-    await initializeAuthServiceWorker();
-    console.log('✅ Firebase auth persistence configured');
-  } catch (error) {
-    if (retries > 0) {
-      console.log(`Service worker initialization failed, retrying... (${retries})`);
-      return initializeFirebaseWithRetry(retries - 1);
+  while (retryCount < maxRetries) {
+    try {
+      const auth = initializeAuth(app, {
+        persistence: [indexedDBLocalPersistence],
+        popupRedirectResolver: browserPopupRedirectResolver,
+      });
+      
+      // Initialize service worker for auth popups
+      await initAuthServiceWorker();
+      
+      return auth;
+    } catch (error) {
+      retryCount++;
+      if (retryCount === maxRetries) {
+        throw new Error('Failed to initialize Firebase Auth after multiple attempts');
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
     }
-    console.warn('Service worker initialization failed after retries.');
   }
+
+  throw new Error('Failed to initialize Firebase Auth');
 };
 
-initializeFirebaseWithRetry();
-
-export { app };
+export const auth = await initAuth();
+export const db = getFirestore(app);
+export default app;

@@ -2,8 +2,8 @@
 /* global clients, firebase, importScripts */
 
 // File: /public/firebase-messaging-sw.js
-// Description: Firebase service worker for handling auth popups and messaging
-// Author: Copilot
+// Description: Firebase service worker for auth popup handling
+// Author: GitHub Copilot
 // Created: 2024-02-12
 
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
@@ -12,8 +12,14 @@ importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-comp
 importScripts('./firebase-config.js');
 
 const TIMEOUT = parseInt(self.VITE_SERVICE_WORKER_TIMEOUT || '10000', 10);
+const AUTH_ERROR_MESSAGES = {
+  'auth/popup-closed-by-user': 'Sign-in window was closed. Please try again.',
+  'auth/popup-blocked': 'Sign-in popup was blocked. Please allow popups and try again.',
+  'auth/network-request-failed': 'Network error. Please check your connection and try again.',
+  'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
+  'auth/unauthorized-domain': 'Authentication not allowed on this domain.',
+};
 
-// Initialize Firebase with config from environment
 firebase.initializeApp({
   apiKey: self.VITE_FIREBASE_API_KEY,
   authDomain: self.VITE_FIREBASE_AUTH_DOMAIN,
@@ -27,7 +33,6 @@ firebase.initializeApp({
 const CACHE_NAME = 'geaux-academy-cache-v1';
 const OFFLINE_URL = '/offline.html';
 
-// Assets to cache for offline support
 const CACHE_ASSETS = [
   '/',
   '/index.html',
@@ -43,7 +48,7 @@ self.addEventListener('install', (event) => {
       try {
         const cache = await caches.open(CACHE_NAME);
         await cache.addAll(CACHE_ASSETS);
-        await self.skipWaiting(); // Ensure new service worker takes over immediately
+        await self.skipWaiting();
         console.info('Service worker installed successfully');
       } catch (error) {
         console.error('Failed to install service worker:', error);
@@ -56,7 +61,6 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     try {
-      // Clean up old caches
       const cacheNames = await caches.keys();
       await Promise.all(
         cacheNames.map((cacheName) => {
@@ -65,7 +69,6 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-      // Take control of all pages immediately
       await self.clients.claim();
       notifyWindowsAboutReadyState();
     } catch (error) {
@@ -83,7 +86,7 @@ function notifyWindowsAboutReadyState() {
       client.postMessage({ 
         type: 'FIREBASE_SERVICE_WORKER_READY', 
         ready: true,
-        https: true // Indicate HTTPS is available
+        https: true 
       });
     });
   });
@@ -92,7 +95,6 @@ function notifyWindowsAboutReadyState() {
 self.addEventListener('fetch', (event) => {
   event.respondWith((async () => {
     try {
-      // Handle auth-related requests
       if (event.request.url.includes('/__/auth/')) {
         const response = await fetch(event.request);
         const clonedResponse = response.clone();
@@ -105,13 +107,11 @@ self.addEventListener('fetch', (event) => {
             ok: response.ok,
             secure: event.request.url.startsWith('https')
           });
-          // Log the auth fetch error to help diagnose issues with authentication requests
         });
 
         return clonedResponse;
       }
 
-      // Network-first strategy for dynamic content
       if (event.request.mode === 'navigate') {
         try {
           const response = await fetch(event.request);
@@ -126,7 +126,6 @@ self.addEventListener('fetch', (event) => {
         }
       }
 
-      // Cache-first strategy for static assets
       if (event.request.destination === 'image' ||
           event.request.destination === 'style' ||
           event.request.destination === 'script') {
@@ -134,7 +133,6 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse || await fetch(event.request);
       }
 
-      // Network-first strategy for other requests
       const response = await fetch(event.request);
       if (response.ok) {
         const clonedResponse = response.clone();
@@ -164,10 +162,8 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Handle auth state changes
 firebase.auth().onAuthStateChanged((user) => {
   if (user) {
-    // Notify all clients about the auth state change
     self.clients.matchAll().then((clients) => {
       clients.forEach((client) => {
         client.postMessage({
@@ -183,10 +179,8 @@ firebase.auth().onAuthStateChanged((user) => {
   }
 });
 
-// Initialize Firebase Messaging
 const messaging = firebase.messaging();
 
-// Handle background messages
 messaging.onBackgroundMessage((payload) => {
   const { notification } = payload;
   if (notification) {
@@ -201,7 +195,6 @@ messaging.onBackgroundMessage((payload) => {
   }
 });
 
-// Set up keepalive for auth popups
 const keepAliveInterval = setInterval(() => {
   self.clients.matchAll().then((clients) => {
     if (clients.length === 0) {
@@ -215,6 +208,25 @@ async function handleFirebaseAuthPopup() {
   const isReady = 'serviceWorker' in navigator && self.registration.active;
   let retryCount = 0;
   const maxRetries = 3;
+
+  const handleAuthError = async (error) => {
+    const errorCode = error.code || 'auth/unknown';
+    const userMessage = AUTH_ERROR_MESSAGES[errorCode] || 'Authentication failed. Please try again.';
+    
+    await notifyMainWindow('FIREBASE_AUTH_POPUP_ERROR', { 
+      error: userMessage,
+      code: errorCode,
+      fallbackToRedirect: error.code === 'auth/popup-blocked',
+      https: true,
+      retryAvailable: retryCount < maxRetries
+    });
+
+    if (error.code === 'auth/popup-closed-by-user') {
+      await notifyMainWindow('AUTH_RETRY_AVAILABLE', {
+        message: 'Would you like to try signing in again?'
+      });
+    }
+  };
 
   const findAuthPopup = async () => {
     const allClients = await clients.matchAll({
@@ -278,10 +290,34 @@ async function handleFirebaseAuthPopup() {
     }
   } catch (error) {
     console.error('Firebase auth popup handling error:', error);
-    await notifyMainWindow('FIREBASE_AUTH_POPUP_ERROR', { 
-      error: error.message,
-      fallbackToRedirect: true,
-      https: true
-    });
+    await handleAuthError(error);
   }
 }
+
+self.addEventListener('install', event => {
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'FIREBASE_AUTH_POPUP') {
+    self.popupOrigin = event.data.origin;
+  }
+});
+
+self.addEventListener('fetch', event => {
+  if (event.request.url.includes('/__/auth/')) {
+    event.respondWith(
+      fetch(event.request).catch(error => {
+        console.error('Auth popup fetch error:', error);
+        return new Response(
+          JSON.stringify({ error: 'Failed to complete authentication' }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      })
+    );
+  }
+});

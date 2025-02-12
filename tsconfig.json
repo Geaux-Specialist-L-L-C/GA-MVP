@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "es2020",
-    "lib": ["dom", "dom.iterable", "es2020", "webworker"],
-    "module": "es2020",
+    "target": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "ESNext",
     "moduleResolution": "bundler",
     "allowJs": true,
     "skipLibCheck": true,
@@ -14,13 +14,17 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
-    }
+      "@/*": ["./src/*"]
+    },
+    "types": ["vite/client", "jest", "node"],
+    "allowImportingTsExtensions": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
-  "include": ["src", "scripts", "public"],
+  "include": ["src"],
   "exclude": ["node_modules", "build", "dist", ".firebase"],
   "references": [
     { "path": "./tsconfig.node.json" }
