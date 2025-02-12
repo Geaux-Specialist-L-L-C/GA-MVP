@@ -3,7 +3,7 @@
 // Author: GitHub Copilot
 // Created: 2023-10-10
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   signInWithPopup,
@@ -36,6 +36,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRedirectChecked, setIsRedirectChecked] = useState(false);
+  const [lastNavigationTimestamp, setLastNavigationTimestamp] = useState(0);
+
+  // Debounced navigation function
+  const navigateDebounced = useCallback((to: string) => {
+    const now = Date.now();
+    const NAVIGATION_THRESHOLD = 1000; // 1 second threshold
+
+    if (location.pathname === to) {
+      return; // Don't navigate if we're already at the target path
+    }
+
+    if (now - lastNavigationTimestamp > NAVIGATION_THRESHOLD) {
+      setLastNavigationTimestamp(now);
+      navigate(to, { replace: true });
+    } else {
+      console.debug('Navigation throttled to prevent history API spam');
+    }
+  }, [navigate, location.pathname, lastNavigationTimestamp]);
 
   // Handle redirect result first
   useEffect(() => {
@@ -44,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const result = await getRedirectResult(auth);
         if (result?.user) {
           const from = (location.state as any)?.from?.pathname || '/dashboard';
-          navigate(from, { replace: true });
+          navigateDebounced(from);
         }
       } catch (error) {
         console.error('Redirect result error:', error);
@@ -54,7 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     handleRedirectResult();
-  }, [navigate, location]);
+  }, [navigateDebounced, location.state]);
 
   // Then handle auth state changes
   useEffect(() => {
@@ -64,15 +82,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(user);
       if (user) {
         const from = (location.state as any)?.from?.pathname || '/dashboard';
-        if (location.pathname !== from) {
-          navigate(from, { replace: true });
-        }
+        navigateDebounced(from);
       }
       setLoading(false);
     });
 
     return unsubscribe;
-  }, [navigate, location, isRedirectChecked]);
+  }, [navigateDebounced, isRedirectChecked, location.state]);
 
   const clearError = () => setError(null);
 
@@ -81,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearError();
       const result = await signInWithEmailAndPassword(auth, email, password);
       const from = (location.state as any)?.from?.pathname || '/dashboard';
-      navigate(from, { replace: true });
+      navigateDebounced(from);
       return result;
     } catch (error) {
       const authError = error as AuthError;
@@ -97,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (result.user) {
         const from = (location.state as any)?.from?.pathname || '/dashboard';
-        navigate(from, { replace: true });
+        navigateDebounced(from);
         return result;
       }
     } catch (error) {
