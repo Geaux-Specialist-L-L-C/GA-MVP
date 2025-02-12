@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   signInWithPopup,
   signInWithRedirect,
@@ -26,59 +26,71 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRedirectChecked, setIsRedirectChecked] = useState(false);
 
+  // Handle redirect result first
   useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          const from = (location.state as any)?.from?.pathname || '/dashboard';
+          navigate(from, { replace: true });
+        }
+      } catch (error) {
+        console.error('Redirect result error:', error);
+      } finally {
+        setIsRedirectChecked(true);
+      }
+    };
+
+    handleRedirectResult();
+  }, [navigate, location]);
+
+  // Then handle auth state changes
+  useEffect(() => {
+    if (!isRedirectChecked) return;
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      if (user && !location.pathname.includes('/dashboard')) {
+        const from = (location.state as any)?.from?.pathname || '/dashboard';
+        navigate(from, { replace: true });
+      }
       setLoading(false);
     });
-    return unsubscribe;
-  }, []);
 
-  // Handle redirect result when the page loads
-  useEffect(() => {
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          navigate('/dashboard');
-        }
-      })
-      .catch((error: AuthError) => {
-        console.error('Redirect login failed:', error);
-        setError('Login failed. Please try again.');
-      });
-  }, [navigate]);
+    return unsubscribe;
+  }, [navigate, location, isRedirectChecked]);
 
   const clearError = () => setError(null);
 
-  const login = async (email: string, password: string): Promise<UserCredential> => {
+  const login = async (email: string, password: string) => {
     try {
+      clearError();
       const result = await signInWithEmailAndPassword(auth, email, password);
-      navigate('/dashboard');
+      const from = (location.state as any)?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
       return result;
     } catch (error) {
       const authError = error as AuthError;
-      setError(authError.message || 'Failed to sign in');
+      setError(authError.message || 'Failed to login');
       throw error;
     }
   };
 
-  const loginWithGoogle = async (): Promise<UserCredential | void> => {
+  const loginWithGoogle = async () => {
     try {
-      // Check for service worker support
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'FIREBASE_AUTH_POPUP'
-        });
-      }
-
+      clearError();
       const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
       
       if (result.user) {
-        navigate('/dashboard');
+        const from = (location.state as any)?.from?.pathname || '/dashboard';
+        navigate(from, { replace: true });
         return result;
       }
     } catch (error) {
@@ -120,6 +132,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loginWithGoogle,
     clearError
   };
+
+  // Only render children after redirect check is complete
+  if (!isRedirectChecked) {
+    return null;
+  }
 
   return (
     <AuthContext.Provider value={value}>

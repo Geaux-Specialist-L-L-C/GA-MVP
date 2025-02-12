@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
@@ -13,6 +13,7 @@ interface FormData {
 const Login: React.FC = () => {
   const { loginWithGoogle, login, loading: authLoading, error: authError, clearError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState<FormData>({ email: '', password: '' });
   const [localError, setLocalError] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -28,7 +29,7 @@ const Login: React.FC = () => {
       setLocalError('');
       setLoading(true);
       await login(formData.email, formData.password);
-      navigate('/dashboard');
+      // Navigation is handled by AuthContext
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to sign in');
       console.error('Login error:', err);
@@ -42,9 +43,9 @@ const Login: React.FC = () => {
       setLocalError('');
       setLoading(true);
       await loginWithGoogle();
-      // Navigation is handled in AuthContext after successful login
+      // Navigation is handled by AuthContext
     } catch (err) {
-      // We don't need to set local error here as AuthContext handles it
+      // Don't set local error here as AuthContext handles it
       console.error('Login error:', err);
     } finally {
       setLoading(false);
@@ -152,121 +153,90 @@ const Title = styled.h1`
 `;
 
 const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  margin-bottom: 1rem;
 `;
 
 const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  margin-bottom: 1rem;
 `;
 
 const Label = styled.label`
-  color: #333;
-  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #555;
 `;
 
 const Input = styled.input`
+  width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 1rem;
   
   &:focus {
     outline: none;
-    border-color: #4a90e2;
-    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+    border-color: var(--primary-color);
   }
 `;
 
 const LoginButton = styled.button`
   width: 100%;
   padding: 0.75rem;
-  background: #4a90e2;
+  background-color: var(--primary-color);
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 1rem;
   cursor: pointer;
-  transition: background 0.2s;
-
-  &:hover:not(:disabled) {
-    background: #357abd;
-  }
-
+  
   &:disabled {
-    background: #9fc7e8;
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`;
+
+const GoogleButton = styled.button`
+  width: 100%;
+  padding: 0.75rem;
+  background-color: white;
+  color: #555;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  
+  &:disabled {
+    opacity: 0.7;
     cursor: not-allowed;
   }
 `;
 
 const Divider = styled.div`
-  display: flex;
-  align-items: center;
   text-align: center;
-  margin: 1.5rem 0;
-  color: #666;
+  margin: 1rem 0;
+  color: #777;
   
   &::before,
   &::after {
     content: '';
-    flex: 1;
-    border-bottom: 1px solid #ddd;
-  }
-  
-  &::before {
-    margin-right: 0.5rem;
-  }
-  
-  &::after {
-    margin-left: 0.5rem;
-  }
-`;
-
-const ErrorMessage = styled.div`
-  color: #dc3545;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  border-radius: 4px;
-  text-align: center;
-`;
-
-const GoogleButton = styled.button<{ disabled?: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: white;
-  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
-  opacity: ${props => props.disabled ? 0.7 : 1};
-  transition: all 0.2s;
-
-  &:hover:not(:disabled) {
-    background: #f8f9fa;
-    border-color: #c8c9ca;
-  }
-
-  svg {
-    font-size: 1.5rem;
+    display: inline-block;
+    width: 45%;
+    height: 1px;
+    background-color: #ddd;
+    margin: 0 0.5rem;
+    vertical-align: middle;
   }
 `;
 
 const SignUpPrompt = styled.p`
   text-align: center;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   color: #666;
 `;
 
 const StyledLink = styled(Link)`
-  color: #4a90e2;
+  color: var(--primary-color);
   text-decoration: none;
   
   &:hover {
@@ -274,18 +244,26 @@ const StyledLink = styled(Link)`
   }
 `;
 
+const ErrorMessage = styled.div`
+  background-color: #fee;
+  color: #c00;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
 const DismissButton = styled.button`
   background: none;
   border: none;
-  color: inherit;
-  padding: 0;
-  margin-left: 8px;
+  color: #c00;
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-
+  padding: 0 0.5rem;
+  
   &:hover {
-    opacity: 1;
+    opacity: 0.7;
   }
 `;
 
