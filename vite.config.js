@@ -10,6 +10,9 @@ export default defineConfig({
     vue() // Add Vue plugin
   ],
   build: {
+    target: 'esnext', // This enables top-level await
+    outDir: 'dist',
+    sourcemap: true,
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
@@ -17,7 +20,10 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
-          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage']
+          'firebase-app': ['firebase/app'],
+          'firebase-auth': ['firebase/auth'],
+          'firebase-firestore': ['firebase/firestore'],
+          'firebase-storage': ['firebase/storage'],
         }
       }
     }
@@ -35,7 +41,9 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 3000,
+    strictPort: true,
+    https: true,
     cors: true,
     headers: {
       'Cross-Origin-Opener-Policy': 'unsafe-none',
