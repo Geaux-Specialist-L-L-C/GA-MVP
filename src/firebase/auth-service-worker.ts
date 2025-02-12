@@ -3,6 +3,9 @@
 // Author: GitHub Copilot
 // Created: 2023-10-10
 
+import { enableIndexedDbPersistence } from 'firebase/firestore';
+import { db } from './config';
+
 interface ServiceWorkerError extends Error {
   name: string;
   code?: string;
@@ -16,6 +19,8 @@ interface AuthServiceWorkerMessage {
   error?: string;
   secure?: boolean;
 }
+
+const SW_TIMEOUT = 10000; // 10 seconds timeout for service worker registration
 
 export async function initializeAuthServiceWorker(retryAttempts = 3, retryDelay = 1000) {
   if (!('serviceWorker' in navigator)) {
@@ -34,11 +39,22 @@ export async function initializeAuthServiceWorker(retryAttempts = 3, retryDelay 
       const existingRegistrations = await navigator.serviceWorker.getRegistrations();
       await Promise.all(existingRegistrations.map(reg => reg.unregister()));
 
+      // Check if service worker file exists
+      const swResponse = await fetch('/firebase-messaging-sw.js');
+      if (!swResponse.ok) {
+        throw new Error('Service worker file not found');
+      }
+
       // Register service worker with proper scope for auth
-      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-        scope: '/__/auth/',
-        updateViaCache: 'none'
-      });
+      const registration = await Promise.race<ServiceWorkerRegistration>([
+        navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+          scope: '/__/auth/',
+          updateViaCache: 'none'
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Service worker registration timeout')), SW_TIMEOUT)
+        )
+      ]);
 
       // Wait for the service worker to be ready with timeout
       await Promise.race([
@@ -68,6 +84,21 @@ export async function initializeAuthServiceWorker(retryAttempts = 3, retryDelay 
       // Verify https is available for auth operations
       if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
         throw new Error('HTTPS is required for secure authentication operations');
+      }
+
+      // Enable Firestore persistence after service worker is ready
+      try {
+        await enableIndexedDbPersistence(db, {
+          synchronizeTabs: true
+        });
+      } catch (err: any) {
+        if (err.code === 'failed-precondition') {
+          // Multiple tabs open, persistence can only be enabled in one tab at a time
+          console.warn('Multiple tabs open, persistence enabled in first tab only');
+        } else if (err.code === 'unimplemented') {
+          // The current browser doesn't support persistence
+          console.warn('Current browser does not support persistence');
+        }
       }
 
       console.debug('Firebase auth service worker registered and activated successfully');

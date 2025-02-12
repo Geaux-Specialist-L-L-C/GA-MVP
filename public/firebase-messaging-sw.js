@@ -1,12 +1,17 @@
 /* eslint-env serviceworker */
 /* global clients, firebase, importScripts */
 
-importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
 importScripts('./firebase-config.js');
 
 // Firebase Service Worker for Auth and Messaging
-firebase.initializeApp(self.FIREBASE_CONFIG);
+const FIREBASE_CONFIG = self.FIREBASE_CONFIG || {
+  // Config will be injected by Firebase during runtime
+};
+
+firebase.initializeApp(FIREBASE_CONFIG);
 
 const CACHE_NAME = 'geaux-academy-cache-v1';
 const OFFLINE_URL = '/offline.html';
@@ -34,6 +39,7 @@ self.addEventListener('install', (event) => {
       }
     })()
   );
+  console.log('Service worker installed successfully');
 });
 
 self.addEventListener('activate', (event) => {
@@ -55,6 +61,7 @@ self.addEventListener('activate', (event) => {
       console.error('Activation error:', error);
     }
   })());
+  console.log('Service worker installed successfully');
 });
 function notifyWindowsAboutReadyState() {
   self.clients.matchAll({ 
@@ -133,6 +140,25 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data.type === 'FIREBASE_AUTH_POPUP') {
     event.waitUntil(handleFirebaseAuthPopup());
+  }
+});
+
+// Handle auth state changes
+firebase.auth().onAuthStateChanged((user) => {
+  if (user) {
+    // Notify all clients about the auth state change
+    self.clients.matchAll().then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({
+          type: 'AUTH_STATE_CHANGED',
+          user: {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName
+          }
+        });
+      });
+    });
   }
 });
 
