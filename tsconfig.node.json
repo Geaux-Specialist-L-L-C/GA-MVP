@@ -2,21 +2,29 @@
   "compilerOptions": {
     "composite": true,
     "skipLibCheck": true,
-    "module": "ESNext",
+    "module": "es2015",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "jsx": "preserve",
     "resolveJsonModule": true,
     "allowJs": true,
-    "types": ["node", "vite/client"]
+    "types": ["node", "vite/client"],
+    "target": "es2017",
+    "outDir": "dist",
+    "strict": true
   },
+  "include": [
+    "src",
+    "scripts"
+  ],
   "exclude": [
     "vite.config.js",
     "dist/**/*",
-    "public/**/*.js",
+    "public",
     "src/**/*.js",
     "*.js",
     "functions/**/*.js",
-    "dataconnect-generated/**/*.js"
+    "dataconnect-generated/**/*.js",
+    "node_modules"
   ]
 }
