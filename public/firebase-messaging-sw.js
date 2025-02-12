@@ -1,6 +1,8 @@
 /* eslint-env serviceworker */
 /* global clients */
 
+let isReady = false;
+
 // Firebase Service Worker configuration
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -13,7 +15,10 @@ self.addEventListener('install', (event) => {
             .map(key => caches.delete(key))
         )
       )
-    ])
+    ]).then(() => {
+      isReady = true;
+      notifyWindowsAboutReadyState();
+    })
   );
 });
 
@@ -23,25 +28,40 @@ self.addEventListener('activate', (event) => {
       clients.claim(),
       // Clear any old IndexedDB data
       indexedDB.databases().then(dbs => {
-        dbs.forEach(db => {
+        return Promise.all(dbs.map(db => {
           if (db.name.includes('firebaseauth')) {
-            indexedDB.deleteDatabase(db.name);
+            return indexedDB.deleteDatabase(db.name);
           }
-        });
+        }));
       }).catch(() => {
         // Ignore errors if IndexedDB is not available
       })
-    ])
+    ]).then(() => {
+      isReady = true;
+      notifyWindowsAboutReadyState();
+    })
   );
 });
 
-// Enhanced popup handling with retry logic
+function notifyWindowsAboutReadyState() {
+  clients.matchAll().then(clients => {
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'FIREBASE_SERVICE_WORKER_READY',
+        ready: isReady
+      });
+    });
+  });
+}
+
+// Enhanced popup handling with retry logic and connection state
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'FIREBASE_AUTH_POPUP') {
     event.waitUntil(
       (async () => {
         let retryCount = 0;
         const maxRetries = 3;
+        const retryDelay = 100;
         
         const findAuthPopup = async () => {
           const allClients = await clients.matchAll({
@@ -55,22 +75,31 @@ self.addEventListener('message', (event) => {
         };
 
         const notifyMainWindow = async (type, message) => {
-          const mainClient = await clients.matchAll({ type: 'window' })
-            .then(clients => clients.find(c => !c.url.includes('/__/auth/')));
+          const windows = await clients.matchAll({ 
+            type: 'window',
+            includeUncontrolled: true
+          });
           
+          const mainClient = windows.find(c => !c.url.includes('/__/auth/'));
           if (mainClient) {
             mainClient.postMessage({ type, message });
           }
         };
 
         try {
+          // Send ready state immediately
+          await notifyMainWindow('FIREBASE_SERVICE_WORKER_READY', { ready: isReady });
+          
+          if (!isReady) {
+            throw new Error('Service worker not ready');
+          }
+
           let authClient;
-          // Retry logic for finding the auth popup
           while (!authClient && retryCount < maxRetries) {
             authClient = await findAuthPopup();
             if (!authClient) {
               retryCount++;
-              await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, retryCount)));
+              await new Promise(resolve => setTimeout(resolve, retryDelay * Math.pow(2, retryCount)));
             }
           }
 
@@ -84,7 +113,8 @@ self.addEventListener('message', (event) => {
           console.error('Firebase auth popup handling error:', error);
           await notifyMainWindow('FIREBASE_AUTH_ERROR', {
             message: 'Popup handling failed',
-            error: error.message
+            error: error.message,
+            code: 'auth/popup-connection-failed'
           });
         }
       })()
@@ -92,18 +122,19 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Enhanced fetch handler for auth requests with timeout and retry
+// Handle auth requests with improved error handling
 self.addEventListener('fetch', (event) => {
   if (event.request.url.includes('/__/auth/')) {
     event.respondWith(
       (async () => {
-        const timeout = 30000; // 30 second timeout
+        const timeout = 30000;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
 
         try {
           const response = await fetch(event.request, {
-            signal: controller.signal
+            signal: controller.signal,
+            credentials: 'include'
           });
           clearTimeout(timeoutId);
           return response;
@@ -111,14 +142,15 @@ self.addEventListener('fetch', (event) => {
           clearTimeout(timeoutId);
           console.error('Auth fetch error:', error);
           
-          // Notify main window about the fetch error
+          // Notify main window about fetch errors
           const mainClient = await clients.matchAll({ type: 'window' })
             .then(clients => clients.find(c => !c.url.includes('/__/auth/')));
           
           if (mainClient) {
             mainClient.postMessage({
               type: 'FIREBASE_AUTH_FETCH_ERROR',
-              error: error.name === 'AbortError' ? 'Request timed out' : error.message
+              error: error.name === 'AbortError' ? 'Request timed out' : error.message,
+              code: 'auth/network-request-failed'
             });
           }
           

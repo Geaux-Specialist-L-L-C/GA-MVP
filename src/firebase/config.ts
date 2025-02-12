@@ -61,47 +61,19 @@ const analytics: Analytics = getAnalytics(app);
 
 // Enhanced sign-in function with popup handling and redirect fallback
 const signInWithGoogle = async () => {
-  if ('serviceWorker' in navigator) {
-    // Register service worker if not already registered
-    const registration = await navigator.serviceWorker
-      .register('/firebase-messaging-sw.js')
-      .catch(err => {
-        console.error('❌ Firebase Service Worker registration failed:', err);
-        return null;
-      });
-
-    if (registration) {
-      console.info('✅ Firebase Service Worker registered successfully');
-      
-      // Set up message listener for service worker responses
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data?.type === 'FIREBASE_AUTH_ERROR') {
-          console.error('Auth error from service worker:', event.data.error);
-        } else if (event.data?.type === 'FIREBASE_AUTH_POPUP_READY') {
-          console.info('Auth popup ready:', event.data.message);
-        }
-      });
-
-      // Notify service worker about upcoming popup
-      if (navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'FIREBASE_AUTH_POPUP'
-        });
-      }
-    }
-  }
-
   try {
     const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
     return result;
   } catch (error: any) {
     if (error.code === 'auth/popup-closed-by-user') {
-      console.warn('Popup closed. Attempting redirect login...');
+      console.warn('Popup closed by user. Attempting redirect login...');
       await signInWithRedirect(auth, googleProvider);
     } else if (error.code === 'auth/popup-blocked' || 
                error.code === 'auth/operation-not-supported-in-this-environment') {
-      console.warn('Popup not available. Using redirect...');
+      console.warn('Popup blocked or not supported. Using redirect method...');
       await signInWithRedirect(auth, googleProvider);
+    } else if (error.code === 'auth/network-request-failed') {
+      throw new Error('Network error during authentication. Please check your connection and try again.');
     } else {
       throw error;
     }
