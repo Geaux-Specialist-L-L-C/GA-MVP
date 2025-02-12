@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 import React from 'react';
+import type { Auth, GoogleAuthProvider } from 'firebase/auth';
 
 // Mock react-icons
 jest.mock('react-icons/fc', () => ({
@@ -15,10 +16,18 @@ afterEach(() => {
   jest.clearAllMocks();
 });
 
-// Mock Firebase
-jest.mock('../firebase/firebaseInit', () => ({
+// Mock Firebase Configuration
+jest.mock('../firebase/config', () => ({
   app: jest.fn(),
   analytics: jest.fn(),
+  auth: jest.fn() as unknown as Auth,
+  db: jest.fn(),
+  storage: jest.fn(),
+  googleProvider: {
+    setCustomParameters: jest.fn()
+  } as unknown as GoogleAuthProvider,
+  signInWithGoogle: jest.fn(),
+  browserPopupRedirectResolver: jest.fn()
 }));
 
 // Mock Firebase Auth
@@ -28,5 +37,8 @@ jest.mock('firebase/auth', () => ({
     setCustomParameters: jest.fn()
   })),
   signInWithPopup: jest.fn(),
-  onAuthStateChanged: jest.fn()
+  signInWithRedirect: jest.fn(),
+  getRedirectResult: jest.fn(),
+  onAuthStateChanged: jest.fn(),
+  browserPopupRedirectResolver: jest.fn()
 }));

@@ -4,22 +4,42 @@ import { FcGoogle } from 'react-icons/fc';
 interface GoogleLoginButtonProps {
   handleGoogleLogin: () => Promise<void>;
   error?: string;
+  loading?: boolean;
+  onDismissError?: () => void;
 }
 
-const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ handleGoogleLogin, error }) => {
+const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ 
+  handleGoogleLogin, 
+  error,
+  loading = false,
+  onDismissError
+}) => {
   return (
     <>
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
+        <div className="auth-error" role="alert">
+          <span>{error}</span>
+          <button 
+            className="auth-error-dismiss" 
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onDismissError) {
+                onDismissError();
+              }
+            }}
+            aria-label="Dismiss error"
+          >
+            ✕
+          </button>
         </div>
       )}
       <button
         onClick={handleGoogleLogin}
-        className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg px-6 py-3 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        disabled={loading}
+        className="google-button"
       >
-        <FcGoogle className="text-xl" />
-        Sign in with Google
+        <FcGoogle size={20} />
+        <span>{loading ? 'Signing in...' : 'Sign in with Google'}</span>
       </button>
     </>
   );

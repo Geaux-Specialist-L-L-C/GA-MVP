@@ -6,6 +6,7 @@ import {
   browserLocalPersistence,
   browserPopupRedirectResolver,
   signInWithPopup,
+  signInWithRedirect,
   useDeviceLanguage,
   type Auth,
   type GoogleAuthProvider as GoogleAuthProviderType
@@ -50,49 +51,62 @@ googleProvider.setCustomParameters({
   access_type: 'offline',
   include_granted_scopes: 'true',
   // Ensure popups work in iframe contexts
-  display: 'popup',
-  // Add additional OAuth scopes if needed
-  scope: 'email profile'
+  display: 'popup'
 });
-
-// Enhanced sign-in function with popup handling
-const signInWithGoogle = async () => {
-  try {
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'FIREBASE_AUTH_POPUP'
-      });
-    }
-    
-    const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
-    return result;
-  } catch (error: any) {
-    if (error.code === 'auth/popup-closed-by-user') {
-      throw new Error('Login popup was closed. Please try again to sign in.');
-    }
-    throw error;
-  }
-};
 
 // Initialize other Firebase services
 const db: Firestore = getFirestore(app);
 const storage: FirebaseStorage = getStorage(app);
 const analytics: Analytics = getAnalytics(app);
 
-// Set up service worker for auth popups if available
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker
-    .register('/firebase-messaging-sw.js')
-    .then(() => console.log('✅ Firebase Service Worker registered'))
-    .catch(err => console.error('❌ Firebase Service Worker registration failed:', err));
+// Enhanced sign-in function with popup handling and redirect fallback
+const signInWithGoogle = async () => {
+  if ('serviceWorker' in navigator) {
+    // Register service worker if not already registered
+    const registration = await navigator.serviceWorker
+      .register('/firebase-messaging-sw.js')
+      .catch(err => {
+        console.error('❌ Firebase Service Worker registration failed:', err);
+        return null;
+      });
 
-  // Listen for auth errors from service worker
-  navigator.serviceWorker.addEventListener('message', (event) => {
-    if (event.data?.type === 'FIREBASE_AUTH_ERROR') {
-      console.error('Auth error from service worker:', event.data.error);
+    if (registration) {
+      console.info('✅ Firebase Service Worker registered successfully');
+      
+      // Set up message listener for service worker responses
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type === 'FIREBASE_AUTH_ERROR') {
+          console.error('Auth error from service worker:', event.data.error);
+        } else if (event.data?.type === 'FIREBASE_AUTH_POPUP_READY') {
+          console.info('Auth popup ready:', event.data.message);
+        }
+      });
+
+      // Notify service worker about upcoming popup
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'FIREBASE_AUTH_POPUP'
+        });
+      }
     }
-  });
-}
+  }
+
+  try {
+    const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
+    return result;
+  } catch (error: any) {
+    if (error.code === 'auth/popup-closed-by-user') {
+      console.warn('Popup closed. Attempting redirect login...');
+      await signInWithRedirect(auth, googleProvider);
+    } else if (error.code === 'auth/popup-blocked' || 
+               error.code === 'auth/operation-not-supported-in-this-environment') {
+      console.warn('Popup not available. Using redirect...');
+      await signInWithRedirect(auth, googleProvider);
+    } else {
+      throw error;
+    }
+  }
+};
 
 // Export configured instances
 export { 
@@ -103,5 +117,5 @@ export {
   analytics,
   googleProvider,
   signInWithGoogle,
-  browserPopupRedirectResolver // Export resolver for consistent popup handling
+  browserPopupRedirectResolver
 };
