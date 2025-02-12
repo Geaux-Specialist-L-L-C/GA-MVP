@@ -1,12 +1,11 @@
 // File: /src/components/PrivateRoute.tsx
-// Description: A route component that protects routes from unauthorized access by redirecting to the login page if the user is not authenticated.
+// Description: A route component that protects routes from unauthorized access
 // Author: GitHub Copilot
-// Created: [Date]
 
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import LoadingSpinner from './common/LoadingSpinner';
 import styled from 'styled-components';
 
 const LoadingContainer = styled.div`
@@ -21,6 +20,7 @@ const PrivateRoute: React.FC = () => {
   const { currentUser, loading } = useAuth();
   const location = useLocation();
 
+  // Show loading spinner while auth state is being determined
   if (loading) {
     return (
       <LoadingContainer>
@@ -29,19 +29,24 @@ const PrivateRoute: React.FC = () => {
     );
   }
 
-  if (!currentUser) {
-    return (
-      <Navigate 
-        to="/login" 
-        state={{ 
-          from: location,
-          error: "Please sign in to access this page" 
-        }} 
-        replace 
-      />
-    );
+  // If not authenticated, redirect to login with current location
+  if (!currentUser && !loading) {
+    // Only redirect if we're not already on the login page
+    if (location.pathname !== '/login') {
+      return (
+        <Navigate 
+          to="/login" 
+          state={{ 
+            from: location,
+            error: "Please sign in to access this page" 
+          }} 
+          replace 
+        />
+      );
+    }
   }
 
+  // If authenticated, render the protected route
   return <Outlet />;
 };
 

@@ -34,6 +34,34 @@ const app = !getApps().length ? initializeApp(getFirebaseConfig()) : getApps()[0
 const auth: Auth = getAuth(app);
 auth.useDeviceLanguage(); // Enable device language support
 
+// Register service worker for auth popups
+const registerAuthServiceWorker = async () => {
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+        scope: '/__/auth/'
+      });
+
+      // Wait for the service worker to be ready
+      await new Promise<void>((resolve) => {
+        const messageHandler = (event: MessageEvent) => {
+          if (event.data?.type === 'FIREBASE_SERVICE_WORKER_READY') {
+            navigator.serviceWorker.removeEventListener('message', messageHandler);
+            resolve();
+          }
+        };
+        navigator.serviceWorker.addEventListener('message', messageHandler);
+      });
+
+      return registration;
+    } catch (error) {
+      console.warn('Service worker registration failed:', error);
+      return null;
+    }
+  }
+  return null;
+};
+
 // Initialize persistence with retry mechanism
 const initializePersistence = async (retries = 3): Promise<void> => {
   try {
@@ -61,8 +89,10 @@ const db: Firestore = getFirestore(app);
 const storage: FirebaseStorage = getStorage(app);
 const analytics: Analytics = getAnalytics(app);
 
-// Initialize persistence
-initializePersistence();
+// Initialize auth features
+registerAuthServiceWorker().then(() => {
+  initializePersistence();
+});
 
 // Enhanced sign-in function with popup handling and redirect fallback
 const signInWithGoogle = async () => {

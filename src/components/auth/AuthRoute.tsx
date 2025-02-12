@@ -21,17 +21,17 @@ const AuthRoute: React.FC<AuthRouteProps> = ({ children }) => {
   const location = useLocation();
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <LoadingContainer>
+        <LoadingSpinner />
+      </LoadingContainer>
+    );
   }
 
+  // If user is authenticated and tries to access auth pages, redirect to dashboard
   if (currentUser) {
-    // If user is already logged in, redirect to dashboard
-    return <Navigate to="/dashboard" state={{ from: location }} replace />;
-  }
-
-  // If user is not authenticated, redirect to login page
-  if (!currentUser) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    const from = location.state?.from?.pathname || '/dashboard';
+    return <Navigate to={from} replace />;
   }
 
   // Allow access to auth pages if not authenticated

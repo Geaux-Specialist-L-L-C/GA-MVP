@@ -19,7 +19,7 @@ import {
 import { auth, googleProvider } from '../firebase/config';
 
 interface AuthContextType {
-  user: User | null;
+  currentUser: User | null;
   loading: boolean;
   error: string | null;
   loginWithGoogle: () => Promise<UserCredential | void>;
@@ -32,123 +32,106 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRedirectChecked, setIsRedirectChecked] = useState(false);
-  const [lastNavigationTimestamp, setLastNavigationTimestamp] = useState(0);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
-  // Debounced navigation function
+  // Improved navigation with request animation frame for better performance
   const navigateDebounced = useCallback((to: string) => {
-    const now = Date.now();
-    const NAVIGATION_THRESHOLD = 1000; // 1 second threshold
-
-    if (location.pathname === to) {
-      return; // Don't navigate if we're already at the target path
+    if (location.pathname === to || pendingNavigation === to) {
+      return;
     }
 
-    if (now - lastNavigationTimestamp > NAVIGATION_THRESHOLD) {
-      setLastNavigationTimestamp(now);
+    setPendingNavigation(to);
+    requestAnimationFrame(() => {
       navigate(to, { replace: true });
-    } else {
-      console.debug('Navigation throttled to prevent history API spam');
-    }
-  }, [navigate, location.pathname, lastNavigationTimestamp]);
+      setPendingNavigation(null);
+    });
+  }, [navigate, location.pathname, pendingNavigation]);
 
-  // Handle redirect result first
+  // Improved redirect result handling
   useEffect(() => {
+    let isMounted = true;
+
     const handleRedirectResult = async () => {
       try {
-        const result = await getRedirectResult(auth);
-        if (result?.user) {
+        const result = await getRedirectResult(auth, browserPopupRedirectResolver);
+        if (result?.user && isMounted) {
           const from = (location.state as any)?.from?.pathname || '/dashboard';
           navigateDebounced(from);
         }
       } catch (error) {
         console.error('Redirect result error:', error);
+        if (isMounted) {
+          setError('Failed to complete sign-in. Please try again.');
+        }
       } finally {
-        setIsRedirectChecked(true);
+        if (isMounted) {
+          setIsRedirectChecked(true);
+        }
       }
     };
 
     handleRedirectResult();
+    return () => { isMounted = false; };
   }, [navigateDebounced, location.state]);
 
-  // Then handle auth state changes
+  // Improved auth state change handling
   useEffect(() => {
     if (!isRedirectChecked) return;
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      if (user) {
+      setCurrentUser(user);
+      setLoading(false);
+
+      if (user && location.pathname === '/login') {
         const from = (location.state as any)?.from?.pathname || '/dashboard';
         navigateDebounced(from);
       }
-      setLoading(false);
     });
 
     return unsubscribe;
-  }, [navigateDebounced, isRedirectChecked, location.state]);
+  }, [navigateDebounced, isRedirectChecked, location.pathname, location.state]);
 
-  const clearError = () => setError(null);
+  const clearError = useCallback(() => setError(null), []);
 
-  const login = async (email: string, password: string) => {
+  // Improved login with better error handling
+  const login = async (email: string, password: string): Promise<UserCredential> => {
     try {
       clearError();
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      const from = (location.state as any)?.from?.pathname || '/dashboard';
-      navigateDebounced(from);
-      return result;
+      return await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
       const authError = error as AuthError;
-      setError(authError.message || 'Failed to login');
+      const errorMessage = getAuthErrorMessage(authError.code);
+      setError(errorMessage);
       throw error;
     }
   };
 
-  const loginWithGoogle = async () => {
+  // Improved Google sign-in with better error handling and fallback
+  const loginWithGoogle = async (): Promise<UserCredential | void> => {
     try {
       clearError();
-      const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
-      
-      if (result.user) {
-        const from = (location.state as any)?.from?.pathname || '/dashboard';
-        navigateDebounced(from);
-        return result;
-      }
+      return await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
     } catch (error) {
       const authError = error as AuthError;
-
-      switch (authError.code) {
-        case 'auth/popup-closed-by-user':
-          console.warn('Popup closed. Attempting redirect login...');
-          await signInWithRedirect(auth, googleProvider);
-          break;
-        case 'auth/cancelled-popup-request':
-          setError('Another sign-in attempt is in progress. Please wait.');
-          break;
-        case 'auth/popup-blocked':
-          console.warn('Popup blocked. Using redirect method...');
-          await signInWithRedirect(auth, googleProvider);
-          break;
-        case 'auth/operation-not-supported-in-this-environment':
-          console.warn('Popup not supported. Using redirect...');
-          await signInWithRedirect(auth, googleProvider);
-          break;
-        default:
-          if (authError.message?.includes('NS_ERROR_DOM_COEP_FAILED')) {
-            setError('Browser security settings prevented login. Please try again or use a different browser.');
-          } else {
-            setError(authError.message || 'An unexpected error occurred');
-            console.error('Auth error:', authError);
-          }
+      
+      if (isPopupError(authError.code)) {
+        console.warn('Popup failed, falling back to redirect:', authError.code);
+        await signInWithRedirect(auth, googleProvider);
+        return;
       }
+
+      const errorMessage = getAuthErrorMessage(authError.code);
+      setError(errorMessage);
       throw error;
     }
   };
 
   const value: AuthContextType = {
-    user,
+    currentUser,
     loading,
     error,
     login,
@@ -175,3 +158,31 @@ export const useAuth = () => {
   }
   return context;
 };
+
+// Helper functions for better error handling
+function isPopupError(code: string): boolean {
+  return [
+    'auth/popup-closed-by-user',
+    'auth/cancelled-popup-request',
+    'auth/popup-blocked',
+    'auth/operation-not-supported-in-this-environment'
+  ].includes(code);
+}
+
+function getAuthErrorMessage(code: string): string {
+  const errorMessages: Record<string, string> = {
+    'auth/popup-closed-by-user': 'Sign-in window was closed. Please try again.',
+    'auth/cancelled-popup-request': 'Sign-in already in progress. Please wait.',
+    'auth/popup-blocked': 'Sign-in popup was blocked. Please allow popups for this site.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/user-disabled': 'This account has been disabled.',
+    'auth/user-not-found': 'No account found with this email.',
+    'auth/wrong-password': 'Incorrect password.',
+    'auth/too-many-requests': 'Too many attempts. Please try again later.',
+    'auth/network-request-failed': 'Network error. Please check your connection.',
+    'auth/internal-error': 'An internal error occurred. Please try again.',
+    'auth/operation-not-supported-in-this-environment': 'This sign-in method is not supported in your browser.',
+  };
+
+  return errorMessages[code] || 'An unexpected error occurred. Please try again.';
+}

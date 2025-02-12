@@ -1,9 +1,19 @@
 /* eslint-env serviceworker */
 /* global clients */
 
-// Firebase Auth Service Worker
+// Firebase Auth Service Worker with enhanced security
 self.addEventListener('activate', (event) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    Promise.all([
+      clients.claim(),
+      // Clear any old caches that might cause CORS issues
+      caches.keys().then(keys => 
+        Promise.all(
+          keys.map(key => caches.delete(key))
+        )
+      )
+    ])
+  );
   notifyWindowsAboutReadyState();
 });
 
@@ -15,14 +25,17 @@ let isReady = false;
 
 function notifyWindowsAboutReadyState() {
   isReady = true;
-  self.clients.matchAll({ type: 'window' }).then(clients => {
+  self.clients.matchAll({ 
+    type: 'window',
+    includeUncontrolled: true 
+  }).then(clients => {
     clients.forEach(client => {
       client.postMessage({ type: 'FIREBASE_SERVICE_WORKER_READY', ready: true });
     });
   });
 }
 
-// Enhanced popup handling with retry logic
+// Enhanced popup handling with security improvements
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'FIREBASE_AUTH_POPUP') {
     event.waitUntil(
@@ -38,7 +51,8 @@ self.addEventListener('message', (event) => {
           });
           
           return allClients.find(client => 
-            client.url.includes('/__/auth/handler')
+            client.url.includes('/__/auth/handler') &&
+            new URL(client.url).origin === self.location.origin
           );
         };
 
@@ -48,7 +62,11 @@ self.addEventListener('message', (event) => {
             includeUncontrolled: true
           });
           
-          const mainClient = windows.find(c => !c.url.includes('/__/auth/'));
+          const mainClient = windows.find(c => 
+            !c.url.includes('/__/auth/') && 
+            new URL(c.url).origin === self.location.origin
+          );
+          
           if (mainClient) {
             mainClient.postMessage({ type, message });
           }
@@ -72,16 +90,15 @@ self.addEventListener('message', (event) => {
 
           if (authClient) {
             await authClient.focus();
-            await notifyMainWindow('FIREBASE_AUTH_POPUP_READY', 'Auth popup is ready');
+            await notifyMainWindow('FIREBASE_AUTH_POPUP_READY', { status: 'ready' });
           } else {
             throw new Error('Could not find auth popup after retries');
           }
         } catch (error) {
           console.error('Firebase auth popup handling error:', error);
-          await notifyMainWindow('FIREBASE_AUTH_ERROR', {
-            message: 'Authentication popup handling failed. Please try again.',
+          await notifyMainWindow('FIREBASE_AUTH_POPUP_ERROR', { 
             error: error.message,
-            code: 'auth/popup-connection-failed'
+            fallbackToRedirect: true 
           });
         }
       })()
@@ -89,57 +106,31 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Handle auth requests with improved error handling and CORS support
+// Handle fetch events to ensure proper CORS headers
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('/__/auth/')) {
+  const url = new URL(event.request.url);
+  
+  // Only handle same-origin auth-related requests
+  if (url.origin === self.location.origin && 
+      (url.pathname.includes('/__/auth/') || url.pathname.includes('/oauth2/')) 
+  ) {
     event.respondWith(
-      (async () => {
-        const timeout = 30000;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-        try {
-          const response = await fetch(event.request, {
-            signal: controller.signal,
-            credentials: 'include',
-            // Add headers to handle CORS and COEP issues
-            mode: 'cors',
-            headers: {
-              'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
-              'Cross-Origin-Embedder-Policy': 'credentialless'
-            }
+      fetch(event.request)
+        .then(response => {
+          // Clone the response so we can modify headers
+          const newResponse = response.clone();
+          
+          // Add security headers
+          const headers = new Headers(newResponse.headers);
+          headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+          headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
+          
+          return new Response(newResponse.body, {
+            status: newResponse.status,
+            statusText: newResponse.statusText,
+            headers
           });
-          clearTimeout(timeoutId);
-          
-          // Clone the response and add CORS headers
-          const corsHeaders = new Headers(response.headers);
-          corsHeaders.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-          corsHeaders.set('Cross-Origin-Embedder-Policy', 'credentialless');
-          
-          return new Response(response.body, {
-            status: response.status,
-            statusText: response.statusText,
-            headers: corsHeaders
-          });
-        } catch (error) {
-          clearTimeout(timeoutId);
-          console.error('Auth fetch error:', error);
-          
-          // Notify main window about fetch errors
-          const mainClient = await clients.matchAll({ type: 'window' })
-            .then(clients => clients.find(c => !c.url.includes('/__/auth/')));
-
-          if (mainClient) {
-            mainClient.postMessage({
-              type: 'FIREBASE_AUTH_FETCH_ERROR',
-              error: error.name === 'AbortError' ? 'Request timed out' : error.message,
-              code: 'auth/network-request-failed'
-            });
-          }
-          
-          return Response.error();
-        }
-      })()
+        })
     );
   }
 });
