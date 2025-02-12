@@ -1,17 +1,28 @@
 /* eslint-env serviceworker */
 /* global clients, firebase, importScripts */
 
+// File: /public/firebase-messaging-sw.js
+// Description: Firebase service worker for handling auth popups and messaging
+// Author: Copilot
+// Created: 2024-02-12
+
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
 importScripts('./firebase-config.js');
 
-// Firebase Service Worker for Auth and Messaging
-const FIREBASE_CONFIG = self.FIREBASE_CONFIG || {
-  // Config will be injected by Firebase during runtime
-};
+const TIMEOUT = parseInt(self.VITE_SERVICE_WORKER_TIMEOUT || '10000', 10);
 
-firebase.initializeApp(FIREBASE_CONFIG);
+// Initialize Firebase with config from environment
+firebase.initializeApp({
+  apiKey: self.VITE_FIREBASE_API_KEY,
+  authDomain: self.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: self.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: self.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: self.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: self.VITE_FIREBASE_APP_ID,
+  measurementId: self.VITE_FIREBASE_MEASUREMENT_ID
+});
 
 const CACHE_NAME = 'geaux-academy-cache-v1';
 const OFFLINE_URL = '/offline.html';
@@ -141,6 +152,16 @@ self.addEventListener('message', (event) => {
   if (event.data.type === 'FIREBASE_AUTH_POPUP') {
     event.waitUntil(handleFirebaseAuthPopup());
   }
+  if (event.data && event.data.type === 'AUTH_ERROR') {
+    self.clients.matchAll().then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({
+          type: 'AUTH_ERROR',
+          error: event.data.error
+        });
+      });
+    });
+  }
 });
 
 // Handle auth state changes
@@ -161,6 +182,34 @@ firebase.auth().onAuthStateChanged((user) => {
     });
   }
 });
+
+// Initialize Firebase Messaging
+const messaging = firebase.messaging();
+
+// Handle background messages
+messaging.onBackgroundMessage((payload) => {
+  const { notification } = payload;
+  if (notification) {
+    const options = {
+      body: notification.body,
+      icon: notification.icon,
+      badge: notification.badge,
+      data: payload.data
+    };
+    
+    self.registration.showNotification(notification.title, options);
+  }
+});
+
+// Set up keepalive for auth popups
+const keepAliveInterval = setInterval(() => {
+  self.clients.matchAll().then((clients) => {
+    if (clients.length === 0) {
+      clearInterval(keepAliveInterval);
+      self.registration.unregister();
+    }
+  });
+}, TIMEOUT);
 
 async function handleFirebaseAuthPopup() {
   const isReady = 'serviceWorker' in navigator && self.registration.active;

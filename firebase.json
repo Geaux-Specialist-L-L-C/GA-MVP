@@ -39,7 +39,7 @@
         "headers": [
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' https://*.firebaseapp.com https://*.firebase.com https://apis.google.com https://www.googletagmanager.com 'unsafe-inline'; connect-src 'self' https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src 'self' https://*.firebaseapp.com https://*.firebase.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data: https:;"
+            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.firebaseapp.com https://*.firebase.com https://apis.google.com https://www.googletagmanager.com; connect-src 'self' https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src 'self' https://*.firebaseapp.com https://*.firebase.com https://accounts.google.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; worker-src 'self' blob:;"
           },
           {
             "key": "Cross-Origin-Opener-Policy",
@@ -47,15 +47,11 @@
           },
           {
             "key": "Cross-Origin-Embedder-Policy",
-            "value": "require-corp"
+            "value": "credentialless"
           },
           {
             "key": "Cross-Origin-Resource-Policy",
-            "value": "same-site"
-          },
-          {
-            "key": "Service-Worker-Allowed",
-            "value": "/"
+            "value": "cross-origin"
           }
         ]
       },
@@ -82,7 +78,7 @@
         ]
       },
       {
-        "source": "**/*.{js,css,png,jpg,jpeg,gif,webp,svg}",
+        "source": "**/*.{js,css,png,jpg,jpeg,gif,webp,svg,woff,woff2}",
         "headers": [
           {
             "key": "Cache-Control",

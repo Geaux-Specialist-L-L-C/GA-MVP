@@ -55,7 +55,7 @@ describe('GoogleLoginButton', () => {
   });
 
   it('renders Google login button', () => {
-    render(<GoogleLoginButton />);
+    render(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} />);
     const button = screen.getByRole('button');
     expect(button).toBeInTheDocument();
   });

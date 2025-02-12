@@ -5,8 +5,8 @@
 
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
+    "target": "es2017",
+    "module": "commonjs",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -20,8 +20,14 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["node", "vite/client", "@types/firebase"]
+    "types": ["node"],
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "outDir": "lib",
+    "sourceMap": true,
+    "typeRoots": ["node_modules/@types"]
   },
-  "include": ["src", "scripts"],
+  "compileOnSave": true,
+  "include": ["src"],
   "exclude": ["node_modules", "dist", "public"]
 }
