@@ -49,6 +49,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       if (error.code === 'auth/popup-blocked') {
         throw new Error('Please allow popups for this site to enable Google login');
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        throw new Error('Popup closed by user. Please try again.');
+      } else if (error.message.includes('NS_ERROR_DOM_COEP_FAILED')) {
+        throw new Error('Cross-Origin-Embedder-Policy error. Please check your browser settings.');
       }
       throw error;
     }

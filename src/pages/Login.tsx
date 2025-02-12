@@ -39,7 +39,17 @@ const Login: React.FC = () => {
       await loginWithGoogle();
       // Navigation is handled in AuthContext after successful login
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sign in with Google');
+      if (err instanceof Error) {
+        if (err.message.includes('auth/popup-closed-by-user')) {
+          setError('Popup closed by user. Please try again.');
+        } else if (err.message.includes('NS_ERROR_DOM_COEP_FAILED')) {
+          setError('Cross-Origin-Embedder-Policy error. Please check your browser settings.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Failed to sign in with Google');
+      }
       console.error('Login error:', err);
     } finally {
       setLoading(false);
