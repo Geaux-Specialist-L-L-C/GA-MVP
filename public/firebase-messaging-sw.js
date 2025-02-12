@@ -32,6 +32,7 @@ self.addEventListener('activate', (event) => {
           if (db.name.includes('firebaseauth')) {
             return indexedDB.deleteDatabase(db.name);
           }
+          return Promise.resolve();
         }));
       }).catch(() => {
         // Ignore errors if IndexedDB is not available
@@ -44,7 +45,7 @@ self.addEventListener('activate', (event) => {
 });
 
 function notifyWindowsAboutReadyState() {
-  clients.matchAll().then(clients => {
+  clients.matchAll({ type: 'window' }).then(clients => {
     clients.forEach(client => {
       client.postMessage({
         type: 'FIREBASE_SERVICE_WORKER_READY',
@@ -122,7 +123,7 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Handle auth requests with improved error handling
+// Handle auth requests with improved error handling and CORS support
 self.addEventListener('fetch', (event) => {
   if (event.request.url.includes('/__/auth/')) {
     event.respondWith(
@@ -134,10 +135,26 @@ self.addEventListener('fetch', (event) => {
         try {
           const response = await fetch(event.request, {
             signal: controller.signal,
-            credentials: 'include'
+            credentials: 'include',
+            // Add headers to handle CORS and COEP issues
+            mode: 'cors',
+            headers: {
+              'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+              'Cross-Origin-Embedder-Policy': 'credentialless'
+            }
           });
           clearTimeout(timeoutId);
-          return response;
+          
+          // Clone the response and add CORS headers
+          const corsHeaders = new Headers(response.headers);
+          corsHeaders.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+          corsHeaders.set('Cross-Origin-Embedder-Policy', 'credentialless');
+          
+          return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: corsHeaders
+          });
         } catch (error) {
           clearTimeout(timeoutId);
           console.error('Auth fetch error:', error);

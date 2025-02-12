@@ -6,15 +6,20 @@ import {
   getRedirectResult,
   onAuthStateChanged,
   browserPopupRedirectResolver,
-  User,
-  AuthError
+  signInWithEmailAndPassword,
+  type User,
+  type UserCredential,
+  type AuthError
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  loginWithGoogle: () => Promise<void>;
+  error: string | null;
+  loginWithGoogle: () => Promise<UserCredential | void>;
+  login: (email: string, password: string) => Promise<UserCredential>;
+  clearError: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -23,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -42,51 +48,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
       .catch((error: AuthError) => {
         console.error('Redirect login failed:', error);
-        throw new Error('Login failed. Please try again.');
+        setError('Login failed. Please try again.');
       });
   }, [navigate]);
 
-  const loginWithGoogle = async (): Promise<void> => {
+  const clearError = () => setError(null);
+
+  const login = async (email: string, password: string): Promise<UserCredential> => {
     try {
-      // Notify service worker about upcoming popup
-      if (navigator.serviceWorker?.controller) {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      navigate('/dashboard');
+      return result;
+    } catch (error) {
+      const authError = error as AuthError;
+      setError(authError.message || 'Failed to sign in');
+      throw error;
+    }
+  };
+
+  const loginWithGoogle = async (): Promise<UserCredential | void> => {
+    try {
+      // Check for service worker support
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({
           type: 'FIREBASE_AUTH_POPUP'
         });
       }
 
-      // Attempt to sign in with popup
       const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
       
       if (result.user) {
         navigate('/dashboard');
+        return result;
       }
     } catch (error) {
       const authError = error as AuthError;
 
-      if (authError.code === 'auth/popup-closed-by-user') {
-        console.warn('Popup closed. Trying redirect login...');
-        await signInWithRedirect(auth, googleProvider);
-      } else if (authError.code === 'auth/cancelled-popup-request') {
-        throw new Error('Another sign-in attempt is in progress. Please wait.');
-      } else if (authError.message.includes('NS_ERROR_DOM_COEP_FAILED')) {
-        throw new Error('Cross-Origin-Embedder-Policy error. Please check your browser settings.');
-      } else if (authError.code === 'auth/popup-blocked') {
-        console.warn('Popup blocked. Trying redirect login...');
-        await signInWithRedirect(auth, googleProvider);
-      } else if (authError.code === 'auth/operation-not-supported-in-this-environment') {
-        console.warn('Popup not supported. Using redirect...');
-        await signInWithRedirect(auth, googleProvider);
-      } else {
-        throw error; // Handle other errors normally
+      switch (authError.code) {
+        case 'auth/popup-closed-by-user':
+          console.warn('Popup closed. Attempting redirect login...');
+          await signInWithRedirect(auth, googleProvider);
+          break;
+        case 'auth/cancelled-popup-request':
+          setError('Another sign-in attempt is in progress. Please wait.');
+          break;
+        case 'auth/popup-blocked':
+          console.warn('Popup blocked. Using redirect method...');
+          await signInWithRedirect(auth, googleProvider);
+          break;
+        case 'auth/operation-not-supported-in-this-environment':
+          console.warn('Popup not supported. Using redirect...');
+          await signInWithRedirect(auth, googleProvider);
+          break;
+        default:
+          if (authError.message?.includes('NS_ERROR_DOM_COEP_FAILED')) {
+            setError('Browser security settings prevented login. Please try again or use a different browser.');
+          } else {
+            setError(authError.message || 'An unexpected error occurred');
+            console.error('Auth error:', authError);
+          }
       }
+      throw error;
     }
   };
 
   const value: AuthContextType = {
     user,
     loading,
-    loginWithGoogle
+    error,
+    login,
+    loginWithGoogle,
+    clearError
   };
 
   return (

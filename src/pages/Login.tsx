@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';  // Remove .tsx extension
+import { useAuth } from '../contexts/AuthContext';
 import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -11,21 +11,26 @@ interface FormData {
 }
 
 const Login: React.FC = () => {
-  const { loginWithGoogle, login, loading: authLoading } = useAuth();  // Destructure needed methods
+  const { loginWithGoogle, login, loading: authLoading, error: authError, clearError } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({ email: '', password: '' });
-  const [error, setError] = useState<string>('');
+  const [localError, setLocalError] = useState<string>('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Clear any existing auth errors when component mounts
+    clearError();
+  }, [clearError]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      setError('');
+      setLocalError('');
       setLoading(true);
       await login(formData.email, formData.password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sign in');
+      setLocalError(err instanceof Error ? err.message : 'Failed to sign in');
       console.error('Login error:', err);
     } finally {
       setLoading(false);
@@ -34,22 +39,12 @@ const Login: React.FC = () => {
 
   const handleGoogleLogin = async (): Promise<void> => {
     try {
-      setError('');
+      setLocalError('');
       setLoading(true);
       await loginWithGoogle();
       // Navigation is handled in AuthContext after successful login
     } catch (err) {
-      if (err instanceof Error) {
-        if (err.message.includes('auth/popup-closed-by-user')) {
-          setError('Popup closed by user. Please try again.');
-        } else if (err.message.includes('NS_ERROR_DOM_COEP_FAILED')) {
-          setError('Cross-Origin-Embedder-Policy error. Please check your browser settings.');
-        } else {
-          setError(err.message);
-        }
-      } else {
-        setError('Failed to sign in with Google');
-      }
+      // We don't need to set local error here as AuthContext handles it
       console.error('Login error:', err);
     } finally {
       setLoading(false);
@@ -68,7 +63,15 @@ const Login: React.FC = () => {
     <LoginContainer>
       <LoginBox>
         <Title>Welcome Back</Title>
-        {error && <ErrorMessage>{error}</ErrorMessage>}
+        {(localError || authError) && (
+          <ErrorMessage>
+            <span>{localError || authError}</span>
+            <DismissButton onClick={() => {
+              setLocalError('');
+              clearError();
+            }}>✕</DismissButton>
+          </ErrorMessage>
+        )}
         
         <Form onSubmit={handleEmailLogin}>
           <FormGroup>
@@ -268,6 +271,21 @@ const StyledLink = styled(Link)`
   
   &:hover {
     text-decoration: underline;
+  }
+`;
+
+const DismissButton = styled.button`
+  background: none;
+  border: none;
+  color: inherit;
+  padding: 0;
+  margin-left: 8px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 1;
   }
 `;
 

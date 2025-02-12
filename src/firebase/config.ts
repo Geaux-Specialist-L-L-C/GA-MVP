@@ -1,4 +1,4 @@
-import { initializeApp, type FirebaseOptions } from "firebase/app";
+import { initializeApp, getApps, type FirebaseOptions } from "firebase/app";
 import { 
   getAuth, 
   GoogleAuthProvider, 
@@ -27,31 +27,27 @@ const getFirebaseConfig = (): FirebaseOptions => ({
   databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || ''
 });
 
-// Initialize Firebase with improved error handling
-let app;
-try {
-  const firebaseConfig = getFirebaseConfig();
-  app = initializeApp(firebaseConfig);
-  console.info("✅ Firebase initialized successfully");
-} catch (error) {
-  console.error("❌ Error initializing Firebase:", error);
-  throw error;
-}
+// Initialize Firebase only if not already initialized
+const app = !getApps().length ? initializeApp(getFirebaseConfig()) : getApps()[0];
 
 // Initialize Firebase services with enhanced popup handling
 const auth: Auth = getAuth(app);
 auth.useDeviceLanguage(); // Enable device language support
-setPersistence(auth, browserLocalPersistence) // Use local persistence for better UX
-  .catch(error => console.error("Auth persistence error:", error));
+
+// Set persistence synchronously to avoid race conditions
+try {
+  await setPersistence(auth, browserLocalPersistence);
+  console.info("✅ Firebase auth persistence configured");
+} catch (error) {
+  console.error("❌ Auth persistence error:", error);
+}
 
 // Configure Google Auth Provider with improved popup settings
 const googleProvider: GoogleAuthProviderType = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account',
   access_type: 'offline',
-  include_granted_scopes: 'true',
-  // Ensure popups work in iframe contexts
-  display: 'popup'
+  include_granted_scopes: 'true'
 });
 
 // Initialize other Firebase services
@@ -61,7 +57,16 @@ const analytics: Analytics = getAnalytics(app);
 
 // Enhanced sign-in function with popup handling and redirect fallback
 const signInWithGoogle = async () => {
+  // Check for service worker support first
+  let hasServiceWorker = 'serviceWorker' in navigator && navigator.serviceWorker.controller;
+  
   try {
+    if (hasServiceWorker) {
+      navigator.serviceWorker.controller?.postMessage({
+        type: 'FIREBASE_AUTH_POPUP'
+      });
+    }
+
     const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
     return result;
   } catch (error: any) {
@@ -74,7 +79,10 @@ const signInWithGoogle = async () => {
       await signInWithRedirect(auth, googleProvider);
     } else if (error.code === 'auth/network-request-failed') {
       throw new Error('Network error during authentication. Please check your connection and try again.');
+    } else if (error.code === 'auth/cancelled-popup-request') {
+      throw new Error('Sign-in process was interrupted. Please try again.');
     } else {
+      console.error('Authentication error:', error);
       throw error;
     }
   }
