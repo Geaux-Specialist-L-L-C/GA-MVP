@@ -1,33 +1,38 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, type FirebaseOptions } from "firebase/app";
 import { 
   getAuth, 
   GoogleAuthProvider, 
   setPersistence, 
-  browserLocalPersistence,
   browserSessionPersistence,
   inMemoryPersistence,
   connectAuthEmulator,
-  useDeviceLanguage
+  useDeviceLanguage,
+  type Auth,
+  type GoogleAuthProvider as GoogleAuthProviderType
 } from "firebase/auth";
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
-import { getStorage, connectStorageEmulator } from "firebase/storage";
-import { getAnalytics } from "firebase/analytics";
+import { getFirestore, connectFirestoreEmulator, type Firestore } from "firebase/firestore";
+import { getStorage, connectStorageEmulator, type FirebaseStorage } from "firebase/storage";
+import { getAnalytics, type Analytics } from "firebase/analytics";
 
-// Environment variables are typed in src/env.d.ts
+// Get Firebase config based on environment
+const getFirebaseConfig = (): FirebaseOptions => {
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  return {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+    databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || '' // Added databaseURL for local development
+  };
 };
 
 // Initialize Firebase with error handling
 let app;
 try {
+  const firebaseConfig = getFirebaseConfig();
   app = initializeApp(firebaseConfig);
   console.info("✅ Firebase initialized successfully");
 } catch (error) {
@@ -36,16 +41,16 @@ try {
 }
 
 // Initialize Firebase services with error handling
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
-const analytics = getAnalytics(app);
+const auth: Auth = getAuth(app);
+const db: Firestore = getFirestore(app);
+const storage: FirebaseStorage = getStorage(app);
+const analytics: Analytics = getAnalytics(app);
 
 // Enable device language support
 useDeviceLanguage(auth);
 
 // Configure Google Auth Provider with improved popup handling
-const googleProvider = new GoogleAuthProvider();
+const googleProvider: GoogleAuthProviderType = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account',
   // Add additional OAuth 2.0 scopes
