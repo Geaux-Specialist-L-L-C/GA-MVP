@@ -1,13 +1,5 @@
-// File: /src/firebase/firebaseInit.ts
-// Description: Initializes Firebase with Analytics for the Geaux Academy project.
-// Author: [Your Name]
-// Created: [Date]
-
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-
-// TODO: Add SDKs for Firebase products that you want to use
-// See: https://firebase.google.com/docs/web/setup#available-libraries
 
 const firebaseConfig = {
   apiKey: "AIzaSyB0V4iL1aQ_xtWeO_iWL1fuhu4_SLfqZeo",
