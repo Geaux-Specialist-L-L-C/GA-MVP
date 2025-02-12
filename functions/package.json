@@ -16,6 +16,7 @@
   "main": "lib/index.js",
   "dependencies": {
     "@genkit-ai/firebase": "^0.9.12",
+    "@genkit-ai/googleai": "^1.0.4",
     "@genkit-ai/vertexai": "^0.9.12",
     "express": "^4.21.2",
     "firebase-admin": "^12.6.0",
