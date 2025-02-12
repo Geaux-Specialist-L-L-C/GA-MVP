@@ -17,8 +17,13 @@ const LoginForm = () => {
       await loginWithGoogle();
       // Navigation is handled in AuthContext after successful login
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sign in with Google');
-      console.error('Login error:', err);
+      // The error message is already user-friendly from AuthContext
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      if (err instanceof Error && err.message.includes('popup')) {
+        console.info('Google login popup interaction:', err.message);
+      } else {
+        console.error('Login error:', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -28,7 +33,20 @@ const LoginForm = () => {
     <div className="auth-container card">
       <h2 className="auth-title">Welcome Back</h2>
       
-      {error && <div className="auth-error">{error}</div>}
+      {error && (
+        <div className="auth-error" role="alert">
+          <span>{error}</span>
+          {error.includes('popup') && (
+            <button 
+              className="auth-error-dismiss" 
+              onClick={() => setError('')}
+              aria-label="Dismiss error"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      )}
       
       <button 
         className="google-button" 
@@ -36,7 +54,7 @@ const LoginForm = () => {
         disabled={loading}
       >
         <FcGoogle size={20} />
-        <span>Sign in with Google</span>
+        <span>{loading ? 'Signing in...' : 'Sign in with Google'}</span>
       </button>
       
       <div className="auth-divider">

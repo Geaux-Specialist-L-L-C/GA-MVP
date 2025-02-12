@@ -4,7 +4,8 @@ import {
   signInWithPopup,
   onAuthStateChanged,
   browserPopupRedirectResolver,
-  User
+  User,
+  AuthError
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
 
@@ -46,10 +47,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (result.user) {
         navigate('/dashboard');
       }
-    } catch (error: any) {
-      if (error.code === 'auth/popup-blocked') {
+    } catch (error) {
+      const authError = error as AuthError;
+      if (authError.code === 'auth/popup-blocked') {
         throw new Error('Please allow popups for this site to enable Google login');
+      } else if (authError.code === 'auth/popup-closed-by-user') {
+        throw new Error('Sign-in cancelled. Please try again when ready.');
+      } else if (authError.code === 'auth/cancelled-popup-request') {
+        throw new Error('Another sign-in attempt is in progress. Please wait.');
       }
+      // For any other errors, throw the original error
       throw error;
     }
   };
