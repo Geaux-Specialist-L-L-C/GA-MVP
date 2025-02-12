@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "module": "NodeNext",
+    "module": "commonjs",
     "esModuleInterop": true,
-    "moduleResolution": "NodeNext",
+    "moduleResolution": "node",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
@@ -10,7 +10,8 @@
     "strict": true,
     "target": "es2017",
     "skipLibCheck": true,
-    "types": ["firebase"]
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types"]
   },
   "compileOnSave": true,
   "include": [

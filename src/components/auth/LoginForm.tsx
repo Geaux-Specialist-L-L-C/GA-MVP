@@ -59,12 +59,14 @@ const SubmitButton = styled.button`
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.2s;
-  &:hover {
-    background-color: #357abd;
-  }
+
   &:disabled {
     background-color: #ccc;
     cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: #357abd;
   }
 `;
 
@@ -72,9 +74,47 @@ const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, loginWithGoogle, error: authError, clearError } = useAuth();
+  const [authError, setAuthError] = useState<string | null>(null);
+  const { login, loginWithGoogle } = useAuth();  // Fixed function name
   const navigate = useNavigate();
   const location = useLocation();
+
+  const clearError = () => {
+    setAuthError(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setAuthError(null);
+
+    try {
+      await login(email, password);
+      navigate((location.state as any)?.from?.pathname || '/dashboard');
+    } catch (error: any) {
+      setAuthError(error.message || 'Failed to sign in. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsSubmitting(true);
+    setAuthError(null);
+
+    try {
+      await loginWithGoogle();  // Fixed function name
+      navigate((location.state as any)?.from?.pathname || '/dashboard');
+    } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user') {
+        setAuthError('Sign in was cancelled. Please try again.');
+      } else {
+        setAuthError(error.message || 'Failed to sign in with Google. Please try again.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Reset error when component unmounts or when email/password changes
   useEffect(() => {
@@ -82,39 +122,6 @@ const LoginForm: React.FC = () => {
       clearError();
     };
   }, [email, password, clearError]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email || !password) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await login(email, password);
-      const from = (location.state as any)?.from?.pathname || '/dashboard';
-      navigate(from, { replace: true });
-    } catch (error) {
-      // Error is handled by AuthContext
-      console.error('Login failed:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      clearError();
-      setIsSubmitting(true);
-      await loginWithGoogle();
-      // Navigation is handled in AuthContext after successful login
-    } catch (err) {
-      console.error('Login error:', err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <div className="auth-container card">
@@ -160,7 +167,7 @@ const LoginForm: React.FC = () => {
 
       <GoogleLoginButton 
         handleGoogleLogin={handleGoogleLogin}
-        error={authError}
+        error={authError || undefined}
         loading={isSubmitting}
         onDismissError={clearError}
       />

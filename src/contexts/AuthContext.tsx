@@ -17,6 +17,7 @@ import {
   type AuthError
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
+import { initializeAuthServiceWorker } from '../firebase/auth-service-worker';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -37,6 +38,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
   const [isRedirectChecked, setIsRedirectChecked] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+  const [isServiceWorkerReady, setServiceWorkerReady] = useState(false);
+
+  // Initialize service worker on mount
+  useEffect(() => {
+    initializeAuthServiceWorker().then(setServiceWorkerReady);
+  }, []);
 
   // Improved navigation with request animation frame for better performance
   const navigateDebounced = useCallback((to: string) => {
@@ -143,21 +150,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Improved Google sign-in with better error handling and fallback
+  // Enhanced loginWithGoogle to consider service worker state
   const loginWithGoogle = async (): Promise<UserCredential | void> => {
     try {
       clearError();
-      return await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
-    } catch (error) {
-      const authError = error as AuthError;
       
-      if (isPopupError(authError.code)) {
-        console.warn('Popup failed, falling back to redirect:', authError.code);
-        await signInWithRedirect(auth, googleProvider);
-        return;
+      // Always try popup first if service worker is ready
+      if (isServiceWorkerReady) {
+        try {
+          return await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
+        } catch (error: any) {
+          // Only fall back to redirect if it's a popup-related error
+          if (!isPopupError(error.code)) {
+            throw error;
+          }
+          console.warn('Popup failed, falling back to redirect');
+        }
       }
 
-      const errorMessage = getAuthErrorMessage(authError.code);
+      // Fall back to redirect method
+      await signInWithRedirect(auth, googleProvider);
+    } catch (error: any) {
+      const errorMessage = getAuthErrorMessage(error.code);
       setError(errorMessage);
       throw error;
     }

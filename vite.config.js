@@ -2,12 +2,30 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
+import fs from 'fs';
+
+// Custom plugin to inject Firebase config into service worker
+const injectFirebaseConfig = () => ({
+  name: 'inject-firebase-config',
+  buildEnd: async () => {
+    const configContent = fs.readFileSync('./public/firebase-config.js', 'utf-8');
+    const injectedContent = configContent
+      .replace('__FIREBASE_API_KEY__', process.env.FIREBASE_API_KEY)
+      .replace('__FIREBASE_AUTH_DOMAIN__', process.env.FIREBASE_AUTH_DOMAIN)
+      .replace('__FIREBASE_PROJECT_ID__', process.env.FIREBASE_PROJECT_ID)
+      .replace('__FIREBASE_MESSAGING_SENDER_ID__', process.env.FIREBASE_MESSAGING_SENDER_ID)
+      .replace('__FIREBASE_APP_ID__', process.env.FIREBASE_APP_ID);
+    
+    fs.writeFileSync('./dist/firebase-config.js', injectedContent);
+  }
+});
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    vue() // Add Vue plugin
+    vue(), // Add Vue plugin
+    injectFirebaseConfig()
   ],
   build: {
     target: 'esnext', // This enables top-level await
