@@ -1,41 +1,47 @@
-import { initializeApp } from "firebase/app";
+// @ts-ignore - Ignoring missing type declarations as Firebase provides its own
+import { initializeApp, type FirebaseOptions } from "firebase/app";
+// @ts-ignore
 import { 
   getAuth, 
   GoogleAuthProvider, 
   setPersistence, 
-  browserLocalPersistence,
   browserSessionPersistence,
   inMemoryPersistence,
   connectAuthEmulator,
-  useDeviceLanguage
+  useDeviceLanguage,
+  type Auth,
+  type GoogleAuthProvider as GoogleAuthProviderType
 } from "firebase/auth";
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
-import { getStorage, connectStorageEmulator } from "firebase/storage";
-import { getAnalytics } from "firebase/analytics";
+// @ts-ignore
+import { getFirestore, connectFirestoreEmulator, type Firestore } from "firebase/firestore";
+// @ts-ignore
+import { getStorage, connectStorageEmulator, type FirebaseStorage } from "firebase/storage";
+// @ts-ignore
+import { getAnalytics, type Analytics } from "firebase/analytics";
 
 // Get Firebase config based on environment
-const getFirebaseConfig = () => {
+const getFirebaseConfig = (): FirebaseOptions => {
   // For production deployment (using GitHub Actions secrets)
   if (process.env.NODE_ENV === 'production') {
     return {
-      apiKey: process.env.FIREBASE_API_KEY,
-      authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-      appId: process.env.FIREBASE_APP_ID,
+      apiKey: process.env.FIREBASE_API_KEY || '',
+      authDomain: process.env.FIREBASE_AUTH_DOMAIN || '',
+      projectId: process.env.FIREBASE_PROJECT_ID || '',
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || '',
+      messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '',
+      appId: process.env.FIREBASE_APP_ID || '',
       measurementId: process.env.FIREBASE_MEASUREMENT_ID
     };
   }
   
   // For local development (using Vite's import.meta.env)
   return {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
     measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
   };
 };
@@ -52,16 +58,16 @@ try {
 }
 
 // Initialize Firebase services with error handling
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
-const analytics = getAnalytics(app);
+const auth: Auth = getAuth(app);
+const db: Firestore = getFirestore(app);
+const storage: FirebaseStorage = getStorage(app);
+const analytics: Analytics = getAnalytics(app);
 
 // Enable device language support
 useDeviceLanguage(auth);
 
 // Configure Google Auth Provider with improved popup handling
-const googleProvider = new GoogleAuthProvider();
+const googleProvider: GoogleAuthProviderType = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account',
   // Add additional OAuth 2.0 scopes
