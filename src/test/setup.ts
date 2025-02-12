@@ -1,11 +1,32 @@
 import '@testing-library/jest-dom';
-import { expect, afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
-import matchers from '@testing-library/jest-dom/matchers';
+import React from 'react';
 
-expect.extend(matchers);
+// Mock react-icons
+jest.mock('react-icons/fc', () => ({
+  FcGoogle: function MockGoogleIcon() {
+    return React.createElement('span', { 'data-testid': 'google-icon' }, 'Google Icon');
+  }
+}));
 
-// Runs after each test suite
+// Run cleanup after each test
 afterEach(() => {
   cleanup();
+  jest.clearAllMocks();
 });
+
+// Mock Firebase
+jest.mock('../firebase/firebaseInit', () => ({
+  app: jest.fn(),
+  analytics: jest.fn(),
+}));
+
+// Mock Firebase Auth
+jest.mock('firebase/auth', () => ({
+  getAuth: jest.fn(),
+  GoogleAuthProvider: jest.fn().mockImplementation(() => ({
+    setCustomParameters: jest.fn()
+  })),
+  signInWithPopup: jest.fn(),
+  onAuthStateChanged: jest.fn()
+}));
