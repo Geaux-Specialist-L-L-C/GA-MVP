@@ -22,9 +22,10 @@ export interface AuthContextType {
   loading: boolean;
   authError: string | null;
   login: (email: string, password: string) => Promise<UserCredential>;
-  loginWithGoogle: () => Promise<UserCredential>;
+  loginWithGoogle: () => Promise<void>;
   signup: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
+  setAuthError: (error: string | null) => void;
 }
 
 export interface Student {

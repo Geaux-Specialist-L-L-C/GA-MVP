@@ -43,10 +43,14 @@ const analytics = getAnalytics(app);
 // Enable device language support
 useDeviceLanguage(auth);
 
-// Configure Google Auth Provider with custom parameters
+// Configure Google Auth Provider with improved popup handling
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
-  prompt: 'select_account'
+  prompt: 'select_account',
+  // Add additional OAuth 2.0 scopes
+  scope: 'email profile',
+  // Display on top frame in mobile browsers
+  display: 'popup'
 });
 
 // Configure emulators for local development

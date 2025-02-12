@@ -51,6 +51,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       localStorage.setItem('token', token);
 
       const parentProfile = await getParentProfile(result.user.uid);
+
       const userData: User = {
         uid: result.user.uid,
         email: result.user.email || null,
@@ -63,6 +64,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       navigate('/dashboard');
     } catch (error) {
       console.error("❌ Error processing auth result:", error);
+      // Still set the basic user data even if profile fetch fails
       setCurrentUser({
         uid: result.user.uid,
         email: result.user.email || null,
@@ -86,8 +88,8 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     try {
       const token = await getIdToken(user);
       localStorage.setItem('token', token);
-
       const parentProfile = await getParentProfile(user.uid);
+      
       setCurrentUser({
         uid: user.uid,
         email: user.email || null,
@@ -96,7 +98,9 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
         ...parentProfile
       });
     } catch (error) {
-      console.error("❌ Error updating user state:", error);
+      console.error("❌ Error handling auth state change:", error);
+      setAuthError("Failed to load user profile");
+      // Set basic user data even if profile load fails
       setCurrentUser({
         uid: user.uid,
         email: user.email || null,
@@ -123,22 +127,79 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     }
   };
 
-  const loginWithGoogle = async (): Promise<UserCredential> => {
+  const loginWithGoogle = async (): Promise<void> => {
+    setLoading(true);
+    setAuthError(null);
+    
+    // Function to check if popup is blocked
+    const isPopupBlocked = () => {
+      const popup = window.open('', '_blank', 'width=1,height=1');
+      const isBlocked = !popup || popup.closed;
+      if (popup) popup.close();
+      return isBlocked;
+    };
+
     try {
-      setAuthError(null);
-      setLoading(true);
-      console.log("🔄 Starting Google sign-in...");
-      googleProvider.setCustomParameters({
-        prompt: 'select_account'
-      });
-      const result = await signInWithPopup(auth, googleProvider);
+      // Clear any existing tokens and check for popup blocker
+      localStorage.removeItem('token');
+      if (isPopupBlocked()) {
+        throw new Error('auth/popup-blocked');
+      }
+      
+      // Add popup timeout handling with retry
+      const popupTimeoutMs = 120000; // 2 minutes
+      const maxRetries = 2;
+      let retryCount = 0;
+      
+      const attemptLogin = async (): Promise<UserCredential> => {
+        const popupPromise = signInWithPopup(auth, googleProvider);
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('popup-timeout')), popupTimeoutMs);
+        });
+
+        try {
+          return await Promise.race([popupPromise, timeoutPromise]) as UserCredential;
+        } catch (error: any) {
+          if (error.message === 'popup-timeout' && retryCount < maxRetries) {
+            retryCount++;
+            console.log(`Retrying popup login (attempt ${retryCount}/${maxRetries})`);
+            return attemptLogin();
+          }
+          throw error;
+        }
+      };
+
+      const result = await attemptLogin();
       await handleAuthResult(result);
-      return result;
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Google login error:", error);
-      setAuthError("Failed to sign in with Google. Please try again.");
-      setLoading(false);
+      
+      // Enhanced error handling
+      let errorMessage = "Failed to sign in with Google";
+      switch(error.code || error.message) {
+        case 'auth/popup-closed-by-user':
+          errorMessage = "Sign-in window was closed. Please try again.";
+          break;
+        case 'auth/popup-blocked':
+          errorMessage = "Pop-up was blocked. Please enable pop-ups for this site and try again.";
+          break;
+        case 'popup-timeout':
+          errorMessage = "Sign-in timed out. Please check your internet connection and try again.";
+          break;
+        case 'auth/network-request-failed':
+          errorMessage = "Network error. Please check your internet connection.";
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = "Too many sign-in attempts. Please wait a moment and try again.";
+          break;
+        default:
+          errorMessage = `Sign-in failed: ${error.message || 'Unknown error'}`;
+      }
+      
+      setAuthError(errorMessage);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -177,7 +238,8 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     login,
     loginWithGoogle,
     signup,
-    logout
+    logout,
+    setAuthError
   };
 
   return (

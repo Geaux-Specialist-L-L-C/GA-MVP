@@ -38,8 +38,8 @@ export default defineConfig({
     port: 5173,
     cors: true,
     headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
-      'Cross-Origin-Embedder-Policy': 'require-corp'
+      'Cross-Origin-Opener-Policy': 'unsafe-none',
+      'Cross-Origin-Embedder-Policy': 'unsafe-none'
     },
     proxy: {
       '/api': {
@@ -78,7 +78,11 @@ export default defineConfig({
     hmr: {
       protocol: 'ws',
       host: 'localhost',
-      clientPort: 5173
+      clientPort: 5173,
+      timeout: 120000
+    },
+    watch: {
+      usePolling: true
     }
   },
   resolve: {
