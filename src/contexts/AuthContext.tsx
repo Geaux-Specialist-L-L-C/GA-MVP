@@ -139,69 +139,59 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     setLoading(true);
     setAuthError(null);
     
-    // Function to check if popup is blocked
-    const isPopupBlocked = () => {
-      const popup = window.open('', '_blank', 'width=1,height=1');
-      const isBlocked = !popup || popup.closed;
-      if (popup) popup.close();
-      return isBlocked;
-    };
-
     try {
-      // Clear any existing tokens and check for popup blocker
+      // Clear any existing tokens
       localStorage.removeItem('token');
-      if (isPopupBlocked()) {
-        throw new Error('auth/popup-blocked');
-      }
       
-      // Add popup timeout handling with retry
-      const popupTimeoutMs = 120000; // 2 minutes
-      const maxRetries = 2;
-      let retryCount = 0;
-      
-      const attemptLogin = async (): Promise<UserCredential> => {
-        const popupPromise = signInWithPopup(auth, googleProvider);
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('popup-timeout')), popupTimeoutMs);
-        });
+      // Configure auth persistence to prevent COOP issues
+      await setPersistence(auth, browserSessionPersistence);
 
-        try {
-          return await Promise.race([popupPromise, timeoutPromise]) as UserCredential;
-        } catch (error: any) {
-          if (error.message === 'popup-timeout' && retryCount < maxRetries) {
-            retryCount++;
-            console.log(`Retrying popup login (attempt ${retryCount}/${maxRetries})`);
-            return attemptLogin();
+      // Create promise with timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('auth/popup-timeout')), 60000); // 1 minute timeout
+      });
+
+      const popupPromise = signInWithPopup(auth, googleProvider)
+        .catch(error => {
+          // Handle specific popup errors
+          if (error.code === 'auth/popup-closed-by-user') {
+            throw new Error('The sign-in popup was closed before authentication was completed. Please try again.');
+          }
+          if (error.code === 'auth/popup-blocked') {
+            throw new Error('The sign-in popup was blocked. Please enable popups for this site and try again.');
           }
           throw error;
-        }
+        });
+
+      const result = await Promise.race([popupPromise, timeoutPromise]) as UserCredential;
+      
+      // Get fresh token and update profile
+      const token = await getIdToken(result.user, true);
+      localStorage.setItem('token', token);
+
+      const parentProfile = await getParentProfile(result.user.uid);
+      
+      const userData: User = {
+        uid: result.user.uid,
+        email: result.user.email || null,
+        displayName: result.user.displayName || null,
+        photoURL: result.user.photoURL || null,
+        ...parentProfile
       };
 
-      const result = await attemptLogin();
-      await handleAuthResult(result);
+      setCurrentUser(userData);
+      navigate('/dashboard');
+      
     } catch (error: any) {
       console.error("❌ Google login error:", error);
       
-      // Enhanced error handling
       let errorMessage = "Failed to sign in with Google";
-      switch(error.code || error.message) {
-        case 'auth/popup-closed-by-user':
-          errorMessage = "Sign-in window was closed. Please try again.";
-          break;
-        case 'auth/popup-blocked':
-          errorMessage = "Pop-up was blocked. Please enable pop-ups for this site and try again.";
-          break;
-        case 'popup-timeout':
-          errorMessage = "Sign-in timed out. Please check your internet connection and try again.";
-          break;
-        case 'auth/network-request-failed':
-          errorMessage = "Network error. Please check your internet connection.";
-          break;
-        case 'auth/too-many-requests':
-          errorMessage = "Too many sign-in attempts. Please wait a moment and try again.";
-          break;
-        default:
-          errorMessage = `Sign-in failed: ${error.message || 'Unknown error'}`;
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = "Network error. Please check your internet connection.";
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Too many sign-in attempts. Please wait a moment and try again.";
       }
       
       setAuthError(errorMessage);
