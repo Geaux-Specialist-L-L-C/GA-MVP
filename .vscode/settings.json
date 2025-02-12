@@ -74,5 +74,8 @@
             "filePattern": "firestore.rules",
             "instructions": "Ensure Firestore security rules enforce RBAC. No public read/write access unless explicitly required."
         }
+    ],
+    "github-actions.workflows.pinned.workflows": [
+        ".github/workflows/ci-cd.yml"
     ]
 }
