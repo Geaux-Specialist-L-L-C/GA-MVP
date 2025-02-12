@@ -4,15 +4,19 @@
   "context": ".",
   "appPort": [3000, 5000],
   "runArgs": ["--env-file", ".env"],
-  "settings": {
-    "terminal.integrated.shell.linux": "/bin/bash"
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash"
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode.vscode-typescript-tslint-plugin"
+      ]
+    }
   },
-  "extensions": [
-    "dbaeumer.vscode-eslint",
-    "esbenp.prettier-vscode",
-    "ms-azuretools.vscode-docker",
-    "ms-vscode.vscode-typescript-tslint-plugin"
-  ],
   "postCreateCommand": "npm install",
   "remoteEnv": {
     "VITE_FIREBASE_API_KEY": "${localEnv:VITE_FIREBASE_API_KEY}",
@@ -22,9 +26,29 @@
     "VITE_FIREBASE_MESSAGING_SENDER_ID": "${localEnv:VITE_FIREBASE_MESSAGING_SENDER_ID}",
     "VITE_FIREBASE_APP_ID": "${localEnv:VITE_FIREBASE_APP_ID}",
     "VITE_FIREBASE_MEASUREMENT_ID": "${localEnv:VITE_FIREBASE_MEASUREMENT_ID}",
+    "VITE_FIREBASE_DATABASE_URL": "${localEnv:VITE_FIREBASE_DATABASE_URL}",
     "VITE_OPENAI_API_KEY": "${localEnv:VITE_OPENAI_API_KEY}",
+    "VITE_CHESHIRE_API_URL": "${localEnv:VITE_CHESHIRE_API_URL}",
+    "VITE_CHESHIRE_API_TOKEN": "${localEnv:VITE_CHESHIRE_API_TOKEN}",
+    "VITE_CHESHIRE_API_TOKEN_TYPE": "${localEnv:VITE_CHESHIRE_API_TOKEN_TYPE}",
+    "VITE_CHESHIRE_ADMIN_USERNAME": "${localEnv:VITE_CHESHIRE_ADMIN_USERNAME}",
+    "VITE_CHESHIRE_ADMIN_PASSWORD": "${localEnv:VITE_CHESHIRE_ADMIN_PASSWORD}",
+    "VITE_CHESHIRE_DEBUG": "${localEnv:VITE_CHESHIRE_DEBUG}",
     "REACT_APP_AZURE_ENDPOINT": "${localEnv:REACT_APP_AZURE_ENDPOINT}",
     "REACT_APP_MODEL_NAME": "${localEnv:REACT_APP_MODEL_NAME}",
-    "REACT_APP_AZURE_API_KEY": "${localEnv:REACT_APP_AZURE_API_KEY}"
+    "REACT_APP_AZURE_API_KEY": "${localEnv:REACT_APP_AZURE_API_KEY}",
+    "AGENTOPS_API_KEY": "${localEnv:AGENTOPS_API_KEY}",
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
+    "AWS_ACCESS_KEY_ID": "${localEnv:AWS_ACCESS_KEY_ID}",
+    "AWS_SECRET_ACCESS_KEY": "${localEnv:AWS_SECRET_ACCESS_KEY}",
+    "DATABASE_URL": "${localEnv:DATABASE_URL}",
+    "DB_USERNAME": "${localEnv:DB_USERNAME}",
+    "DB_PASSWORD": "${localEnv:DB_PASSWORD}",
+    "GROQ_API_KEY": "${localEnv:GROQ_API_KEY}",
+    "SERPER_SEARCH": "${localEnv:SERPER_SEARCH}",
+    "SUPERABASE_SERVICE_KEY": "${localEnv:SUPERABASE_SERVICE_KEY}",
+    "TWILIO_AUTH_TOKEN": "${localEnv:TWILIO_AUTH_TOKEN}",
+    "REPLICATE": "${localEnv:REPLICATE}",
+    "WEBSITE_URL": "${localEnv:WEBSITE_URL}"
   }
 }

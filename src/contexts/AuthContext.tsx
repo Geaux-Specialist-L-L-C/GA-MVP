@@ -16,7 +16,15 @@ import { auth, googleProvider } from '../firebase/config';
 import { getParentProfile } from '../services/profileService';
 import { AuthContextType, User } from '../types/auth';
 
-const AuthContext = createContext<AuthContextType | null>(null);
+export const AuthContext = createContext<AuthContextType | null>(null);
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -248,11 +256,3 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     </AuthContext.Provider>
   );
 }
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
