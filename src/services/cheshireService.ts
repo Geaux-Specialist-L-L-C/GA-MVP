@@ -1,7 +1,8 @@
 import axios, { AxiosInstance } from 'axios';
 import { auth } from '../firebase/config';
 
-const CHESHIRE_API_URL = import.meta.env.VITE_CHESHIRE_API_URL;
+// Use environment variable if set, otherwise fall back to the production URL
+const CHESHIRE_API_URL = import.meta.env.VITE_CHESHIRE_API_URL || 'https://cheshire.geaux.app';
 const CHESHIRE_DEBUG = import.meta.env.VITE_CHESHIRE_DEBUG === 'true';
 
 // Create axios instance with default configuration

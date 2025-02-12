@@ -1,29 +1,30 @@
+# File: /Dockerfile
+# Description: Dockerfile for Geaux Academy application using the Node.js devcontainer image.
+# Author: [Your Name]
+# Created: [Date]
 
-noagenda
-{
-  "image": "mcr.microsoft.com/devcontainers/javascript:alpine",
-  "remoteUser": "node"
-}
+# Use the specified devcontainer image as the base
+FROM mcr.microsoft.com/devcontainers/javascript:alpine
 
 # Set the working directory inside the container
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json to the working directory
+# Copy package.json and package-lock.json to leverage Docker cache
 COPY package*.json ./
 
 # Install Node.js dependencies
 RUN npm install
 
-# Install Firebase CLI
+# Install Firebase CLI globally
 RUN npm install -g firebase-tools
 
-# Copy the rest of the application code to the working directory
+# Copy the rest of the application code into the container
 COPY . .
 
 # Expose the ports the app runs on
 EXPOSE 3000 5000
 
-# Set environment variables from .env file
+# Set environment variables (values will be provided at runtime)
 ENV VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}
 ENV VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN}
 ENV VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}
