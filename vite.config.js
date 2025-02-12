@@ -132,14 +132,16 @@ export default defineConfig({
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
       'Cross-Origin-Embedder-Policy': 'credentialless',
+      'Cross-Origin-Resource-Policy': 'cross-origin',
       'Content-Security-Policy': `
         default-src 'self';
         script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseapp.com https://*.firebase.com https://*.google.com https://*.googleapis.com https://*.gstatic.com https://apis.google.com https://www.googletagmanager.com;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         img-src 'self' data: https://*.google.com https://*.googleapis.com https://*.gstatic.com;
-        connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebase.com wss://*.firebaseio.com https://firebaseinstallations.googleapis.com https://identitytoolkit.googleapis.com;
+        connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebase.com wss://*.firebaseio.com https://firebaseinstallations.googleapis.com https://identitytoolkit.googleapis.com https://firebase.googleapis.com https://*.firebasestorage.app https://*.firebaseapp.com https://*.cloudfunctions.net https://*.firebase-database.app https://securetoken.googleapis.com;
         font-src 'self' https://fonts.gstatic.com;
-        frame-src 'self' https://*.firebaseapp.com https://*.firebase.com;
+        frame-src 'self' https://*.firebaseapp.com https://*.firebase.com https://*.google.com;
+        worker-src 'self' blob:;
         object-src 'none';
       `.replace(/\s+/g, ' ').trim(),
       'Access-Control-Allow-Origin': '*',

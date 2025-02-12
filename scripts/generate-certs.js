@@ -23,7 +23,32 @@ async function generateCertificate() {
 
     // Generate a self-signed certificate for localhost using selfsigned package
     const attrs = [{ name: 'commonName', value: 'localhost' }];
-    const pems = selfsigned.generate(attrs, { days: 365, keySize: 2048 });
+    const pems = selfsigned.generate(attrs, {
+      algorithm: 'sha256',
+      days: 365,
+      keySize: 2048,
+      extensions: [{
+        name: 'basicConstraints',
+        cA: true
+      }, {
+        name: 'keyUsage',
+        keyCertSign: true,
+        digitalSignature: true,
+        nonRepudiation: true,
+        keyEncipherment: true,
+        dataEncipherment: true
+      }, {
+        name: 'extKeyUsage',
+        serverAuth: true,
+        clientAuth: true
+      }, {
+        name: 'subjectAltName',
+        altNames: [{
+          type: 2, // DNS
+          value: 'localhost'
+        }]
+      }]
+    });
     
     // Save the generated private key and certificate
     const keyPath = path.join(certDir, 'key.pem');
