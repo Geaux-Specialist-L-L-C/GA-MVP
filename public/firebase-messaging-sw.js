@@ -1,61 +1,28 @@
 /* eslint-env serviceworker */
 /* global clients */
 
+// Firebase Auth Service Worker
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
+  notifyWindowsAboutReadyState();
+});
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(self.skipWaiting());
+});
+
 let isReady = false;
 
-// Firebase Service Worker configuration
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    Promise.all([
-      self.skipWaiting(),
-      // Clear any old auth caches
-      caches.keys().then(keys => 
-        Promise.all(
-          keys.filter(key => key.startsWith('firebase-auth-'))
-            .map(key => caches.delete(key))
-        )
-      )
-    ]).then(() => {
-      isReady = true;
-      notifyWindowsAboutReadyState();
-    })
-  );
-});
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    Promise.all([
-      clients.claim(),
-      // Clear any old IndexedDB data
-      indexedDB.databases().then(dbs => {
-        return Promise.all(dbs.map(db => {
-          if (db.name.includes('firebaseauth')) {
-            return indexedDB.deleteDatabase(db.name);
-          }
-          return Promise.resolve();
-        }));
-      }).catch(() => {
-        // Ignore errors if IndexedDB is not available
-      })
-    ]).then(() => {
-      isReady = true;
-      notifyWindowsAboutReadyState();
-    })
-  );
-});
-
 function notifyWindowsAboutReadyState() {
-  clients.matchAll({ type: 'window' }).then(clients => {
+  isReady = true;
+  self.clients.matchAll({ type: 'window' }).then(clients => {
     clients.forEach(client => {
-      client.postMessage({
-        type: 'FIREBASE_SERVICE_WORKER_READY',
-        ready: isReady
-      });
+      client.postMessage({ type: 'FIREBASE_SERVICE_WORKER_READY', ready: true });
     });
   });
 }
 
-// Enhanced popup handling with retry logic and connection state
+// Enhanced popup handling with retry logic
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'FIREBASE_AUTH_POPUP') {
     event.waitUntil(
@@ -88,7 +55,6 @@ self.addEventListener('message', (event) => {
         };
 
         try {
-          // Send ready state immediately
           await notifyMainWindow('FIREBASE_SERVICE_WORKER_READY', { ready: isReady });
           
           if (!isReady) {
@@ -113,7 +79,7 @@ self.addEventListener('message', (event) => {
         } catch (error) {
           console.error('Firebase auth popup handling error:', error);
           await notifyMainWindow('FIREBASE_AUTH_ERROR', {
-            message: 'Popup handling failed',
+            message: 'Authentication popup handling failed. Please try again.',
             error: error.message,
             code: 'auth/popup-connection-failed'
           });
@@ -162,7 +128,7 @@ self.addEventListener('fetch', (event) => {
           // Notify main window about fetch errors
           const mainClient = await clients.matchAll({ type: 'window' })
             .then(clients => clients.find(c => !c.url.includes('/__/auth/')));
-          
+
           if (mainClient) {
             mainClient.postMessage({
               type: 'FIREBASE_AUTH_FETCH_ERROR',

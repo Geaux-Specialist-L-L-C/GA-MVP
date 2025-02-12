@@ -30,30 +30,39 @@ const getFirebaseConfig = (): FirebaseOptions => ({
 // Initialize Firebase only if not already initialized
 const app = !getApps().length ? initializeApp(getFirebaseConfig()) : getApps()[0];
 
-// Initialize Firebase services with enhanced popup handling
+// Initialize Firebase services with enhanced error handling
 const auth: Auth = getAuth(app);
 auth.useDeviceLanguage(); // Enable device language support
 
-// Set persistence synchronously to avoid race conditions
-try {
-  await setPersistence(auth, browserLocalPersistence);
-  console.info("✅ Firebase auth persistence configured");
-} catch (error) {
-  console.error("❌ Auth persistence error:", error);
-}
+// Initialize persistence with retry mechanism
+const initializePersistence = async (retries = 3): Promise<void> => {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    console.info("✅ Firebase auth persistence configured");
+  } catch (error: any) {
+    if (retries > 0 && error.code === 'auth/internal-error') {
+      console.warn(`Retrying persistence setup... (${retries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return initializePersistence(retries - 1);
+    }
+    console.error("❌ Auth persistence error:", error);
+  }
+};
 
 // Configure Google Auth Provider with improved popup settings
 const googleProvider: GoogleAuthProviderType = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account',
-  access_type: 'offline',
-  include_granted_scopes: 'true'
+  // Remove access_type and include_granted_scopes to reduce COEP issues
 });
 
 // Initialize other Firebase services
 const db: Firestore = getFirestore(app);
 const storage: FirebaseStorage = getStorage(app);
 const analytics: Analytics = getAnalytics(app);
+
+// Initialize persistence
+initializePersistence();
 
 // Enhanced sign-in function with popup handling and redirect fallback
 const signInWithGoogle = async () => {

@@ -43,7 +43,7 @@
           },
           {
             "key": "Cross-Origin-Embedder-Policy",
-            "value": "credentialless"
+            "value": "unsafe-none"
           }
         ]
       },
@@ -56,7 +56,11 @@
           },
           {
             "key": "Cross-Origin-Embedder-Policy",
-            "value": "credentialless"
+            "value": "unsafe-none"
+          },
+          {
+            "key": "Cross-Origin-Resource-Policy",
+            "value": "cross-origin"
           }
         ]
       }
