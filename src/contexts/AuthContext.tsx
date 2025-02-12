@@ -55,8 +55,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
 
+      // Attempt to sign in with popup
       const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
-
+      
       if (result.user) {
         navigate('/dashboard');
       }
