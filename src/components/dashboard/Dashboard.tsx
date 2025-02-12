@@ -7,17 +7,8 @@ import StudentCard from '../../components/student/StudentCard';
 import { getParentProfile, getStudentProfile } from '../../services/profileService';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-
-interface Student {
-  id: string;
-  name: string;
-  grade: string;
-  parentId: string;
-  hasTakenAssessment: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-  assessmentStatus?: string;
-}
+import LoadingSpinner from '../common/LoadingSpinner';
+import type { Student } from '../../types/profiles';
 
 interface UserData {
   name: string;
@@ -32,7 +23,7 @@ interface ParentProfile {
 }
 
 const Dashboard: React.FC = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -104,15 +95,17 @@ const Dashboard: React.FC = () => {
         const studentsData = await Promise.all(
           profile.students.map(async (studentId) => {
             try {
-              return await getStudentProfile(studentId);
+              const student = await getStudentProfile(studentId);
+              return student;
             } catch (err) {
               console.error(`Error fetching student ${studentId}:`, err);
               return null;
             }
           })
         );
-
-        setStudents(studentsData.filter((s): s is Student => s !== null));
+        
+        // Filter out null values and cast to Student array
+        setStudents(studentsData.filter((s): s is Student => s !== null && s.id !== undefined));
       }
 
       setRetryCount(0); // Reset retry count on success
@@ -146,7 +139,6 @@ const Dashboard: React.FC = () => {
 
   const handleLogout = async (): Promise<void> => {
     try {
-      await logout();
       navigate('/login');
     } catch (err) {
       setError('Failed to log out');
