@@ -92,15 +92,15 @@ export default defineConfig({
     extensions: ['.js', '.jsx', '.ts', '.tsx']
   },
   define: {
-    __VITE_FIREBASE_CONFIG__: {
-      apiKey: JSON.stringify(process.env.VITE_FIREBASE_API_KEY),
-      authDomain: JSON.stringify(process.env.VITE_FIREBASE_AUTH_DOMAIN),
-      projectId: JSON.stringify(process.env.VITE_FIREBASE_PROJECT_ID),
-      storageBucket: JSON.stringify(process.env.VITE_FIREBASE_STORAGE_BUCKET),
-      messagingSenderId: JSON.stringify(process.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
-      appId: JSON.stringify(process.env.VITE_FIREBASE_APP_ID),
-      measurementId: JSON.stringify(process.env.VITE_FIREBASE_MEASUREMENT_ID)
-    },
-    'process.env': {}
+    'process.env': {
+      NODE_ENV: JSON.stringify(process.env.NODE_ENV),
+      FIREBASE_API_KEY: JSON.stringify(process.env.FIREBASE_API_KEY),
+      FIREBASE_AUTH_DOMAIN: JSON.stringify(process.env.FIREBASE_AUTH_DOMAIN),
+      FIREBASE_PROJECT_ID: JSON.stringify(process.env.FIREBASE_PROJECT_ID),
+      FIREBASE_STORAGE_BUCKET: JSON.stringify(process.env.FIREBASE_STORAGE_BUCKET),
+      FIREBASE_MESSAGING_SENDER_ID: JSON.stringify(process.env.FIREBASE_MESSAGING_SENDER_ID),
+      FIREBASE_APP_ID: JSON.stringify(process.env.FIREBASE_APP_ID),
+      FIREBASE_MEASUREMENT_ID: JSON.stringify(process.env.FIREBASE_MEASUREMENT_ID)
+    }
   }
 });
