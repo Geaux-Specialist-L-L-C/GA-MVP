@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
 import fs from 'fs';
+import path from 'path';
 
 // Custom plugin to inject Firebase config into service worker
 const injectFirebaseConfig = () => ({
@@ -61,11 +62,22 @@ export default defineConfig({
   server: {
     port: 3000,
     strictPort: true,
-    https: true,
-    cors: true,
+    https: {
+      key: fs.readFileSync(path.resolve(__dirname, '.cert/key.pem')),
+      cert: fs.readFileSync(path.resolve(__dirname, '.cert/cert.pem')),
+    },
+    cors: {
+      origin: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true
+    },
     headers: {
-      'Cross-Origin-Opener-Policy': 'unsafe-none',
-      'Cross-Origin-Embedder-Policy': 'unsafe-none'
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
     },
     proxy: {
       '/api': {
@@ -102,9 +114,9 @@ export default defineConfig({
       }
     },
     hmr: {
-      protocol: 'ws',
+      protocol: 'wss',
       host: 'localhost',
-      clientPort: 5173,
+      clientPort: 3000,
       timeout: 120000
     },
     watch: {
@@ -115,7 +127,7 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, 'src')
     },
-    extensions: ['.js', '.jsx', '.ts', '.tsx']
+    extensions: ['.js', '.jsx', '.ts', '.tsx', '.vue']
   },
   define: {
     'process.env': {

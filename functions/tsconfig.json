@@ -10,7 +10,7 @@
     "strict": true,
     "target": "es2017",
     "skipLibCheck": true,
-    "types": ["node"],
+    "types": ["node", "@firebase/app-types", "firebase"],
     "typeRoots": ["./node_modules/@types"]
   },
   "compileOnSave": true,

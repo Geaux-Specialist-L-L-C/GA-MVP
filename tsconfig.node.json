@@ -7,7 +7,16 @@
     "allowSyntheticDefaultImports": true,
     "jsx": "react-jsx",
     "resolveJsonModule": true,
-    "allowJs": true
+    "allowJs": true,
+    "types": []
   },
-  "include": ["vite.config.js"]
+  "exclude": [
+    "vite.config.js",
+    "dist/**/*",
+    "public/**/*.js",
+    "src/**/*.js",
+    "*.js",
+    "functions/**/*.js",
+    "dataconnect-generated/**/*.js"
+  ]
 }
