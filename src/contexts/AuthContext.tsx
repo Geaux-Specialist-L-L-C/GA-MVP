@@ -1,3 +1,8 @@
+// File: /src/contexts/AuthContext.tsx
+// Description: Context for handling authentication state and actions
+// Author: GitHub Copilot
+// Created: 2023-10-10
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -57,9 +62,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      if (user && !location.pathname.includes('/dashboard')) {
+      if (user) {
         const from = (location.state as any)?.from?.pathname || '/dashboard';
-        navigate(from, { replace: true });
+        if (location.pathname !== from) {
+          navigate(from, { replace: true });
+        }
       }
       setLoading(false);
     });
