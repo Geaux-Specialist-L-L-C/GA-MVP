@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, browserPopupRedirectResolver, signInWithPopup } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -18,11 +18,38 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
 
-// Configure Google provider with custom popup settings
+// Register service worker for improved popup handling
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker
+    .register('/firebase-messaging-sw.js')
+    .then(registration => {
+      console.log('✅ Firebase Service Worker registered successfully');
+    })
+    .catch(err => {
+      console.error('❌ Firebase Service Worker registration failed:', err);
+    });
+}
+
+// Configure Google provider with improved popup settings
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account',
-  display: 'popup'
+  'access_type': 'offline',
+  'include_granted_scopes': 'true'
 });
 
-export { app, analytics, auth, googleProvider };
+// Ensure proper security checks
+auth.settings.appVerificationDisabledForTesting = false;
+
+// Create a wrapper function that uses the popup resolver
+const signInWithGooglePopup = async () => {
+  // Notify service worker about popup
+  if (navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'FIREBASE_AUTH_POPUP'
+    });
+  }
+  return signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
+};
+
+export { app, analytics, auth, googleProvider, signInWithGooglePopup };

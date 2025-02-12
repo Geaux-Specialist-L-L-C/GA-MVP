@@ -15,6 +15,7 @@ import {
 import { auth, googleProvider } from '../firebase/config';
 import { getParentProfile } from '../services/profileService';
 import { AuthContextType, User } from '../types/auth';
+import { signInWithGooglePopup } from '../firebase/firebaseInit';
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -143,27 +144,11 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       // Clear any existing tokens
       localStorage.removeItem('token');
       
-      // Configure auth persistence to prevent COOP issues
+      // Configure auth persistence
       await setPersistence(auth, browserSessionPersistence);
 
-      // Create promise with timeout
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('auth/popup-timeout')), 60000); // 1 minute timeout
-      });
-
-      const popupPromise = signInWithPopup(auth, googleProvider)
-        .catch(error => {
-          // Handle specific popup errors
-          if (error.code === 'auth/popup-closed-by-user') {
-            throw new Error('The sign-in popup was closed before authentication was completed. Please try again.');
-          }
-          if (error.code === 'auth/popup-blocked') {
-            throw new Error('The sign-in popup was blocked. Please enable popups for this site and try again.');
-          }
-          throw error;
-        });
-
-      const result = await Promise.race([popupPromise, timeoutPromise]) as UserCredential;
+      // Use the improved popup sign-in function
+      const result = await signInWithGooglePopup();
       
       // Get fresh token and update profile
       const token = await getIdToken(result.user, true);
@@ -181,17 +166,20 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
 
       setCurrentUser(userData);
       navigate('/dashboard');
-      
     } catch (error: any) {
       console.error("❌ Google login error:", error);
       
       let errorMessage = "Failed to sign in with Google";
-      if (error.message) {
-        errorMessage = error.message;
+      if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = "The sign-in popup was closed. Please try again.";
+      } else if (error.code === 'auth/popup-blocked') {
+        errorMessage = "Popup was blocked. Please enable popups and try again.";
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        errorMessage = "Sign-in was interrupted. Please try again.";
       } else if (error.code === 'auth/network-request-failed') {
         errorMessage = "Network error. Please check your internet connection.";
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = "Too many sign-in attempts. Please wait a moment and try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
       setAuthError(errorMessage);
