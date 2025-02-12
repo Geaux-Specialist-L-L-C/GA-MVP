@@ -1,236 +1,76 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
+import { 
   signInWithPopup,
   onAuthStateChanged,
-  getIdToken,
-  UserCredential,
-  GoogleAuthProvider,
-  setPersistence,
-  browserSessionPersistence,
-  signOut
+  browserPopupRedirectResolver,
+  User
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
-import { getParentProfile } from '../services/profileService';
-import { AuthContextType, User } from '../types/auth';
-import { signInWithGooglePopup } from '../firebase/firebaseInit';
+
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  loginWithGoogle: () => Promise<void>;
+}
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
-export const useAuth = (): AuthContextType => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
+
+  const loginWithGoogle = async (): Promise<void> => {
+    try {
+      if (navigator.serviceWorker?.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'FIREBASE_AUTH_POPUP'
+        });
+      }
+
+      const result = await signInWithPopup(
+        auth, 
+        googleProvider,
+        browserPopupRedirectResolver
+      );
+      
+      if (result.user) {
+        navigate('/dashboard');
+      }
+    } catch (error: any) {
+      if (error.code === 'auth/popup-blocked') {
+        throw new Error('Please allow popups for this site to enable Google login');
+      }
+      throw error;
+    }
+  };
+
+  const value: AuthContextType = {
+    user,
+    loading,
+    loginWithGoogle
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
-
-interface AuthProviderProps {
-  children: React.ReactNode;
-}
-
-export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        console.log("🔄 Setting Firebase auth persistence...");
-        await setPersistence(auth, browserSessionPersistence);
-        const unsubscribe = onAuthStateChanged(auth, handleAuthStateChange);
-        return () => unsubscribe();
-      } catch (error) {
-        console.error("❌ Auth initialization error:", error);
-        setAuthError("Failed to initialize authentication");
-        setLoading(false);
-      }
-    };
-
-    initAuth();
-  }, []);
-
-  const handleAuthResult = async (result: UserCredential) => {
-    try {
-      const token = await getIdToken(result.user);
-      localStorage.setItem('token', token);
-
-      const parentProfile = await getParentProfile(result.user.uid);
-
-      const userData: User = {
-        uid: result.user.uid,
-        email: result.user.email || null,
-        displayName: result.user.displayName || null,
-        photoURL: result.user.photoURL || null,
-        ...parentProfile
-      };
-
-      setCurrentUser(userData);
-      navigate('/dashboard');
-    } catch (error) {
-      console.error("❌ Error processing auth result:", error);
-      // Still set the basic user data even if profile fetch fails
-      setCurrentUser({
-        uid: result.user.uid,
-        email: result.user.email || null,
-        displayName: result.user.displayName || null,
-        photoURL: result.user.photoURL || null
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAuthStateChange = async (user: any) => {
-    console.log("🔄 Auth state changed:", user ? "User logged in" : "No user");
-    
-    if (!user) {
-      setCurrentUser(null);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const token = await getIdToken(user);
-      localStorage.setItem('token', token);
-      const parentProfile = await getParentProfile(user.uid);
-      
-      setCurrentUser({
-        uid: user.uid,
-        email: user.email || null,
-        displayName: user.displayName || null,
-        photoURL: user.photoURL || null,
-        ...parentProfile
-      });
-    } catch (error) {
-      console.error("❌ Error handling auth state change:", error);
-      setAuthError("Failed to load user profile");
-      // Set basic user data even if profile load fails
-      setCurrentUser({
-        uid: user.uid,
-        email: user.email || null,
-        displayName: user.displayName || null,
-        photoURL: user.photoURL || null
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = async (email: string, password: string): Promise<UserCredential> => {
-    try {
-      setAuthError(null);
-      setLoading(true);
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      await handleAuthResult(result);
-      return result;
-    } catch (error) {
-      console.error("❌ Login error:", error);
-      setAuthError((error as Error).message);
-      setLoading(false);
-      throw error;
-    }
-  };
-
-  const loginWithGoogle = async (): Promise<void> => {
-    setLoading(true);
-    setAuthError(null);
-    
-    try {
-      // Clear any existing tokens
-      localStorage.removeItem('token');
-      
-      // Configure auth persistence
-      await setPersistence(auth, browserSessionPersistence);
-
-      // Use the improved popup sign-in function
-      const result = await signInWithGooglePopup();
-      
-      // Get fresh token and update profile
-      const token = await getIdToken(result.user, true);
-      localStorage.setItem('token', token);
-
-      const parentProfile = await getParentProfile(result.user.uid);
-      
-      const userData: User = {
-        uid: result.user.uid,
-        email: result.user.email || null,
-        displayName: result.user.displayName || null,
-        photoURL: result.user.photoURL || null,
-        ...parentProfile
-      };
-
-      setCurrentUser(userData);
-      navigate('/dashboard');
-    } catch (error: any) {
-      console.error("❌ Google login error:", error);
-      
-      let errorMessage = "Failed to sign in with Google";
-      if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = "The sign-in popup was closed. Please try again.";
-      } else if (error.code === 'auth/popup-blocked') {
-        errorMessage = "Popup was blocked. Please enable popups and try again.";
-      } else if (error.code === 'auth/cancelled-popup-request') {
-        errorMessage = "Sign-in was interrupted. Please try again.";
-      } else if (error.code === 'auth/network-request-failed') {
-        errorMessage = "Network error. Please check your internet connection.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      setAuthError(errorMessage);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const signup = async (email: string, password: string): Promise<UserCredential> => {
-    try {
-      setAuthError(null);
-      setLoading(true);
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      await handleAuthResult(result);
-      return result;
-    } catch (error) {
-      console.error("❌ Signup error:", error);
-      setAuthError((error as Error).message);
-      setLoading(false);
-      throw error;
-    }
-  };
-
-  const logout = async (): Promise<void> => {
-    try {
-      await signOut(auth);
-      localStorage.removeItem('token');
-      setCurrentUser(null);
-      navigate('/', { replace: true });
-    } catch (error) {
-      console.error("❌ Logout error:", error);
-      setAuthError((error as Error).message);
-      throw error;
-    }
-  };
-
-  const value = {
-    currentUser,
-    loading,
-    authError,
-    login,
-    loginWithGoogle,
-    signup,
-    logout,
-    setAuthError
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
