@@ -1,0 +1,34 @@
+name: Copilot Environment Setup
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/copilot-instructions.md'
+      - 'devcontainer.json'
+      - 'Dockerfile'
+
+jobs:
+  setup_dev_environment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate development environment
+        run: |
+          if [ -f "devcontainer.json" ]; then
+            echo "Development container configuration validated"
+          else
+            echo "Error: Missing devcontainer.json"
+            exit 1
+          fi
+
+      - name: Validate Copilot instructions
+        run: |
+          if [ -f ".github/copilot-instructions.md" ]; then
+            echo "Copilot instructions validated"
+          else
+            echo "Error: Missing Copilot instructions"
+            exit 1
+          fi
