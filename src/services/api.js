@@ -62,7 +62,29 @@ api.interceptors.response.use(
       message: error.message
     });
 
-    return Promise.reject(error);
+    // Enhanced error handling
+    let errorMessage = "An error occurred. Please try again.";
+    switch (error.response?.status) {
+      case 400:
+        errorMessage = "Bad request. Please check your input.";
+        break;
+      case 403:
+        errorMessage = "You don't have permission to perform this action.";
+        break;
+      case 404:
+        errorMessage = "The requested resource was not found.";
+        break;
+      case 500:
+        errorMessage = "Internal server error. Please try again later.";
+        break;
+      case 503:
+        errorMessage = "Service unavailable. Please try again later.";
+        break;
+      default:
+        errorMessage = `Error: ${error.message}`;
+    }
+
+    return Promise.reject(new Error(errorMessage));
   }
 );
 

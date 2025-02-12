@@ -1,6 +1,4 @@
-// @ts-ignore - Ignoring missing type declarations as Firebase provides its own
 import { initializeApp, type FirebaseOptions } from "firebase/app";
-// @ts-ignore
 import { 
   getAuth, 
   GoogleAuthProvider, 
@@ -12,11 +10,8 @@ import {
   type Auth,
   type GoogleAuthProvider as GoogleAuthProviderType
 } from "firebase/auth";
-// @ts-ignore
 import { getFirestore, connectFirestoreEmulator, type Firestore } from "firebase/firestore";
-// @ts-ignore
 import { getStorage, connectStorageEmulator, type FirebaseStorage } from "firebase/storage";
-// @ts-ignore
 import { getAnalytics, type Analytics } from "firebase/analytics";
 
 // Get Firebase config based on environment
@@ -30,7 +25,8 @@ const getFirebaseConfig = (): FirebaseOptions => {
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET || '',
       messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '',
       appId: process.env.FIREBASE_APP_ID || '',
-      measurementId: process.env.FIREBASE_MEASUREMENT_ID
+      measurementId: process.env.FIREBASE_MEASUREMENT_ID,
+      databaseURL: process.env.FIREBASE_DATABASE_URL || '' // Added databaseURL for production
     };
   }
   
@@ -42,7 +38,8 @@ const getFirebaseConfig = (): FirebaseOptions => {
     storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
     appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
-    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+    databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || '' // Added databaseURL for local development
   };
 };
 
