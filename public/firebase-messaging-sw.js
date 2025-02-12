@@ -17,7 +17,8 @@ const CACHE_ASSETS = [
   '/index.html',
   '/offline.html',
   '/vite.svg',
-  '/google-icon.svg'
+  '/google-icon.svg',
+  '/.cert/cert.pem'
 ];
 
 self.addEventListener('install', (event) => {
@@ -27,6 +28,7 @@ self.addEventListener('install', (event) => {
         const cache = await caches.open(CACHE_NAME);
         await cache.addAll(CACHE_ASSETS);
         await self.skipWaiting(); // Ensure new service worker takes over immediately
+        console.info('Service worker installed successfully');
       } catch (error) {
         console.error('Failed to install service worker:', error);
       }
@@ -60,7 +62,11 @@ function notifyWindowsAboutReadyState() {
     includeUncontrolled: true 
   }).then(clients => {
     clients.forEach(client => {
-      client.postMessage({ type: 'FIREBASE_SERVICE_WORKER_READY', ready: true });
+      client.postMessage({ 
+        type: 'FIREBASE_SERVICE_WORKER_READY', 
+        ready: true,
+        https: true // Indicate HTTPS is available
+      });
     });
   });
 }
@@ -78,7 +84,8 @@ self.addEventListener('fetch', (event) => {
           client.postMessage({
             type: 'AUTH_RESPONSE',
             status: response.status,
-            ok: response.ok
+            ok: response.ok,
+            secure: event.request.url.startsWith('https')
           });
           // Log the auth fetch error to help diagnose issues with authentication requests
         });
@@ -89,9 +96,15 @@ self.addEventListener('fetch', (event) => {
       // Network-first strategy for dynamic content
       if (event.request.mode === 'navigate') {
         try {
-          return await fetch(event.request);
+          const response = await fetch(event.request);
+          if (response.ok) {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(event.request, response.clone());
+          }
+          return response;
         } catch {
-          return await caches.match(OFFLINE_URL);
+          const cached = await caches.match(OFFLINE_URL);
+          return cached || new Response('Offline');
         }
       }
 
@@ -113,7 +126,7 @@ self.addEventListener('fetch', (event) => {
       return response;
     } catch (error) {
       console.error('Fetch error:', error);
-      return await caches.match(event.request);
+      return await caches.match(event.request) || caches.match(OFFLINE_URL);
     }
   })());
 });
@@ -124,7 +137,7 @@ self.addEventListener('message', (event) => {
 });
 
 async function handleFirebaseAuthPopup() {
-  const isReady = 'serviceWorker' in navigator && navigator.serviceWorker.controller;
+  const isReady = 'serviceWorker' in navigator && self.registration.active;
   let retryCount = 0;
   const maxRetries = 3;
 
@@ -143,7 +156,7 @@ async function handleFirebaseAuthPopup() {
   const notifyMainWindow = async (type, message) => {
     const windows = await clients.matchAll({ 
       type: 'window',
-      includeUncontrolled: true
+      includeUncontrolled: true 
     });
     
     const mainClient = windows.find(c => 
@@ -156,10 +169,15 @@ async function handleFirebaseAuthPopup() {
     }
   };
 
-  const retryDelay = (retryCount) => new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+  const retryDelay = (count) => new Promise(resolve => 
+    setTimeout(resolve, Math.min(1000 * Math.pow(2, count), 10000))
+  );
 
   try {
-    await notifyMainWindow('FIREBASE_SERVICE_WORKER_READY', { ready: isReady });
+    await notifyMainWindow('FIREBASE_SERVICE_WORKER_READY', { 
+      ready: isReady,
+      https: true
+    });
     
     if (!isReady) {
       throw new Error('Service worker not ready');
@@ -176,7 +194,10 @@ async function handleFirebaseAuthPopup() {
 
     if (authClient) {
       await authClient.focus();
-      await notifyMainWindow('FIREBASE_AUTH_POPUP_READY', { status: 'ready' });
+      await notifyMainWindow('FIREBASE_AUTH_POPUP_READY', { 
+        status: 'ready',
+        secure: true
+      });
     } else {
       throw new Error('Could not find auth popup after retries');
     }
@@ -184,7 +205,8 @@ async function handleFirebaseAuthPopup() {
     console.error('Firebase auth popup handling error:', error);
     await notifyMainWindow('FIREBASE_AUTH_POPUP_ERROR', { 
       error: error.message,
-      fallbackToRedirect: true 
+      fallbackToRedirect: true,
+      https: true
     });
   }
 }

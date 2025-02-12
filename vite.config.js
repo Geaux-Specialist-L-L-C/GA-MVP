@@ -1,3 +1,8 @@
+// File: /vite.config.js
+// Description: Vite configuration for Geaux Academy project
+// Author: GitHub Copilot
+// Created: 2023-10-10
+
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import vue from '@vitejs/plugin-vue';
@@ -21,15 +26,32 @@ const injectFirebaseConfig = () => ({
   }
 });
 
+// Helper to check for SSL certificates
+const getHttpsConfig = () => {
+  const certPath = path.resolve(__dirname, '.cert');
+  const keyPath = path.join(certPath, 'key.pem');
+  const certFilePath = path.join(certPath, 'cert.pem');
+
+  if (fs.existsSync(keyPath) && fs.existsSync(certFilePath)) {
+    return {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certFilePath)
+    };
+  }
+  
+  console.warn('SSL certificates not found. HTTPS will not be enabled.');
+  return false;
+};
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    vue(), // Add Vue plugin
+    vue(),
     injectFirebaseConfig()
   ],
   build: {
-    target: 'esnext', // This enables top-level await
+    target: 'esnext',
     outDir: 'dist',
     sourcemap: true,
     rollupOptions: {
@@ -62,10 +84,7 @@ export default defineConfig({
   server: {
     port: 3000,
     strictPort: true,
-    https: {
-      key: fs.readFileSync(path.resolve(__dirname, '.cert/key.pem')),
-      cert: fs.readFileSync(path.resolve(__dirname, '.cert/cert.pem')),
-    },
+    https: getHttpsConfig(),
     cors: {
       origin: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

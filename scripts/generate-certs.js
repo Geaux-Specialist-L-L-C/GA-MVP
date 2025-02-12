@@ -1,53 +1,48 @@
-import { generateKeyPairSync, X509Certificate } from 'crypto';
+// File: /scripts/generate-certs.js
+// Description: Generates self-signed SSL certificates for local development
+// Author: GitHub Copilot
+// Created: 2023-10-10
+
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import selfsigned from 'selfsigned';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const certDir = path.resolve(__dirname, '..', '.cert');
 
-const certDir = path.join(dirname(__dirname), '.cert');
+async function generateCertificate() {
+  // Ensure .cert directory exists
+  if (!fs.existsSync(certDir)) {
+    fs.mkdirSync(certDir, { recursive: true });
+  }
 
-// Create .cert directory if it doesn't exist
-if (!fs.existsSync(certDir)) {
-  fs.mkdirSync(certDir);
-}
-
-const generateCerts = () => {
   try {
-    // Generate key pair
-    const { privateKey, publicKey } = generateKeyPairSync('rsa', {
-      modulusLength: 4096,
-      publicKeyEncoding: {
-        type: 'spki',
-        format: 'pem'
-      },
-      privateKeyEncoding: {
-        type: 'pkcs8',
-        format: 'pem'
-      }
-    });
+    console.log('Generating SSL certificates...');
+    console.log('Certificate directory:', certDir);
 
-    // Create a self-signed certificate
-    const cert = new X509Certificate({
-      subject: { CN: 'localhost' },
-      issuer: { CN: 'localhost' },
-      notBefore: new Date(),
-      notAfter: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year validity
-      publicKey
-    });
+    // Generate a self-signed certificate for localhost using selfsigned package
+    const attrs = [{ name: 'commonName', value: 'localhost' }];
+    const pems = selfsigned.generate(attrs, { days: 365, keySize: 2048 });
+    
+    // Save the generated private key and certificate
+    const keyPath = path.join(certDir, 'key.pem');
+    const certPath = path.join(certDir, 'cert.pem');
 
-    // Save private key and certificate
-    fs.writeFileSync(path.join(certDir, 'key.pem'), privateKey);
-    fs.writeFileSync(path.join(certDir, 'cert.pem'), cert.toString());
+    fs.writeFileSync(keyPath, pems.private);
+    fs.writeFileSync(certPath, pems.cert);
 
     console.log('SSL certificates generated successfully!');
-    console.log('Location:', certDir);
+    console.log('Key:', keyPath);
+    console.log('Certificate:', certPath);
+    
+    return true;
   } catch (error) {
     console.error('Failed to generate certificates:', error);
-    process.exit(1);
+    return false;
   }
-};
+}
 
-generateCerts();
+generateCertificate().then(success => {
+  process.exit(success ? 0 : 1);
+});
