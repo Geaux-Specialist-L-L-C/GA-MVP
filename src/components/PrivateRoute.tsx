@@ -1,3 +1,8 @@
+// File: /src/components/PrivateRoute.tsx
+// Description: A route component that protects routes from unauthorized access by redirecting to the login page if the user is not authenticated.
+// Author: GitHub Copilot
+// Created: [Date]
+
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
