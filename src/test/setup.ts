@@ -1,3 +1,8 @@
+// File: /src/test/setup.ts
+// Description: Jest setup file for testing environment configuration.
+// Author: [Your Name]
+// Created: [Date]
+
 import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 import React from 'react';

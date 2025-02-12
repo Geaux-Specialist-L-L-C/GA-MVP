@@ -53,4 +53,10 @@ describe('GoogleLoginButton', () => {
     
     expect(mockDismissError).toHaveBeenCalledTimes(1);
   });
+
+  it('renders Google login button', () => {
+    render(<GoogleLoginButton />);
+    const button = screen.getByRole('button');
+    expect(button).toBeInTheDocument();
+  });
 });

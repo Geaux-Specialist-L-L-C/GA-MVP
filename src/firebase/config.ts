@@ -1,3 +1,8 @@
+// File: /src/firebase/config.ts
+// Description: Firebase configuration and app initialization.
+// Author: [Your Name]
+// Created: [Date]
+
 import { initializeApp, FirebaseOptions } from 'firebase/app';
 import { 
   initializeAuth, 
