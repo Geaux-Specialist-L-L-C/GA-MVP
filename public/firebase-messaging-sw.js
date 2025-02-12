@@ -1,24 +1,47 @@
 /* eslint-env serviceworker */
 /* global clients */
 
-// Firebase Auth Service Worker with enhanced security
+// Firebase Service Worker for Auth and Messaging
+const CACHE_NAME = 'geaux-academy-cache-v1';
+const OFFLINE_URL = '/offline.html';
+
+// Assets to cache for offline support
+const CACHE_ASSETS = [
+  '/',
+  '/index.html',
+  '/offline.html',
+  '/vite.svg',
+  '/google-icon.svg'
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    Promise.all([
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.addAll(CACHE_ASSETS);
+      }),
+      self.skipWaiting() // Ensure new service worker takes over immediately
+    ])
+  );
+});
+
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
-      clients.claim(),
-      // Clear any old caches that might cause CORS issues
-      caches.keys().then(keys => 
-        Promise.all(
-          keys.map(key => caches.delete(key))
-        )
-      )
+      // Clean up old caches
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Take control of all pages immediately
+      self.clients.claim()
     ])
   );
-  notifyWindowsAboutReadyState();
-});
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(self.skipWaiting());
 });
 
 let isReady = false;
@@ -35,15 +58,99 @@ function notifyWindowsAboutReadyState() {
   });
 }
 
-// Enhanced popup handling with security improvements
+// Handle fetch events and provide offline support
+self.addEventListener('fetch', (event) => {
+  // Handle auth-related requests
+  if (event.request.url.includes('/__/auth/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Clone the response before returning it
+          const clonedResponse = response.clone();
+          
+          // Post message to main window about auth status
+          self.clients.matchAll().then((clients) => {
+            clients.forEach((client) => {
+              client.postMessage({
+                type: 'AUTH_RESPONSE',
+                status: response.status,
+                ok: response.ok
+              });
+            });
+          });
+
+          return clonedResponse;
+        })
+        .catch((error) => {
+          console.error('Auth fetch error:', error);
+          // Notify clients about the error
+          self.clients.matchAll().then((clients) => {
+            clients.forEach((client) => {
+              client.postMessage({
+                type: 'AUTH_ERROR',
+                error: error.message
+              });
+            });
+          });
+          throw error;
+        })
+    );
+    return;
+  }
+
+  // Network-first strategy for dynamic content
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => {
+          return caches.match(OFFLINE_URL);
+        })
+    );
+    return;
+  }
+
+  // Cache-first strategy for static assets
+  if (event.request.destination === 'image' ||
+      event.request.destination === 'style' ||
+      event.request.destination === 'script') {
+    event.respondWith(
+      caches.match(event.request)
+        .then((response) => {
+          return response || fetch(event.request);
+        })
+    );
+    return;
+  }
+
+  // Network-first strategy for other requests
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        // Cache successful responses
+        if (response.ok) {
+          const clonedResponse = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, clonedResponse);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        return caches.match(event.request);
+      })
+  );
+});
+
+// Handle auth popup messages
 self.addEventListener('message', (event) => {
-  if (event.data?.type === 'FIREBASE_AUTH_POPUP') {
+  if (event.data.type === 'FIREBASE_AUTH_POPUP') {
     event.waitUntil(
       (async () => {
+        const isReady = 'serviceWorker' in navigator && navigator.serviceWorker.controller;
         let retryCount = 0;
         const maxRetries = 3;
-        const retryDelay = 100;
-        
+        const retryDelay = 1000; // 1 second
+
         const findAuthPopup = async () => {
           const allClients = await clients.matchAll({
             type: 'window',
@@ -102,35 +209,6 @@ self.addEventListener('message', (event) => {
           });
         }
       })()
-    );
-  }
-});
-
-// Handle fetch events to ensure proper CORS headers
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-  
-  // Only handle same-origin auth-related requests
-  if (url.origin === self.location.origin && 
-      (url.pathname.includes('/__/auth/') || url.pathname.includes('/oauth2/')) 
-  ) {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          // Clone the response so we can modify headers
-          const newResponse = response.clone();
-          
-          // Add security headers
-          const headers = new Headers(newResponse.headers);
-          headers.set('Cross-Origin-Opener-Policy', 'same-origin');
-          headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
-          
-          return new Response(newResponse.body, {
-            status: newResponse.status,
-            statusText: newResponse.statusText,
-            headers
-          });
-        })
     );
   }
 });
