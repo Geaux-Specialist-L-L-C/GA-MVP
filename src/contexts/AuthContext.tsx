@@ -97,15 +97,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearError = useCallback(() => setError(null), []);
 
-  // Improved login with better error handling
+  // Improved login with better error handling and validation
   const login = async (email: string, password: string): Promise<UserCredential> => {
     try {
       clearError();
-      return await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
+      
+      // Basic validation
+      if (!email || !email.includes('@')) {
+        setError('Please enter a valid email address');
+        throw new Error('Invalid email format');
+      }
+
+      if (!password || password.length < 6) {
+        setError('Password must be at least 6 characters');
+        throw new Error('Invalid password format');
+      }
+
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      
+      if (result.user) {
+        // Clear any existing errors on successful login
+        clearError();
+        const from = (location.state as any)?.from?.pathname || '/dashboard';
+        navigateDebounced(from);
+      }
+
+      return result;
+    } catch (error: any) {
       const authError = error as AuthError;
+      console.error('Login error:', authError.code);
+      
+      // Handle Firebase auth errors with more specific messages
       const errorMessage = getAuthErrorMessage(authError.code);
       setError(errorMessage);
+
+      // Special handling for invalid credentials
+      if (authError.code === 'auth/invalid-credential' || 
+          authError.code === 'auth/invalid-email' || 
+          authError.code === 'auth/user-not-found' ||
+          authError.code === 'auth/wrong-password') {
+        setError('Invalid email or password. Please check your credentials and try again.');
+      }
+
       throw error;
     }
   };
@@ -171,17 +204,19 @@ function isPopupError(code: string): boolean {
 
 function getAuthErrorMessage(code: string): string {
   const errorMessages: Record<string, string> = {
+    'auth/invalid-credential': 'Invalid email or password. Please check your credentials and try again.',
     'auth/popup-closed-by-user': 'Sign-in window was closed. Please try again.',
     'auth/cancelled-popup-request': 'Sign-in already in progress. Please wait.',
     'auth/popup-blocked': 'Sign-in popup was blocked. Please allow popups for this site.',
-    'auth/invalid-email': 'Please enter a valid email address.',
-    'auth/user-disabled': 'This account has been disabled.',
-    'auth/user-not-found': 'No account found with this email.',
-    'auth/wrong-password': 'Incorrect password.',
-    'auth/too-many-requests': 'Too many attempts. Please try again later.',
-    'auth/network-request-failed': 'Network error. Please check your connection.',
+    'auth/invalid-email': 'Invalid email or password. Please check your credentials and try again.',
+    'auth/user-disabled': 'This account has been disabled. Please contact support.',
+    'auth/user-not-found': 'Invalid email or password. Please check your credentials and try again.',
+    'auth/wrong-password': 'Invalid email or password. Please check your credentials and try again.',
+    'auth/too-many-requests': 'Too many failed attempts. Please try again later or reset your password.',
+    'auth/network-request-failed': 'Network error. Please check your internet connection and try again.',
     'auth/internal-error': 'An internal error occurred. Please try again.',
-    'auth/operation-not-supported-in-this-environment': 'This sign-in method is not supported in your browser.',
+    'auth/requires-recent-login': 'Please sign in again to continue.',
+    'auth/operation-not-supported-in-this-environment': 'This sign-in method is not supported in your browser.'
   };
 
   return errorMessages[code] || 'An unexpected error occurred. Please try again.';

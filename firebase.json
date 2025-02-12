@@ -43,7 +43,15 @@
           },
           {
             "key": "Cross-Origin-Embedder-Policy",
-            "value": "unsafe-none"
+            "value": "require-corp"
+          },
+          {
+            "key": "Cross-Origin-Resource-Policy",
+            "value": "same-site"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
           }
         ]
       },
@@ -56,11 +64,28 @@
           },
           {
             "key": "Cross-Origin-Embedder-Policy",
-            "value": "unsafe-none"
+            "value": "require-corp"
           },
           {
             "key": "Cross-Origin-Resource-Policy",
-            "value": "cross-origin"
+            "value": "same-site"
+          },
+          {
+            "key": "Set-Cookie",
+            "value": "SameSite=Strict; Secure"
+          }
+        ]
+      },
+      {
+        "source": "firebase-messaging-sw.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          },
+          {
+            "key": "Service-Worker-Allowed",
+            "value": "/"
           }
         ]
       }

@@ -1,6 +1,29 @@
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { Parent, Student, LearningStyle } from "../types/profiles";
+import { enableIndexedDbPersistence } from 'firebase/firestore';
+
+// Cache for storing profiles
+const profileCache = new Map();
+
+// Enable offline persistence
+enableIndexedDbPersistence(db).catch((err) => {
+  if (err.code === 'failed-precondition') {
+    console.warn('Multiple tabs open, persistence enabled in first tab only');
+  } else if (err.code === 'unimplemented') {
+    console.warn('Browser doesn\'t support persistence');
+  }
+});
+
+// Helper to check online status
+const isOnline = () => navigator.onLine;
+
+// Helper to handle offline errors
+const handleOfflineError = (operation: string) => {
+  const error = new Error(`Cannot ${operation} while offline`);
+  error.name = 'OfflineError';
+  return error;
+};
 
 // ✅ Create Parent Profile
 export const createParentProfile = async (parentData: Partial<Parent>): Promise<string> => {
@@ -27,6 +50,12 @@ export const createParentProfile = async (parentData: Partial<Parent>): Promise<
 export const getParentProfile = async (userId: string): Promise<Parent | null> => {
   try {
     console.log('🔍 Fetching parent profile for:', userId);
+
+    // Check cache first
+    if (profileCache.has(`parent_${userId}`)) {
+      return profileCache.get(`parent_${userId}`);
+    }
+
     const docRef = doc(db, 'parents', userId);
     const docSnap = await getDoc(docRef);
     
@@ -41,6 +70,8 @@ export const getParentProfile = async (userId: string): Promise<Parent | null> =
         updatedAt: data.updatedAt || new Date().toISOString()
       };
       console.log('✅ Parent profile found:', parentProfile);
+      // Cache the result
+      profileCache.set(`parent_${userId}`, parentProfile);
       return parentProfile;
     }
     
@@ -50,6 +81,10 @@ export const getParentProfile = async (userId: string): Promise<Parent | null> =
     return getParentProfile(userId); // Retry fetch after creation
     
   } catch (error) {
+    if (!isOnline()) {
+      console.warn('Offline: Using cached data if available');
+      return profileCache.get(`parent_${userId}`) || null;
+    }
     console.error('❌ Error fetching parent profile:', error);
     throw error;
   }
@@ -57,14 +92,30 @@ export const getParentProfile = async (userId: string): Promise<Parent | null> =
 
 // ✅ Fetch Student Profile
 export const getStudentProfile = async (studentId: string): Promise<Student> => {
-  const studentRef = doc(db, "students", studentId);
-  const studentDoc = await getDoc(studentRef);
+  try {
+    // Check cache first
+    if (profileCache.has(`student_${studentId}`)) {
+      return profileCache.get(`student_${studentId}`);
+    }
 
-  if (!studentDoc.exists()) {
-    throw new Error("Student profile not found");
+    const studentRef = doc(db, "students", studentId);
+    const studentDoc = await getDoc(studentRef);
+
+    if (!studentDoc.exists()) {
+      throw new Error("Student profile not found");
+    }
+
+    const studentData = studentDoc.data() as Student;
+    // Cache the result
+    profileCache.set(`student_${studentId}`, studentData);
+    return studentData;
+  } catch (error) {
+    if (!isOnline()) {
+      console.warn('Offline: Using cached data if available');
+      return profileCache.get(`student_${studentId}`) || null;
+    }
+    throw error;
   }
-
-  return studentDoc.data() as Student;
 };
 
 // ✅ Add Student Profile
@@ -106,12 +157,28 @@ export const addStudentProfile = async (parentId: string, studentData: {
 
 // ✅ Update Student's Assessment Status
 export const updateStudentAssessmentStatus = async (studentId: string, status: string) => {
+  if (!isOnline()) {
+    throw handleOfflineError('update assessment status');
+  }
+
   const studentRef = doc(db, "students", studentId);
   try {
     await updateDoc(studentRef, {
+      hasTakenAssessment: status === 'completed',
       assessmentStatus: status,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     });
+
+    // Update cache
+    const cachedData = profileCache.get(`student_${studentId}`);
+    if (cachedData) {
+      profileCache.set(`student_${studentId}`, {
+        ...cachedData,
+        hasTakenAssessment: status === 'completed',
+        assessmentStatus: status,
+        updatedAt: new Date().toISOString()
+      });
+    }
     console.log(`Assessment status updated to: ${status}`);
   } catch (error) {
     console.error("Error updating assessment status:", error);
@@ -121,6 +188,10 @@ export const updateStudentAssessmentStatus = async (studentId: string, status: s
 
 // ✅ Save Learning Style
 export const saveLearningStyle = async (studentId: string, learningStyle: LearningStyle): Promise<void> => {
+  if (!isOnline()) {
+    throw handleOfflineError('save learning style');
+  }
+
   try {
     console.log('📝 Saving learning style for student:', studentId);
     const studentRef = doc(db, 'students', studentId);
@@ -129,6 +200,16 @@ export const saveLearningStyle = async (studentId: string, learningStyle: Learni
       learningStyle,
       updatedAt: new Date().toISOString()
     });
+
+    // Update cache
+    const cachedData = profileCache.get(`student_${studentId}`);
+    if (cachedData) {
+      profileCache.set(`student_${studentId}`, {
+        ...cachedData,
+        learningStyle,
+        updatedAt: new Date().toISOString()
+      });
+    }
     
     console.log('✅ Learning style saved successfully');
   } catch (error) {
@@ -136,6 +217,16 @@ export const saveLearningStyle = async (studentId: string, learningStyle: Learni
     throw error;
   }
 };
+
+// Listen for online/offline events to manage cache
+window.addEventListener('online', () => {
+  console.info('Back online. Syncing data...');
+  // Could add sync logic here if needed
+});
+
+window.addEventListener('offline', () => {
+  console.warn('Gone offline. Using cached data...');
+});
 
 export default {
   getParentProfile,

@@ -11,7 +11,7 @@ import {
   type Auth,
   type GoogleAuthProvider as GoogleAuthProviderType
 } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
+import { getFirestore, enableIndexedDbPersistence, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 import { getAnalytics, type Analytics } from "firebase/analytics";
 
@@ -62,11 +62,33 @@ const registerAuthServiceWorker = async () => {
   return null;
 };
 
+// Configure offline persistence for Firestore
+const enableOfflinePersistence = async (retries = 3): Promise<void> => {
+  try {
+    await enableIndexedDbPersistence(db);
+    console.info("✅ Firestore offline persistence configured");
+  } catch (error: any) {
+    if (error.code === 'failed-precondition') {
+      console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+    } else if (error.code === 'unimplemented') {
+      console.warn('Browser does not support offline persistence.');
+    } else if (retries > 0) {
+      console.warn(`Retrying persistence setup... (${retries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return enableOfflinePersistence(retries - 1);
+    }
+  }
+};
+
 // Initialize persistence with retry mechanism
 const initializePersistence = async (retries = 3): Promise<void> => {
   try {
+    // First enable auth persistence
     await setPersistence(auth, browserLocalPersistence);
     console.info("✅ Firebase auth persistence configured");
+    
+    // Then enable Firestore offline persistence
+    await enableOfflinePersistence();
   } catch (error: any) {
     if (retries > 0 && error.code === 'auth/internal-error') {
       console.warn(`Retrying persistence setup... (${retries} attempts left)`);
@@ -89,13 +111,26 @@ const db: Firestore = getFirestore(app);
 const storage: FirebaseStorage = getStorage(app);
 const analytics: Analytics = getAnalytics(app);
 
-// Initialize auth features
+// Initialize auth features with network detection
 registerAuthServiceWorker().then(() => {
-  initializePersistence();
+  if (navigator.onLine) {
+    initializePersistence();
+  } else {
+    console.warn('Offline mode detected. Some features may be limited.');
+    window.addEventListener('online', () => {
+      console.info('Back online. Initializing persistence...');
+      initializePersistence();
+    });
+  }
 });
 
-// Enhanced sign-in function with popup handling and redirect fallback
+// Enhanced sign-in function with offline detection
 const signInWithGoogle = async () => {
+  // Check network connectivity
+  if (!navigator.onLine) {
+    throw new Error('You appear to be offline. Please check your internet connection and try again.');
+  }
+
   // Check for service worker support first
   let hasServiceWorker = 'serviceWorker' in navigator && navigator.serviceWorker.controller;
   
@@ -136,5 +171,6 @@ export {
   analytics,
   googleProvider,
   signInWithGoogle,
-  browserPopupRedirectResolver
+  browserPopupRedirectResolver,
+  enableOfflinePersistence // Export for manual retry if needed
 };

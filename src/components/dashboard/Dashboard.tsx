@@ -6,6 +6,7 @@ import CreateStudent from '../../pages/profile/ParentProfile/CreateStudent';
 import StudentCard from '../../components/student/StudentCard';
 import { getParentProfile, getStudentProfile } from '../../services/profileService';
 import styled from 'styled-components';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Student {
   id: string;
@@ -38,55 +39,104 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
+
+  // Handle online/offline status
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      // Retry data fetch when back online
+      if (currentUser) fetchUserData();
+    };
+    
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [currentUser]);
+
+  const fetchUserData = async (): Promise<void> => {
+    try {
+      if (!currentUser?.uid) {
+        navigate('/login');
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+      
+      // Set basic user data immediately from auth
+      setUserData({
+        name: currentUser.displayName || currentUser.email || '',
+        lastLogin: currentUser.metadata?.lastSignInTime || 'N/A',
+      });
+
+      // Fetch parent profile with retry mechanism
+      const fetchProfileWithRetry = async () => {
+        try {
+          const profile = await getParentProfile(currentUser.uid);
+          if (profile) {
+            setParentProfile(profile);
+            return profile;
+          }
+          throw new Error('Profile not found');
+        } catch (err) {
+          if (retryCount < MAX_RETRIES && !isOffline) {
+            setRetryCount(prev => prev + 1);
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+            return fetchProfileWithRetry();
+          }
+          throw err;
+        }
+      };
+
+      const profile = await fetchProfileWithRetry();
+
+      // Fetch students data if profile exists
+      if (profile?.students?.length) {
+        const studentsData = await Promise.all(
+          profile.students.map(async (studentId) => {
+            try {
+              return await getStudentProfile(studentId);
+            } catch (err) {
+              console.error(`Error fetching student ${studentId}:`, err);
+              return null;
+            }
+          })
+        );
+
+        setStudents(studentsData.filter((s): s is Student => s !== null));
+      }
+
+      setRetryCount(0); // Reset retry count on success
+    } catch (err) {
+      console.error('❌ Error fetching user data:', err);
+      setError(isOffline ? 
+        'You are currently offline. Some features may be limited.' :
+        'Failed to fetch user data. Please try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchUserData = async (): Promise<void> => {
-      try {
-        if (!currentUser?.uid) {
-          navigate('/login');
-          return;
-        }
-
-        console.log('🔄 Fetching user data for:', currentUser.uid);
-        
-        setUserData({
-          name: currentUser.displayName || currentUser.email || '',
-          lastLogin: currentUser.metadata?.lastSignInTime || 'N/A',
-        });
-
-        const profile = await getParentProfile(currentUser.uid);
-        console.log('📋 Parent profile loaded:', profile);
-        setParentProfile(profile);
-
-        if (profile?.students?.length) {
-          const studentsData = await Promise.all(
-            profile.students.map(async (studentId) => {
-              try {
-                const student = await getStudentProfile(studentId);
-                return {
-                  ...student,
-                  id: studentId
-                };
-              } catch (err) {
-                console.error(`Error fetching student ${studentId}:`, err);
-                return null;
-              }
-            })
-          );
-          setStudents(studentsData.filter((s): s is Student => s !== null));
-        }
-      } catch (err) {
-        console.error('❌ Error fetching user data:', err);
-        setError('Failed to fetch user data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUserData();
   }, [currentUser, navigate]);
 
   const handleStudentSelect = (student: Student) => {
+    if (isOffline) {
+      setError('This action is not available while offline');
+      return;
+    }
+    
     if (!student.hasTakenAssessment) {
       navigate(`/learning-style-chat/${student.id}`);
     } else {
@@ -106,52 +156,64 @@ const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <DashboardContainer>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div>
+        <LoadingOverlay>
+          <LoadingSpinner />
+        </LoadingOverlay>
       </DashboardContainer>
     );
   }
 
-  if (error) {
-    return <DashboardContainer>Error: {error}</DashboardContainer>;
-  }
-
-  if (!currentUser) {
-    return <DashboardContainer>Please log in to access your dashboard.</DashboardContainer>;
-  }
-
   return (
     <DashboardContainer>
+      <AnimatePresence>
+        {isOffline && (
+          <OfflineBanner
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+          >
+            You are currently offline. Some features may be limited.
+          </OfflineBanner>
+        )}
+      </AnimatePresence>
+
       <DashboardHeader>
         <h1>Welcome, {userData?.name}</h1>
         <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
       </DashboardHeader>
 
+      {error && (
+        <ErrorMessage>
+          {error}
+          <RetryButton onClick={fetchUserData}>Retry</RetryButton>
+        </ErrorMessage>
+      )}
+
       <DashboardGrid>
         <ParentSection>
           <h2>Parent Dashboard</h2>
-          <CreateStudent />
+          {!isOffline && <CreateStudent />}
           <StudentsList>
             <h3>Your Students</h3>
             {students.length > 0 ? (
               <StudentGrid>
                 {students.map((student) => (
-                  <StudentCardWrapper key={student.id} onClick={() => handleStudentSelect(student)}>
+                  <StudentCardWrapper 
+                    key={student.id}
+                    onClick={() => handleStudentSelect(student)}
+                    disabled={isOffline}
+                  >
                     <StudentName>{student.name}</StudentName>
                     <StudentInfo>Grade: {student.grade}</StudentInfo>
                     <AssessmentStatus $completed={student.hasTakenAssessment}>
                       {student.hasTakenAssessment ? 'Assessment Complete' : 'Take Assessment'}
                     </AssessmentStatus>
-                    <ActionButton>
-                      {student.hasTakenAssessment ? 'View Profile' : 'Start Assessment'}
-                    </ActionButton>
                   </StudentCardWrapper>
                 ))}
               </StudentGrid>
             ) : (
               <EmptyState>
-                <p>No students added yet. Add your first student to get started!</p>
+                No students found. {!isOffline && 'Add your first student to get started.'}
               </EmptyState>
             )}
           </StudentsList>
@@ -198,12 +260,13 @@ const StudentGrid = styled.div`
   margin-top: 1rem;
 `;
 
-const StudentCardWrapper = styled.div`
+const StudentCardWrapper = styled.div<{ disabled?: boolean }>`
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 1rem;
-  cursor: pointer;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  opacity: ${props => props.disabled ? 0.7 : 1};
   transition: transform 0.2s, box-shadow 0.2s;
 
   &:hover {
@@ -265,6 +328,46 @@ const LogoutButton = styled.button`
 
   &:hover {
     background-color: #dc2626;
+  }
+`;
+
+const OfflineBanner = styled(motion.div)`
+  background: #fff3cd;
+  color: #856404;
+  padding: 0.75rem;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+`;
+
+const LoadingOverlay = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+`;
+
+const ErrorMessage = styled.div`
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const RetryButton = styled.button`
+  background: none;
+  border: 1px solid currentColor;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
   }
 `;
 
