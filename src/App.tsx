@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
@@ -33,6 +33,20 @@ const TestChat = React.lazy(() => import('./components/chat/TestChat'));
 // Root component to provide theme and context
 const App = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Register service worker for auth handling
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/firebase-messaging-sw.js', { scope: '/__/auth' })
+        .then((registration) => {
+          console.debug('Service Worker registered with scope:', registration.scope);
+        })
+        .catch((error) => {
+          console.error('Service Worker registration failed:', error);
+        });
+    }
+  }, []);
   
   return (
     <MUIThemeProvider theme={muiTheme}>

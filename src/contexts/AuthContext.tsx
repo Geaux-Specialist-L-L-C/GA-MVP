@@ -8,7 +8,9 @@ import { User } from "firebase/auth";
 import { AuthService } from "../firebase/auth-service";
 import AuthErrorDialog from "../components/auth/AuthErrorDialog";
 
-interface AuthContextType {
+export interface AuthContextType {
+  user: User | null;
+  login: (username: string, password: string) => Promise<void>;
   currentUser: User | null;
   loading: boolean;
   isAuthReady: boolean;
@@ -76,13 +78,26 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
   };
 
+  const login = async (username: string, password: string): Promise<void> => {
+    try {
+      setError(null);
+      // Implement email/password login logic here
+      throw new Error("Email/password login not implemented");
+    } catch (error: any) {
+      setError(error.message || "Failed to login");
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
+        user: currentUser,
         currentUser,
         loading,
         isAuthReady,
         error,
+        login,
         signIn: handleSignIn,
         signOut: handleSignOut,
         loginWithGoogle: handleSignIn,

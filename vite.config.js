@@ -17,6 +17,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
+        'firebase-messaging-sw': resolve(__dirname, 'public/firebase-messaging-sw.js')
       },
       output: {
         manualChunks: {
@@ -50,7 +51,7 @@ export default defineConfig({
     },
     cors: true,
     headers: {
-      'Cross-Origin-Opener-Policy': 'unsafe-none',
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
       'Cross-Origin-Embedder-Policy': 'unsafe-none',
       'Content-Security-Policy': `
         default-src 'self';
@@ -127,5 +128,8 @@ export default defineConfig({
       FIREBASE_APP_ID: JSON.stringify(process.env.FIREBASE_APP_ID),
       FIREBASE_MEASUREMENT_ID: JSON.stringify(process.env.FIREBASE_MEASUREMENT_ID)
     }
+  },
+  optimizeDeps: {
+    include: ['firebase/app', 'firebase/auth']
   }
 });

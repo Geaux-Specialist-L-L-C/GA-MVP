@@ -74,25 +74,26 @@ const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const { login, loginWithGoogle } = useAuth();  // Fixed function name
+  const [error, setError] = useState<string | null>(null);
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const clearError = () => {
-    setAuthError(null);
+    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setAuthError(null);
+    setError(null);
 
     try {
       await login(email, password);
       navigate((location.state as any)?.from?.pathname || '/dashboard');
-    } catch (error: any) {
-      setAuthError(error.message || 'Failed to sign in. Please try again.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sign in. Please try again.');
+      console.error('Login error:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -100,17 +101,18 @@ const LoginForm: React.FC = () => {
 
   const handleGoogleLogin = async () => {
     setIsSubmitting(true);
-    setAuthError(null);
+    setError(null);
 
     try {
-      await loginWithGoogle();  // Fixed function name
+      await loginWithGoogle();
       navigate((location.state as any)?.from?.pathname || '/dashboard');
-    } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
-        setAuthError('Sign in was cancelled. Please try again.');
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('popup-closed-by-user')) {
+        setError('Sign in was cancelled. Please try again.');
       } else {
-        setAuthError(error.message || 'Failed to sign in with Google. Please try again.');
+        setError(err instanceof Error ? err.message : 'Failed to sign in with Google. Please try again.');
       }
+      console.error('Login error:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -121,15 +123,15 @@ const LoginForm: React.FC = () => {
     return () => {
       clearError();
     };
-  }, [email, password, clearError]);
+  }, [email, password]);
 
   return (
     <div className="auth-container card">
       <h2 className="auth-title">Welcome Back</h2>
       
-      {authError && (
+      {error && (
         <ErrorMessage role="alert">
-          {authError}
+          {error}
           <CloseButton onClick={clearError} aria-label="Dismiss error">
             ×
           </CloseButton>
@@ -167,7 +169,7 @@ const LoginForm: React.FC = () => {
 
       <GoogleLoginButton 
         handleGoogleLogin={handleGoogleLogin}
-        error={authError || undefined}
+        error={error || undefined}
         loading={isSubmitting}
         onDismissError={clearError}
       />
