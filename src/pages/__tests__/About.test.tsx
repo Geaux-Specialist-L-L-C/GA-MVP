@@ -1,6 +1,7 @@
 // File: /src/pages/__tests__/About.test.tsx
 // Description: Unit test for About page component.
 
+import { test, expect } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import About from "../About";
 
