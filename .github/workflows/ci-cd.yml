@@ -18,11 +18,13 @@ env:
   VITE_AUTH_POPUP_FALLBACK: 'true'
   VITE_SERVICE_WORKER_TIMEOUT: '10000'
   VITE_MAX_AUTH_RETRIES: '3'
+  VITE_AUTH_POPUP_REDIRECT_RESOLVER: 'browser'
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment: production
 
     steps:
     - name: Checkout code
@@ -42,6 +44,9 @@ jobs:
 
     - name: Run linter
       run: npm run lint
+
+    - name: Prepare Service Worker
+      run: node scripts/prepare-service-worker.js
       
     - name: Start Firebase Emulators
       run: firebase emulators:start --only auth,firestore,functions &
@@ -55,18 +60,40 @@ jobs:
         FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
         FIRESTORE_EMULATOR_HOST: localhost:8080
         FIREBASE_FUNCTIONS_EMULATOR_HOST: localhost:5001
+        VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+        VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+        VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+        VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+        VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+        VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+        VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+        VITE_FIREBASE_DATABASE_URL: ${{ secrets.VITE_FIREBASE_DATABASE_URL }}
+        VITE_CHESHIRE_API_URL: ${{ secrets.VITE_CHESHIRE_API_URL }}
+        VITE_CHESHIRE_API_TOKEN: ${{ secrets.VITE_CHESHIRE_API_TOKEN }}
+        VITE_CHESHIRE_API_TOKEN_TYPE: ${{ secrets.VITE_CHESHIRE_API_TOKEN_TYPE }}
+        VITE_CHESHIRE_DEBUG: ${{ secrets.VITE_CHESHIRE_DEBUG }}
+        VITE_OPENAI_API_KEY: ${{ secrets.VITE_OPENAI_API_KEY }}
 
     - name: Build
       run: npm run build
       env:
         NODE_ENV: production
-        VITE_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-        VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
-        VITE_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-        VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
-        VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
-        VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
-        VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
+        VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+        VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+        VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+        VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+        VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+        VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+        VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+        VITE_FIREBASE_DATABASE_URL: ${{ secrets.VITE_FIREBASE_DATABASE_URL }}
+        VITE_CHESHIRE_API_URL: ${{ secrets.VITE_CHESHIRE_API_URL }}
+        VITE_CHESHIRE_API_TOKEN: ${{ secrets.VITE_CHESHIRE_API_TOKEN }}
+        VITE_CHESHIRE_API_TOKEN_TYPE: ${{ secrets.VITE_CHESHIRE_API_TOKEN_TYPE }}
+        VITE_CHESHIRE_DEBUG: ${{ secrets.VITE_CHESHIRE_DEBUG }}
+        VITE_OPENAI_API_KEY: ${{ secrets.VITE_OPENAI_API_KEY }}
+
+    - name: Check bundle size
+      run: npm run analyze-bundle || true
 
   deploy:
     needs: build-and-test
@@ -92,18 +119,105 @@ jobs:
       run: npm run build
       env:
         NODE_ENV: production
-        VITE_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-        VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
-        VITE_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-        VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
-        VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
-        VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
-        VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
+        VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+        VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+        VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+        VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+        VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+        VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+        VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+        VITE_FIREBASE_DATABASE_URL: ${{ secrets.VITE_FIREBASE_DATABASE_URL }}
+        VITE_CHESHIRE_API_URL: ${{ secrets.VITE_CHESHIRE_API_URL }}
+        VITE_CHESHIRE_API_TOKEN: ${{ secrets.VITE_CHESHIRE_API_TOKEN }}
+        VITE_CHESHIRE_API_TOKEN_TYPE: ${{ secrets.VITE_CHESHIRE_API_TOKEN_TYPE }}
+        VITE_CHESHIRE_DEBUG: ${{ secrets.VITE_CHESHIRE_DEBUG }}
+        VITE_OPENAI_API_KEY: ${{ secrets.VITE_OPENAI_API_KEY }}
 
     - name: Deploy to Firebase
       uses: FirebaseExtended/action-hosting-deploy@v0
       with:
         repoToken: '${{ secrets.GITHUB_TOKEN }}'
-        firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+        firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_GEAUX_ACADEMY }}'
         channelId: live
-        projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+        projectId: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+
+    - name: Configure Firebase Headers
+      run: |
+        cat > firebase.json << 'EOF'
+        {
+          "hosting": {
+            "headers": [
+              {
+                "source": "**",
+                "headers": [
+                  {
+                    "key": "Content-Security-Policy",
+                    "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseapp.com https://*.firebase.com https://apis.google.com https://www.googletagmanager.com; connect-src 'self' https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src 'self' https://*.firebaseapp.com https://*.firebase.com https://accounts.google.com https://apis.google.com; img-src 'self' data: https: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; worker-src 'self' blob: 'unsafe-inline'; manifest-src 'self';"
+                  },
+                  {
+                    "key": "Cross-Origin-Opener-Policy",
+                    "value": "same-origin-allow-popups"
+                  },
+                  {
+                    "key": "Cross-Origin-Embedder-Policy",
+                    "value": "unsafe-none"
+                  },
+                  {
+                    "key": "Cross-Origin-Resource-Policy",
+                    "value": "cross-origin"
+                  },
+                  {
+                    "key": "X-Content-Type-Options",
+                    "value": "nosniff"
+                  },
+                  {
+                    "key": "X-Frame-Options",
+                    "value": "DENY"
+                  },
+                  {
+                    "key": "X-XSS-Protection",
+                    "value": "1; mode=block"
+                  },
+                  {
+                    "key": "Referrer-Policy",
+                    "value": "strict-origin-when-cross-origin"
+                  },
+                  {
+                    "key": "Permissions-Policy",
+                    "value": "accelerometer=(), autoplay=(), camera=(), cross-origin-isolated=(), display-capture=(), document-domain=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), keyboard-map=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(self), usb=(), web-share=(), xr-spatial-tracking=()"
+                  }
+                ]
+              },
+              {
+                "source": "**/*.@(js|css)",
+                "headers": [
+                  {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                  }
+                ]
+              },
+              {
+                "source": "/firebase-messaging-sw.js",
+                "headers": [
+                  {
+                    "key": "Service-Worker-Allowed",
+                    "value": "/"
+                  },
+                  {
+                    "key": "Cache-Control",
+                    "value": "no-cache, no-store, must-revalidate"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        EOF
+        firebase deploy --only hosting:headers
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: build
+        path: dist/
