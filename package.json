@@ -20,7 +20,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "postinstall": "npm audit fix --force",
-    "prepare": "npm install --legacy-peer-deps"
+    "prepare": "husky install"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",    
@@ -104,4 +104,3 @@
     "vue-loader": "^17.4.2"
   }
 }
- 
