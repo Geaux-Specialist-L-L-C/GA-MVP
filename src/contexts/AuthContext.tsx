@@ -10,7 +10,8 @@ import AuthErrorDialog from "../components/auth/AuthErrorDialog";
 import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
-  user: User | null;
+  currentUser: User | null;
+  loading: boolean;
   isAuthReady: boolean;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -25,7 +26,8 @@ interface AuthError {
 }
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [error, setError] = useState<AuthError | null>(null);
   const [showError, setShowError] = useState(false);
@@ -37,7 +39,8 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const auth = await authService.getAuth();
         auth.onAuthStateChanged((firebaseUser) => {
-          setUser(firebaseUser);
+          setCurrentUser(firebaseUser);
+          setLoading(false);
           setIsAuthReady(true);
           if (firebaseUser) {
             navigate("/dashboard");
@@ -47,6 +50,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       } catch (error) {
         console.error("Failed to initialize auth:", error);
+        setLoading(false);
         setIsAuthReady(true);
       }
     };
@@ -64,7 +68,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       setError({
         message: "An unexpected error occurred. Please try again.",
-        retry: true
+        retry: true,
       });
       setShowError(true);
     }
@@ -76,7 +80,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       setError({
         message: "Failed to sign out. Please try again.",
-        retry: true
+        retry: true,
       });
       setShowError(true);
     }
@@ -88,13 +92,14 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider 
+    <AuthContext.Provider
       value={{
-        user,
+        currentUser,
+        loading,
         isAuthReady,
         signIn: handleSignIn,
         signOut: handleSignOut,
-        loginWithGoogle: handleSignIn // Add loginWithGoogle as an alias for handleSignIn
+        loginWithGoogle: handleSignIn, // Add loginWithGoogle as an alias for handleSignIn
       }}
     >
       {children}

@@ -9,7 +9,7 @@ import Layout from './components/layout/Layout';
 import Login from './pages/Login';
 import Dashboard from './components/dashboard/Dashboard';
 import { ProfileProvider } from './contexts/ProfileContext';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
 import Home from './pages/Home';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -29,13 +29,6 @@ const StudentDashboard = React.lazy(() => import('./pages/profile/StudentProfile
 const LearningStyleChat = React.lazy(() => import('./components/chat/LearningStyleChat'));
 const ParentDashboard = React.lazy(() => import('./pages/profile/ParentProfile/ParentDashboard'));
 const TestChat = React.lazy(() => import('./components/chat/TestChat'));
-
-function PrivateRoute({ element }: { element: React.ReactNode }) {
-  const { user, isAuthReady } = useAuth();
-
-  if (!isAuthReady) return <p>Loading...</p>;
-  return user ? element : <Navigate to="/login" />;
-}
 
 const App: React.FC = () => {
   return (
@@ -59,14 +52,14 @@ const App: React.FC = () => {
                       <Route path="/curriculum" element={<Curriculum />} />
                       
                       {/* Protected Routes */}
-                      <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
-                      <Route path="/parent-dashboard" element={<ParentDashboard />} />
-                      <Route path="/student-dashboard/:id" element={<StudentDashboard />} />
-                      <Route path="/student-profile/:id" element={<StudentProfile />} />
-                      <Route path="/learning-plan" element={<LearningPlan />} />
-                      <Route path="/assessment/:studentId" element={<TakeAssessment />} />
-                      <Route path="/learning-style-chat/:studentId" element={<LearningStyleChat />} />
-                      <Route path="/test-chat" element={<TestChat />} />
+                      <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+                      <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
+                      <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+                      <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
+                      <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />
+                      <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
+                      <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
+                      <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
 
                       <Route path="*" element={<NotFound />} />
                     </Route>

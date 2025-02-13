@@ -16,7 +16,11 @@ const LoadingContainer = styled.div`
   background: rgba(255, 255, 255, 0.8);
 `;
 
-const PrivateRoute: React.FC = () => {
+interface PrivateRouteProps {
+  children: React.ReactNode;
+}
+
+const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   const { currentUser, loading } = useAuth();
   const location = useLocation();
 
@@ -47,7 +51,7 @@ const PrivateRoute: React.FC = () => {
   }
 
   // If authenticated, render the protected route
-  return <Outlet />;
+  return <>{children}</>;
 };
 
 export default PrivateRoute;
