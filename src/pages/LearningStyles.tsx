@@ -6,10 +6,8 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-import { motion, HTMLMotionProps } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { FaHeadphones, FaBook, FaRunning, FaBrain, FaUsers, FaEye } from 'react-icons/fa';
-import Header from '../components/layout/Header';
-import GoogleLoginButton from '../components/GoogleLoginButton';
 import Card from '../components/common/Card';
 
 const LearningStyles: React.FC = () => {
