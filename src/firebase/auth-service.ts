@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getAuth } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getAuth, signOut as firebaseSignOut } from "firebase/auth";
 import { auth } from "./config";
 
 const provider = new GoogleAuthProvider();
@@ -13,11 +13,15 @@ interface AuthResponse {
 }
 
 export class AuthService {
+  async getAuth() {
+    return auth;
+  }
+
   async signInWithGoogle(): Promise<AuthResponse> {
     try {
       await signInWithPopup(auth, provider);
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Google sign-in failed:", error);
       return {
         success: false,
@@ -28,5 +32,9 @@ export class AuthService {
         },
       };
     }
+  }
+
+  async signOut(): Promise<void> {
+    await firebaseSignOut(auth);
   }
 }

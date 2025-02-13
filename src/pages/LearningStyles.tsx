@@ -83,7 +83,11 @@ const CTASection = styled.div`
     margin-bottom: 2rem;
   }
 `;
-const Button = styled(motion(Link))`
+interface ButtonProps {
+  $variant?: 'primary' | 'secondary';
+}
+
+const Button = styled(motion(Link))<ButtonProps>`
   display: inline-block;
   padding: 1rem 2rem;
   background: ${({ theme }) => theme.palette.primary.main};
@@ -95,7 +99,6 @@ const Button = styled(motion(Link))`
   &:hover {
     background: ${({ theme }) => theme.palette.primary.dark};
   }
-`;
 `;
 
 export default LearningStyles;

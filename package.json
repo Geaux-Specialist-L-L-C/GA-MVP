@@ -64,13 +64,8 @@
     "vue": "^3.5.13",
     "vue-chartjs": "^5.3.2"
   },
-  "devDependencies": {
-<<<<<<< HEAD
-    "eslint": "^8.0.0",
-    "jest": "^29.0.0",
-    "ts-jest": "^29.0.0",
-=======
->>>>>>> 8ef0a2e6209833002f9c14dc0ca5fac2e7bfd976
+"devDependencies": {
+  "eslint": "^8.0.0",
     "@eslint/js": "^8.45.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^14.3.1",

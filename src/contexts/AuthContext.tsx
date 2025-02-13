@@ -14,6 +14,7 @@ interface AuthContextType {
   isAuthReady: boolean;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -92,7 +93,8 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isAuthReady,
         signIn: handleSignIn,
-        signOut: handleSignOut
+        signOut: handleSignOut,
+        loginWithGoogle: handleSignIn // Add loginWithGoogle as an alias for handleSignIn
       }}
     >
       {children}
