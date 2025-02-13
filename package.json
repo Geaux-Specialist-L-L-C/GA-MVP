@@ -19,8 +19,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "postinstall": "npm audit fix --force",
-    "prepare": "husky install"
+    "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && husky install || true"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",    
