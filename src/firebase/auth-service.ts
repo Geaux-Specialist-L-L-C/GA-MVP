@@ -2,35 +2,21 @@ import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getAuth, signO
 import { auth } from "./config";
 
 const provider = new GoogleAuthProvider();
-
-interface AuthResponse {
-  success: boolean;
-  error?: {
-    code: string;
-    message: string;
-    retry?: boolean;
-  };
-}
+provider.setCustomParameters({
+  prompt: 'select_account'
+});
 
 export class AuthService {
   async getAuth() {
     return auth;
   }
 
-  async signInWithGoogle(): Promise<AuthResponse> {
+  async signInWithGoogle(): Promise<void> {
     try {
       await signInWithPopup(auth, provider);
-      return { success: true };
     } catch (error: any) {
       console.error("Google sign-in failed:", error);
-      return {
-        success: false,
-        error: {
-          code: error.code,
-          message: error.message || "Authentication failed. Please try again.",
-          retry: true,
-        },
-      };
+      throw error;
     }
   }
 
