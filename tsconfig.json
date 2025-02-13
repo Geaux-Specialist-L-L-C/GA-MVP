@@ -35,7 +35,7 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "types": ["node", "jest", "firebase"]
+    "types": ["node", "jest"]
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
