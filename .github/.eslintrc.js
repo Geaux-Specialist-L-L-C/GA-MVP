@@ -31,7 +31,7 @@ module.exports = {
         "react-hooks/exhaustive-deps": "warn",
         "react/react-in-jsx-scope": "off"
     },
-    settings: {
+                                                                                    settings: {
         react: {
             version: "detect"
         }

@@ -3,37 +3,20 @@
 
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
 importScripts('./firebase-config.js');
 
-const SW_TIMEOUT = parseInt(import.meta.env.VITE_SERVICE_WORKER_TIMEOUT || '10000', 10);
-const SW_SCOPE = import.meta.env.VITE_AUTH_SW_SCOPE || '/__/auth/';
-const REQUIRE_SECURE = import.meta.env.VITE_AUTH_REQUIRE_SECURE !== 'false';
-const MAX_RETRIES = parseInt(import.meta.env.VITE_MAX_AUTH_RETRIES || '3', 10);
-
-const AUTH_ERROR_MESSAGES = {
-  'auth/popup-closed-by-user': 'Sign-in window was closed. Would you like to try again?',
-  'auth/popup-blocked': 'Sign-in popup was blocked. Please allow popups and try again.',
-  'auth/network-request-failed': 'Network error. Please check your connection and try again.',
-  'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
-  'auth/unauthorized-domain': 'Authentication not allowed on this domain.',
-  'auth/operation-not-supported-in-this-environment': 'Authentication is not supported in this environment.',
-  'auth/internal-error': 'Authentication service encountered an error. Please try again.'
+// Firebase Service Worker for Auth and Messaging
+const FIREBASE_CONFIG = self.FIREBASE_CONFIG || {
+  // Config will be injected by Firebase during runtime
 };
 
-firebase.initializeApp({
-  apiKey: self.VITE_FIREBASE_API_KEY,
-  authDomain: self.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: self.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: self.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: self.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: self.VITE_FIREBASE_APP_ID,
-  measurementId: self.VITE_FIREBASE_MEASUREMENT_ID
-});
+firebase.initializeApp(FIREBASE_CONFIG);
 
 const CACHE_NAME = 'geaux-academy-cache-v1';
 const OFFLINE_URL = '/offline.html';
 
+// Assets to cache for offline support
 const CACHE_ASSETS = [
   '/',
   '/index.html',
@@ -49,7 +32,7 @@ self.addEventListener('install', (event) => {
       try {
         const cache = await caches.open(CACHE_NAME);
         await cache.addAll(CACHE_ASSETS);
-        await self.skipWaiting();
+        await self.skipWaiting(); // Ensure new service worker takes over immediately
         console.info('Service worker installed successfully');
       } catch (error) {
         console.error('Failed to install service worker:', error);
@@ -62,6 +45,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     try {
+      // Clean up old caches
       const cacheNames = await caches.keys();
       await Promise.all(
         cacheNames.map((cacheName) => {
@@ -70,6 +54,7 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
+      // Take control of all pages immediately
       await self.clients.claim();
       notifyWindowsAboutReadyState();
     } catch (error) {
@@ -87,7 +72,7 @@ function notifyWindowsAboutReadyState() {
       client.postMessage({ 
         type: 'FIREBASE_SERVICE_WORKER_READY', 
         ready: true,
-        https: true 
+        https: true // Indicate HTTPS is available
       });
     });
   });
@@ -96,6 +81,7 @@ function notifyWindowsAboutReadyState() {
 self.addEventListener('fetch', (event) => {
   event.respondWith((async () => {
     try {
+      // Handle auth-related requests
       if (event.request.url.includes('/__/auth/')) {
         const response = await fetch(event.request);
         const clonedResponse = response.clone();
@@ -108,11 +94,13 @@ self.addEventListener('fetch', (event) => {
             ok: response.ok,
             secure: event.request.url.startsWith('https')
           });
+          // Log the auth fetch error to help diagnose issues with authentication requests
         });
 
         return clonedResponse;
       }
 
+      // Network-first strategy for dynamic content
       if (event.request.mode === 'navigate') {
         try {
           const response = await fetch(event.request);
@@ -127,6 +115,7 @@ self.addEventListener('fetch', (event) => {
         }
       }
 
+      // Cache-first strategy for static assets
       if (event.request.destination === 'image' ||
           event.request.destination === 'style' ||
           event.request.destination === 'script') {
@@ -134,6 +123,7 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse || await fetch(event.request);
       }
 
+      // Network-first strategy for other requests
       const response = await fetch(event.request);
       if (response.ok) {
         const clonedResponse = response.clone();
@@ -151,20 +141,12 @@ self.addEventListener('message', (event) => {
   if (event.data.type === 'FIREBASE_AUTH_POPUP') {
     event.waitUntil(handleFirebaseAuthPopup());
   }
-  if (event.data && event.data.type === 'AUTH_ERROR') {
-    self.clients.matchAll().then((clients) => {
-      clients.forEach((client) => {
-        client.postMessage({
-          type: 'AUTH_ERROR',
-          error: event.data.error
-        });
-      });
-    });
-  }
 });
 
+// Handle auth state changes
 firebase.auth().onAuthStateChanged((user) => {
   if (user) {
+    // Notify all clients about the auth state change
     self.clients.matchAll().then((clients) => {
       clients.forEach((client) => {
         client.postMessage({
@@ -180,54 +162,10 @@ firebase.auth().onAuthStateChanged((user) => {
   }
 });
 
-const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage((payload) => {
-  const { notification } = payload;
-  if (notification) {
-    const options = {
-      body: notification.body,
-      icon: notification.icon,
-      badge: notification.badge,
-      data: payload.data
-    };
-    
-    self.registration.showNotification(notification.title, options);
-  }
-});
-
-const keepAliveInterval = setInterval(() => {
-  self.clients.matchAll().then((clients) => {
-    if (clients.length === 0) {
-      clearInterval(keepAliveInterval);
-      self.registration.unregister();
-    }
-  });
-}, TIMEOUT);
-
 async function handleFirebaseAuthPopup() {
   const isReady = 'serviceWorker' in navigator && self.registration.active;
   let retryCount = 0;
   const maxRetries = 3;
-
-  const handleAuthError = async (error) => {
-    const errorCode = error.code || 'auth/unknown';
-    const userMessage = AUTH_ERROR_MESSAGES[errorCode] || 'Authentication failed. Please try again.';
-    
-    await notifyMainWindow('FIREBASE_AUTH_POPUP_ERROR', { 
-      error: userMessage,
-      code: errorCode,
-      fallbackToRedirect: error.code === 'auth/popup-blocked',
-      https: true,
-      retryAvailable: retryCount < maxRetries
-    });
-
-    if (error.code === 'auth/popup-closed-by-user') {
-      await notifyMainWindow('AUTH_RETRY_AVAILABLE', {
-        message: 'Would you like to try signing in again?'
-      });
-    }
-  };
 
   const findAuthPopup = async () => {
     const allClients = await clients.matchAll({
@@ -291,87 +229,10 @@ async function handleFirebaseAuthPopup() {
     }
   } catch (error) {
     console.error('Firebase auth popup handling error:', error);
-    await handleAuthError(error);
+    await notifyMainWindow('FIREBASE_AUTH_POPUP_ERROR', { 
+      error: error.message,
+      fallbackToRedirect: true,
+      https: true
+    });
   }
 }
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    (async () => {
-      try {
-        await self.skipWaiting();
-        console.info('Auth service worker installed successfully');
-      } catch (error) {
-        console.error('Failed to install auth service worker:', error);
-      }
-    })()
-  );
-});
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    (async () => {
-      try {
-        await self.clients.claim();
-        console.info('Auth service worker activated and claimed control');
-      } catch (error) {
-        console.error('Failed to activate auth service worker:', error);
-      }
-    })()
-  );
-});
-
-self.addEventListener('fetch', (event) => {
-  // Handle auth-related requests
-  if (event.request.url.includes('/__/auth/')) {
-    event.respondWith(
-      (async () => {
-        try {
-          // Validate secure context if required
-          if (REQUIRE_SECURE && !event.request.url.startsWith('https')) {
-            throw new Error('Authentication requires a secure context (HTTPS)');
-          }
-
-          const response = await fetch(event.request);
-          const clonedResponse = response.clone();
-
-          // Notify clients about the auth response
-          const clients = await self.clients.matchAll();
-          clients.forEach((client) => {
-            client.postMessage({
-              type: 'AUTH_RESPONSE',
-              status: response.status,
-              ok: response.ok,
-              secure: event.request.url.startsWith('https')
-            });
-          });
-
-          return clonedResponse;
-        } catch (error) {
-          console.error('Auth fetch error:', error);
-          // Log error telemetry
-          self.clients.matchAll().then(clients => {
-            clients.forEach(client => {
-              client.postMessage({
-                type: 'AUTH_ERROR',
-                error: error.message,
-                code: error.code
-              });
-            });
-          });
-
-          return new Response(
-            JSON.stringify({ 
-              error: 'Authentication failed',
-              details: error.message
-            }),
-            { 
-              status: 500, 
-              headers: { 'Content-Type': 'application/json' }
-            }
-          );
-        }
-      })()
-    );
-  }
-});

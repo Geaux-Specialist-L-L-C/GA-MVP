@@ -82,6 +82,20 @@ interface AuthResponse {
   token_type: string;
 }
 
+interface CheshireError {
+  message: string;
+  code?: string;
+  response?: {
+    status: number;
+    data: unknown;
+  };
+  config?: {
+    url: string;
+    method: string;
+    headers: Record<string, string>;
+  };
+}
+
 export class CheshireService {
   private static async getAuthHeaders() {
     const user = auth.currentUser;
@@ -114,12 +128,13 @@ export class CheshireService {
         status: 'healthy',
         version: response.data.version || 'unknown'
       };
-    } catch (error: any) {
-      console.error('TIPI health check failed:', error);
-      if (error.code === 'ERR_NETWORK') {
+    } catch (error) {
+      const err = error as CheshireError;
+      console.error('TIPI health check failed:', err);
+      if (err.code === 'ERR_NETWORK') {
         throw new Error('TIPI container is not accessible. Please ensure it is running.');
       }
-      throw error;
+      throw err;
     }
   }
 
@@ -185,7 +200,7 @@ export class CheshireService {
     }
   }
 
-  static getErrorMessage(error: any): string {
+  static getErrorMessage(error: CheshireError): string {
     if (error.message === 'Authentication required') {
       return "Please log in to continue.";
     }
