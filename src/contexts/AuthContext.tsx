@@ -12,9 +12,11 @@ interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   isAuthReady: boolean;
+  error: AuthError | null;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -84,15 +86,22 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
   };
 
+  const clearError = () => {
+    setError(null);
+    setShowError(false);
+  };
+
   return (
     <AuthContext.Provider
       value={{
         currentUser,
         loading,
         isAuthReady,
+        error,
         signIn: handleSignIn,
         signOut: handleSignOut,
         loginWithGoogle: handleSignIn,
+        clearError,
       }}
     >
       {children}
