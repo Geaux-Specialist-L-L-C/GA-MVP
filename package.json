@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "predev": "node scripts/generate-certs.js",
     "start": "vite",
@@ -12,11 +16,13 @@
     "preview": "vite preview",
     "serve": "firebase emulators:start",
     "deploy": "firebase deploy",
-    "ci": "npm run lint && npm test && npm run build",
+    "ci": "npm ci --legacy-peer-deps && npm run lint && npm test && npm run build",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
-    "install": "npm install",
+    "install": "npm install --legacy-peer-deps",
+    "postinstall": "npm audit fix --force",
+    "prepare": "npm run build",
     "run-dev": "npm run dev"
   },
   "dependencies": {
