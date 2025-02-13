@@ -1,26 +1,22 @@
-import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getAuth, signOut as firebaseSignOut } from "firebase/auth";
-import { auth } from "./config";
-
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({
-  prompt: 'select_account'
-});
+import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
+import { auth } from './config';
 
 export class AuthService {
+  private provider: GoogleAuthProvider;
+
+  constructor() {
+    this.provider = new GoogleAuthProvider();
+  }
+
   async getAuth() {
     return auth;
   }
 
-  async signInWithGoogle(): Promise<void> {
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      console.error("Google sign-in failed:", error);
-      throw error;
-    }
+  async signInWithGoogle() {
+    return signInWithPopup(auth, this.provider);
   }
 
-  async signOut(): Promise<void> {
-    await firebaseSignOut(auth);
+  async signOut() {
+    return firebaseSignOut(auth);
   }
 }
