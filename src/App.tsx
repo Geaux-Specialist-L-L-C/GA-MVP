@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
@@ -31,7 +31,7 @@ const ParentDashboard = React.lazy(() => import('./pages/profile/ParentProfile/P
 const TestChat = React.lazy(() => import('./components/chat/TestChat'));
 
 // Root component to provide theme and context
-const Root = () => {
+const App = () => {
   const navigate = useNavigate();
   
   return (
@@ -72,14 +72,6 @@ const Root = () => {
         </ProfileProvider>
       </StyledThemeProvider>
     </MUIThemeProvider>
-  );
-};
-
-const App = () => {
-  return (
-    <Router>
-      <Root />
-    </Router>
   );
 };
 
