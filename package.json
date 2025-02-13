@@ -1,6 +1,4 @@
-// Geaux Academy Project
-// This is the package.json file for the Geaux Academy project.
-// It includes basic scripts and dependencies for the project.
+
 
 {
   "name": "geaux-academy",
@@ -9,15 +7,15 @@
   "type": "module",
   "scripts": {
     "predev": "node scripts/generate-certs.js",
-    "start": "react-scripts start",
+    "start": "vite",
     "dev": "vite",
-    "build": "react-scripts build",
+    "build": "vite build",
     "lint": "eslint . --ext .tsx,.ts",
     "preview": "vite preview",
     "serve": "firebase emulators:start",
     "deploy": "firebase deploy",
     "ci": "npm run lint && npm test && npm run build",
-    "test": "react-scripts test",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
   },
@@ -61,8 +59,6 @@
     "vue-chartjs": "^5.3.2"
   },
   "devDependencies": {
-    "typescript": "^4.0.0",
-    "eslint": "^8.0.0",
     "jest": "^29.0.0",
     "ts-jest": "^29.0.0",
     "@eslint/js": "^8.45.0",
