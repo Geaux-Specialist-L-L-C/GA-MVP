@@ -1,18 +1,18 @@
 // File: /src/pages/__tests__/About.test.tsx
 // Description: Unit test for About page component.
+// Author: GitHub Copilot
+// Created: [Date]
 
 import React from 'react';
 import { describe, test, expect, beforeEach } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
-import { BrowserRouter } from "react-router-dom";
+import '@testing-library/jest-dom';
 import About from "../About";
 
 describe('About Page', () => {
   beforeEach(() => {
     render(
-      <BrowserRouter>
-        <About />
-      </BrowserRouter>
+      <About />
     );
   });
 

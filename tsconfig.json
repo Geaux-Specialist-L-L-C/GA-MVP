@@ -21,7 +21,7 @@
       "@mui/icons-material": ["node_modules/@mui/icons-material"],
       "@mui/icons-material/*": ["node_modules/@mui/icons-material/*"]
     },
-    "types": ["vite/client", "jest", "node", "@mui/material"],
+    "types": ["vite/client", "jest", "node", "@mui/material", "@testing-library/jest-dom"],
     "allowImportingTsExtensions": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true
