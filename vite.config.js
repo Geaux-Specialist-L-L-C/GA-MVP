@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
+import fs from 'fs';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -43,11 +44,26 @@ export default defineConfig({
   server: {
     port: 3000,
     strictPort: true,
-    https: true,
+    https: {
+      key: fs.readFileSync('.cert/key.pem'),
+      cert: fs.readFileSync('.cert/cert.pem'),
+    },
     cors: true,
     headers: {
       'Cross-Origin-Opener-Policy': 'unsafe-none',
-      'Cross-Origin-Embedder-Policy': 'unsafe-none'
+      'Cross-Origin-Embedder-Policy': 'unsafe-none',
+      'Content-Security-Policy': `
+        default-src 'self';
+        connect-src 'self' https://*.firebaseio.com https://*.firebase.com 
+        wss://*.firebaseio.com wss://localhost:* https://localhost:* 
+        https://firebase.googleapis.com https://identitytoolkit.googleapis.com 
+        https://firebaseinstallations.googleapis.com https://www.googleapis.com;
+        script-src 'self' 'unsafe-inline' 'unsafe-eval';
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: https:;
+        font-src 'self' data:;
+        frame-src 'self' https://*.firebaseapp.com https://*.firebase.com;
+      `.replace(/\s+/g, ' ').trim()
     },
     proxy: {
       '/api': {
@@ -84,9 +100,10 @@ export default defineConfig({
       }
     },
     hmr: {
-      protocol: 'ws',
+      protocol: 'wss',
       host: 'localhost',
-      clientPort: 5173,
+      port: 3000,
+      clientPort: 3000,
       timeout: 120000
     },
     watch: {

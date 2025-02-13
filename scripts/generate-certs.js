@@ -22,7 +22,11 @@ async function generateCertificate() {
     console.log('Certificate directory:', certDir);
 
     // Generate a self-signed certificate for localhost using selfsigned package
-    const attrs = [{ name: 'commonName', value: 'localhost' }];
+    const attrs = [
+      { name: 'commonName', value: 'localhost' },
+      { name: 'countryName', value: 'US' },
+      { name: 'organizationName', value: 'Geaux Academy Development' }
+    ];
     const pems = selfsigned.generate(attrs, {
       algorithm: 'sha256',
       days: 365,
