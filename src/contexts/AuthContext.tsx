@@ -7,6 +7,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { User } from "firebase/auth";
 import { AuthService } from "../firebase/auth-service";
 import AuthErrorDialog from "../components/auth/AuthErrorDialog";
+import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
   user: User | null;
@@ -28,6 +29,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<AuthError | null>(null);
   const [showError, setShowError] = useState(false);
   const authService = new AuthService();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -36,6 +38,11 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
         auth.onAuthStateChanged((firebaseUser) => {
           setUser(firebaseUser);
           setIsAuthReady(true);
+          if (firebaseUser) {
+            navigate("/dashboard");
+          } else {
+            navigate("/login");
+          }
         });
       } catch (error) {
         console.error("Failed to initialize auth:", error);
@@ -44,7 +51,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     initializeAuth();
-  }, []);
+  }, [navigate]);
 
   const handleSignIn = async () => {
     try {
