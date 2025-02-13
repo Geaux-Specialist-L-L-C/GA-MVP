@@ -1,8 +1,3 @@
-// File: /vite.config.js
-// Description: Vite configuration for Geaux Academy project
-// Author: GitHub Copilot
-// Created: 2023-10-10
-
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import vue from '@vitejs/plugin-vue';
