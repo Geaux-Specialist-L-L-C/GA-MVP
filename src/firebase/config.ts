@@ -4,7 +4,7 @@
 // Created: 2024-02-12
 
 import { initializeApp } from 'firebase/app';
-import { getAuth, browserPopupRedirectResolver, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
+import { getAuth as getFirebaseAuth, browserPopupRedirectResolver, initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, Auth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { initAuthServiceWorker } from './auth-service-worker';
 
@@ -34,14 +34,14 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-const initAuth = async () => {
-  const maxRetries = Number(import.meta.env.VITE_MAX_AUTH_RETRIES) || 3;
+export const getAuth = async (): Promise<Auth> => {
+  const maxRetries = 3;
   let retryCount = 0;
 
   while (retryCount < maxRetries) {
     try {
       const auth = initializeAuth(app, {
-        persistence: [indexedDBLocalPersistence],
+        persistence: [indexedDBLocalPersistence, browserLocalPersistence],
         popupRedirectResolver: browserPopupRedirectResolver,
       });
       
@@ -54,13 +54,13 @@ const initAuth = async () => {
       if (retryCount === maxRetries) {
         throw new Error('Failed to initialize Firebase Auth after multiple attempts');
       }
-      await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
     }
   }
 
   throw new Error('Failed to initialize Firebase Auth');
 };
 
-export const auth = await initAuth();
+export const auth = getAuth();
 export const db = getFirestore(app);
 export default app;

@@ -3,128 +3,98 @@
 // Author: GitHub Copilot
 // Created: 2024-02-12
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { 
-  User,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
-  AuthError,
-  onAuthStateChanged
-} from 'firebase/auth';
-import { auth } from '../firebase/config';
-import { debounce } from 'lodash';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { User } from "firebase/auth";
+import { AuthService } from "../firebase/auth-service";
+import AuthErrorDialog from "../components/auth/AuthErrorDialog";
 
 interface AuthContextType {
   user: User | null;
-  loading: boolean;
-  error: string | null;
-  signInWithGoogle: () => Promise<void>;
-  logout: () => Promise<void>;
-  dismissError: () => void;
-  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   isAuthReady: boolean;
+  signIn: () => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface AuthProviderProps {
-  children: React.ReactNode;
+interface AuthError {
+  message: string;
+  retry?: boolean;
 }
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
-
-  // Debounced navigation to prevent history API spam
-  const debouncedNavigate = debounce((path: string) => {
-    window.history.pushState({}, '', path);
-  }, 300);
-
-  const handleAuthError = (error: AuthError) => {
-    if (error.code === 'auth/popup-closed-by-user') {
-      setError('Sign-in window was closed. Please try again.');
-    } else if (error.code === 'auth/popup-blocked') {
-      setError('Pop-up was blocked by your browser. Please allow pop-ups and try again.');
-      // Fallback to redirect
-      return true;
-    } else {
-      setError(`Authentication error: ${error.message}`);
-    }
-    return false;
-  };
-
-  const signInWithGoogle = async () => {
-    try {
-      setError(null);
-      const provider = new GoogleAuthProvider();
-      try {
-        await signInWithPopup(auth, provider);
-      } catch (error: any) {
-        if (handleAuthError(error)) {
-          // Fallback to redirect method
-          await signInWithRedirect(auth, provider);
-        }
-      }
-    } catch (error: any) {
-      handleAuthError(error);
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await auth.signOut();
-      debouncedNavigate('/login');
-    } catch (error: any) {
-      setError(`Logout error: ${error.message}`);
-    }
-  };
-
-  const dismissError = () => setError(null);
+  const [error, setError] = useState<AuthError | null>(null);
+  const [showError, setShowError] = useState(false);
+  const authService = new AuthService();
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-
     const initializeAuth = async () => {
       try {
-        const authInstance = await auth;
-        unsubscribe = onAuthStateChanged(authInstance, (firebaseUser: User | null) => {
+        const auth = await authService.getAuth();
+        auth.onAuthStateChanged((firebaseUser) => {
           setUser(firebaseUser);
           setIsAuthReady(true);
         });
       } catch (error) {
         console.error("Failed to initialize auth:", error);
-        setIsAuthReady(true); // Set to true even on error to prevent infinite loading
+        setIsAuthReady(true);
       }
     };
 
     initializeAuth();
-
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-      debouncedNavigate.cancel();
-    };
   }, []);
+
+  const handleSignIn = async () => {
+    try {
+      const response = await authService.signInWithGoogle();
+      if (!response.success && response.error) {
+        setError(response.error);
+        setShowError(true);
+      }
+    } catch (error) {
+      setError({
+        message: "An unexpected error occurred. Please try again.",
+        retry: true
+      });
+      setShowError(true);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await authService.signOut();
+    } catch (error) {
+      setError({
+        message: "Failed to sign out. Please try again.",
+        retry: true
+      });
+      setShowError(true);
+    }
+  };
+
+  const handleErrorClose = () => {
+    setShowError(false);
+    setError(null);
+  };
 
   return (
     <AuthContext.Provider 
-      value={{ 
-        user, 
-        loading, 
-        error,
-        signInWithGoogle, 
-        logout,
-        dismissError,
-        setUser,
-        isAuthReady
+      value={{
+        user,
+        isAuthReady,
+        signIn: handleSignIn,
+        signOut: handleSignOut
       }}
     >
       {children}
+      <AuthErrorDialog
+        open={showError}
+        error={error}
+        onClose={handleErrorClose}
+        onRetry={error?.retry ? handleSignIn : undefined}
+      />
     </AuthContext.Provider>
   );
 }
@@ -132,7 +102,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

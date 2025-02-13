@@ -46,15 +46,17 @@ export default defineConfig({
     port: 3000,
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Embedder-Policy': 'unsafe-none',
       'Cross-Origin-Resource-Policy': 'cross-origin',
-      'Permissions-Policy': 'fullscreen=*, popup=*',
+      'Service-Worker-Allowed': '/',
+      'Permissions-Policy': 'fullscreen=*, popup=*, cross-origin-isolated=*',
     },
     proxy: {
       '/__/auth/*': {
-        target: 'http://localhost:9099',  // Firebase emulator default port
+        target: 'http://localhost:9099',
         changeOrigin: true,
         secure: false,
+        ws: true,
       }
     }
   },

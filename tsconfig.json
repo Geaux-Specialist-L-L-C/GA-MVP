@@ -17,9 +17,11 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@mui/icons-material": ["node_modules/@mui/icons-material"],
+      "@mui/icons-material/*": ["node_modules/@mui/icons-material/*"]
     },
-    "types": ["vite/client", "jest", "node"],
+    "types": ["vite/client", "jest", "node", "@mui/material"],
     "allowImportingTsExtensions": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true

@@ -7,6 +7,26 @@ import App from './App';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import './index.css';
 
+// Listen for auth service worker status events
+window.addEventListener('firebase-auth-worker-status', (event: Event) => {
+  const { success, isSecure, error } = (event as CustomEvent).detail;
+  if (!success) {
+    console.warn(
+      'Auth service worker initialization status:', 
+      { success, isSecure, error }
+    );
+  }
+});
+
+// Listen for auth errors from service worker
+window.addEventListener('firebase-auth-error', (event: Event) => {
+  const { error, fallbackToRedirect } = (event as CustomEvent).detail;
+  console.error('Firebase auth error:', error);
+  if (fallbackToRedirect) {
+    console.info('Falling back to redirect method for authentication');
+  }
+});
+
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );

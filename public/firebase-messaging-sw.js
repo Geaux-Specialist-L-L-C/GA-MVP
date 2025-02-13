@@ -1,23 +1,24 @@
 /* eslint-env serviceworker */
 /* global clients, firebase, importScripts */
 
-// File: /public/firebase-messaging-sw.js
-// Description: Firebase service worker for auth popup handling
-// Author: GitHub Copilot
-// Created: 2024-02-12
-
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
 importScripts('./firebase-config.js');
 
-const TIMEOUT = parseInt(self.VITE_SERVICE_WORKER_TIMEOUT || '10000', 10);
+const SW_TIMEOUT = parseInt(import.meta.env.VITE_SERVICE_WORKER_TIMEOUT || '10000', 10);
+const SW_SCOPE = import.meta.env.VITE_AUTH_SW_SCOPE || '/__/auth/';
+const REQUIRE_SECURE = import.meta.env.VITE_AUTH_REQUIRE_SECURE !== 'false';
+const MAX_RETRIES = parseInt(import.meta.env.VITE_MAX_AUTH_RETRIES || '3', 10);
+
 const AUTH_ERROR_MESSAGES = {
-  'auth/popup-closed-by-user': 'Sign-in window was closed. Please try again.',
+  'auth/popup-closed-by-user': 'Sign-in window was closed. Would you like to try again?',
   'auth/popup-blocked': 'Sign-in popup was blocked. Please allow popups and try again.',
   'auth/network-request-failed': 'Network error. Please check your connection and try again.',
   'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
   'auth/unauthorized-domain': 'Authentication not allowed on this domain.',
+  'auth/operation-not-supported-in-this-environment': 'Authentication is not supported in this environment.',
+  'auth/internal-error': 'Authentication service encountered an error. Please try again.'
 };
 
 firebase.initializeApp({
@@ -294,30 +295,83 @@ async function handleFirebaseAuthPopup() {
   }
 }
 
-self.addEventListener('install', event => {
-  event.waitUntil(self.skipWaiting());
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    (async () => {
+      try {
+        await self.skipWaiting();
+        console.info('Auth service worker installed successfully');
+      } catch (error) {
+        console.error('Failed to install auth service worker:', error);
+      }
+    })()
+  );
 });
 
-self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    (async () => {
+      try {
+        await self.clients.claim();
+        console.info('Auth service worker activated and claimed control');
+      } catch (error) {
+        console.error('Failed to activate auth service worker:', error);
+      }
+    })()
+  );
 });
 
-self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'FIREBASE_AUTH_POPUP') {
-    self.popupOrigin = event.data.origin;
-  }
-});
-
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', (event) => {
+  // Handle auth-related requests
   if (event.request.url.includes('/__/auth/')) {
     event.respondWith(
-      fetch(event.request).catch(error => {
-        console.error('Auth popup fetch error:', error);
-        return new Response(
-          JSON.stringify({ error: 'Failed to complete authentication' }),
-          { status: 500, headers: { 'Content-Type': 'application/json' } }
-        );
-      })
+      (async () => {
+        try {
+          // Validate secure context if required
+          if (REQUIRE_SECURE && !event.request.url.startsWith('https')) {
+            throw new Error('Authentication requires a secure context (HTTPS)');
+          }
+
+          const response = await fetch(event.request);
+          const clonedResponse = response.clone();
+
+          // Notify clients about the auth response
+          const clients = await self.clients.matchAll();
+          clients.forEach((client) => {
+            client.postMessage({
+              type: 'AUTH_RESPONSE',
+              status: response.status,
+              ok: response.ok,
+              secure: event.request.url.startsWith('https')
+            });
+          });
+
+          return clonedResponse;
+        } catch (error) {
+          console.error('Auth fetch error:', error);
+          // Log error telemetry
+          self.clients.matchAll().then(clients => {
+            clients.forEach(client => {
+              client.postMessage({
+                type: 'AUTH_ERROR',
+                error: error.message,
+                code: error.code
+              });
+            });
+          });
+
+          return new Response(
+            JSON.stringify({ 
+              error: 'Authentication failed',
+              details: error.message
+            }),
+            { 
+              status: 500, 
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
+        }
+      })()
     );
   }
 });

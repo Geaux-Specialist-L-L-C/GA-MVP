@@ -58,3 +58,30 @@ export interface AuthRouteProps {
 export interface PrivateRouteProps {
   children: React.ReactNode;
 }
+
+declare global {
+  interface WindowEventMap {
+    'firebase-auth-worker-status': CustomEvent<{
+      success: boolean;
+      isSecure: boolean;
+      supportsServiceWorker: boolean;
+      error?: string;
+    }>;
+    'firebase-auth-error': CustomEvent<{
+      error: string;
+      fallbackToRedirect?: boolean;
+      status?: number;
+    }>;
+    'firebase-auth-popup-ready': CustomEvent<{
+      secure: boolean;
+    }>;
+    'firebase-auth-success': CustomEvent<{
+      status: number;
+    }>;
+    'firebase-auth-security': CustomEvent<{
+      secure: boolean;
+    }>;
+  }
+}
+
+export {};
