@@ -211,40 +211,10 @@ const Home: React.FC = () => {
   };
 
   return (
-    <Container>
-      <HeroSection>
-        <HeroContent>
-          <h1>Welcome to Geaux Academy</h1>
-          <p>Your Journey to Learning Excellence Starts Here</p>
-          <HeroImage src="/images/hero_img.svg" alt="Hero" />
-        </HeroContent>
-      </HeroSection>
-
-      <FeaturesGrid>
-        {features.map((feature, index) => (
-          <FlipCard 
-            key={index} 
-            icon={feature.icon} 
-            title={feature.title} 
-            description={feature.description} 
-          />
-        ))}
-      </FeaturesGrid>
-
-      <CallToAction>
-        <h2>Ready to Start Your Learning Journey?</h2>
-        <p>Join Geaux Academy today and discover your unique learning style.</p>
-        <Button to="/signup" $variant="primary">Get Started</Button>
-      </CallToAction>
-
-      <GoogleLoginSection>
-        <p>Sign in to unlock more features!</p>
-        <GoogleLoginButton onClick={handleGoogleLogin}>
-          <FcGoogle /> Sign in with Google
-        </GoogleLoginButton>
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-      </GoogleLoginSection>
-    </Container>
+    <div className="container mx-auto p-4">
+      <h1 className="text-4xl font-bold">Welcome to Geaux Academy</h1>
+      <p className="mt-4">Empowering Personalized Learning through AI.</p>
+    </div>
   );
 };
 

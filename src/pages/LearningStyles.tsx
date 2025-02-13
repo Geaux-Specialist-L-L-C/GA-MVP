@@ -1,3 +1,8 @@
+// File: /src/pages/LearningStyles.tsx
+// Description: Learning Styles page component explaining different learning styles.
+// Author: GitHub Copilot
+// Created: 2023-10-10
+
 import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
@@ -6,7 +11,7 @@ import Header from '../components/layout/Header';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 import Card from '../components/common/Card';
 
-const LearningStyles = () => {
+const LearningStyles: React.FC = () => {
   const learningStyles = [
     { title: "Visual", description: "Learn through seeing and watching demonstrations", icon: <FaEye /> },
     { title: "Auditory", description: "Learn through listening and speaking", icon: <FaHeadphones /> },
@@ -17,11 +22,11 @@ const LearningStyles = () => {
   ];
 
   return (
-    <Container>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <Title>Learning Styles</Title>
-        <Subtitle>Discover how you learn best</Subtitle>
+    <div className="container mx-auto p-4">
+      <h1 className="text-4xl font-bold">Learning Styles</h1>
+      <p className="mt-4">Discover your preferred learning style and how Geaux Academy can help you learn more effectively.</p>
 
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <StylesGrid>
           {learningStyles.map((style, index) => (
             <StyleCard 
@@ -44,26 +49,9 @@ const LearningStyles = () => {
           </Button>
         </CTASection>
       </motion.div>
-    </Container>
+    </div>
   );
 };
-
-const Container = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-`;
-
-const Title = styled.h1`
-  text-align: center;
-  margin-bottom: 1rem;
-`;
-
-const Subtitle = styled.p`
-  text-align: center;
-  margin-bottom: 3rem;
-  color: ${({ theme }) => theme.palette.text.secondary};
-`;
 
 const StylesGrid = styled.div`
   display: grid;
