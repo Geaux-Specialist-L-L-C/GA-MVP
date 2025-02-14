@@ -1,7 +1,5 @@
 // File: /src/firebase/config.ts
 // Description: Firebase configuration with Firestore persistence setup
-// Author: GitHub Copilot
-// Created: 2023-10-10
 
 import { initializeApp } from 'firebase/app';
 import { getAuth, browserPopupRedirectResolver, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
@@ -20,14 +18,14 @@ const firebaseConfig = {
 // Initialize Firebase App
 export const app = initializeApp(firebaseConfig);
 
-// Create Firestore instance and enable persistence immediately.
+// Create Firestore instance and enable persistence immediately
 export const db = getFirestore(app);
+
+// Enable Firestore persistence with error handling
 enableIndexedDbPersistence(db).catch((err) => {
   if (err.code === 'failed-precondition') {
-    // Multiple tabs open; persistence can only be enabled in one tab at a time.
     console.warn('Firestore persistence failed: Multiple tabs open');
   } else if (err.code === 'unimplemented') {
-    // The current browser doesn't support persistence
     console.warn('Firestore persistence not supported in this environment');
   } else {
     console.error('Firestore persistence initialization error:', err);
@@ -39,3 +37,6 @@ export const auth = initializeAuth(app, {
   persistence: [indexedDBLocalPersistence],
   popupRedirectResolver: browserPopupRedirectResolver
 });
+
+// Export other Firebase services as needed
+export { app as firebase };

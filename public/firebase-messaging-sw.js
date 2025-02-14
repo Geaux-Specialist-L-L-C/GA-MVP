@@ -7,14 +7,13 @@ importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-comp
 importScripts('./firebase-config.js');
 
 // Firebase Service Worker for Auth and Messaging
-const FIREBASE_CONFIG = self.FIREBASE_CONFIG || {
-  // Config will be injected by Firebase during runtime
-};
+const FIREBASE_CONFIG = self.FIREBASE_CONFIG || {};
 
 firebase.initializeApp(FIREBASE_CONFIG);
 
 const CACHE_NAME = 'geaux-academy-cache-v1';
 const OFFLINE_URL = '/offline.html';
+const SECURE_ORIGIN = self.location.protocol === 'https:';
 
 // Assets to cache for offline support
 const CACHE_ASSETS = [
@@ -22,8 +21,7 @@ const CACHE_ASSETS = [
   '/index.html',
   '/offline.html',
   '/vite.svg',
-  '/google-icon.svg',
-  '/.cert/cert.pem'
+  '/google-icon.svg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -63,22 +61,27 @@ self.addEventListener('activate', (event) => {
   })());
   console.log('Service worker installed successfully');
 });
-function notifyWindowsAboutReadyState() {
-  self.clients.matchAll({ 
-    type: 'window',
-    includeUncontrolled: true 
-  }).then(clients => {
-    clients.forEach(client => {
-      client.postMessage({ 
-        type: 'FIREBASE_SERVICE_WORKER_READY', 
-        ready: true,
-        https: true // Indicate HTTPS is available
-      });
+
+async function notifyWindowsAboutReadyState() {
+  const allClients = await clients.matchAll({
+    includeUncontrolled: true
+  });
+  
+  allClients.forEach(client => {
+    client.postMessage({
+      type: 'FIREBASE_SERVICE_WORKER_READY',
+      secure: SECURE_ORIGIN
     });
   });
 }
 
 self.addEventListener('fetch', (event) => {
+  if (!SECURE_ORIGIN && event.request.url.startsWith('https:')) {
+    // Allow HTTPS requests in development
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith((async () => {
     try {
       // Handle auth-related requests

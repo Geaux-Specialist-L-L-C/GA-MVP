@@ -53,17 +53,14 @@ export default defineConfig({
       'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
       'Cross-Origin-Embedder-Policy': 'unsafe-none',
       'Content-Security-Policy': `
-        default-src 'self';
-        connect-src 'self' https://*.firebaseio.com https://*.firebase.com
-        wss://*.firebaseio.com wss://localhost:* https://localhost:*
-        https://firebase.googleapis.com https://identitytoolkit.googleapis.com
-        https://firebaseinstallations.googleapis.com https://www.googleapis.com;
-        script-src 'self' 'unsafe-inline' 'unsafe-eval';
-        style-src 'self' 'unsafe-inline';
-        img-src 'self' data: https:;
-        font-src 'self' data:;
-        frame-src 'self' https://*.firebaseapp.com https://*.firebase.com;
-      `.replace(/\s+/g, ' ').trim()
+        default-src 'self' https://*.googleapis.com https://*.google.com https://*.gstatic.com;
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.google.com https://*.gstatic.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        img-src 'self' data: https: blob:;
+        font-src 'self' data: https://fonts.gstatic.com;
+        frame-src 'self' https://*.google.com https://*.firebaseapp.com https://accounts.google.com;
+        connect-src 'self' https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.googleapis.com ws://localhost:* wss://localhost:*;
+      `.replace(/\s+/g, ' '),
     },
     proxy: {
       '/api': {
@@ -97,6 +94,11 @@ export default defineConfig({
             proxyReq.setHeader('Cookie', 'Global=Auth');
           });
         }
+      },
+      '/__/auth/*': {
+        target: 'https://localhost:3001',
+        changeOrigin: true,
+        secure: false
       }
     },
     hmr: {
