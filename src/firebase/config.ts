@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, browserPopupRedirectResolver, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';solver, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';} from 'firebase/firestore';
+import { getAuth, browserPopupRedirectResolver, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
+import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -13,23 +13,11 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-export const app = initializeApp(firebaseConfig);firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 
-// Initialize Auth with persistence and popup supportwith persistence and popup support
-export const auth = initializeAuth(app, {export const auth = initializeAuth(app, {
-
-
-
-
-
-
-
-
-
-
-
-
-});  console.warn('Firestore persistence initialization warning:', err);enableIndexedDbPersistence(db).catch((err) => {// Enable offline persistence for Firestoreexport const db = getFirestore(app);// Initialize Firestore});  popupRedirectResolver: browserPopupRedirectResolver  persistence: [indexedDBLocalPersistence],  persistence: [indexedDBLocalPersistence],
+// Initialize Auth with persistence and popup support
+export const auth = initializeAuth(app, {
+  persistence: [indexedDBLocalPersistence],
   popupRedirectResolver: browserPopupRedirectResolver
 });
 

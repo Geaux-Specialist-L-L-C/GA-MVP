@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react';om 'react';
+import React, { Suspense, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
@@ -30,20 +30,19 @@ const LearningStyleChat = React.lazy(() => import('./components/chat/LearningSty
 const ParentDashboard = React.lazy(() => import('./pages/profile/ParentProfile/ParentDashboard'));
 const TestChat = React.lazy(() => import('./components/chat/TestChat'));
 
-// Root component to provide theme and context
 const App = () => {
   const navigate = useNavigate();
 
-  useEffect(() => {t(() => {
-    // Register service worker for auth handling handling
+  useEffect(() => {
+    // Register service worker for auth handling
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorkerrker
-        .register('/firebase-messaging-sw.js', { scope: '/__/auth' })base-messaging-sw.js', { scope: '/__/auth' })
-        .then((registration) => {n) => {
-          console.debug('Service Worker registered with scope:', registration.scope);h scope:', registration.scope);
+      navigator.serviceWorker
+        .register('/firebase-messaging-sw.js', { scope: '/__/auth' })
+        .then((registration) => {
+          console.debug('Service Worker registered with scope:', registration.scope);
         })
         .catch((error) => {
-          console.error('Service Worker registration failed:', error);egistration failed:', error);
+          console.error('Service Worker registration failed:', error);
         });
     }
   }, []);
@@ -52,7 +51,7 @@ const App = () => {
     <MUIThemeProvider theme={muiTheme}>
       <StyledThemeProvider theme={styledTheme}>
         <ProfileProvider>
-          <AuthProvider>der>
+          <AuthProvider>
             <AppContainer>
               <Suspense fallback={<LoadingSpinner />}>
                 <Routes>
@@ -62,41 +61,26 @@ const App = () => {
                     <Route path="/about" element={<About />} />
                     <Route path="/contact" element={<Contact />} />
                     <Route path="/features" element={<Features />} />
-                    <Route path="/login" element={<Login />} />                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<SignUp />} />} />
-                    <Route path="/learning-styles" element={<LearningStyles />} /> path="/learning-styles" element={<LearningStyles />} />
-                    <Route path="/curriculum" element={<Curriculum />} />e path="/curriculum" element={<Curriculum />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<SignUp />} />
+                    <Route path="/learning-styles" element={<LearningStyles />} />
+                    <Route path="/curriculum" element={<Curriculum />} />
                     
-                    {/* Protected Routes */}tected Routes */}
-                    <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />e path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-                    <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} /> path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
-                    <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />ath="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
-                    <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />ute path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
-                    <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />                <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />
-                    <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />                  <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
-                    <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />                    <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
-                    <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />"/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
-
+                    {/* Protected Routes */}
+                    <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+                    <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
+                    <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+                    <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
+                    <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />
+                    <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
+                    <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
+                    <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
                     <Route path="*" element={<NotFound />} />
-                  </Route>                </Route>
-                </Routes>                </Routes>
-              </Suspense>pense>
-            </AppContainer>            </AppContainer>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export default App;`;  background-color: ${({ theme }) => theme.palette.background.default};  min-height: 100vh;const AppContainer = styled.div`};  );    </MUIThemeProvider>      </StyledThemeProvider>        </ProfileProvider>          </AuthProvider>          </AuthProvider>
+                  </Route>
+                </Routes>
+              </Suspense>
+            </AppContainer>
+          </AuthProvider>
         </ProfileProvider>
       </StyledThemeProvider>
     </MUIThemeProvider>
