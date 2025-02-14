@@ -4,22 +4,69 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from 'react-router-dom';
 import { AuthContext } from "../../contexts/AuthContext";
+import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
+import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import Home from "../Home";
 
 const mockNavigate = jest.fn();
+const mockLoginWithGoogle = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
 }));
 
-const mockLoginWithGoogle = jest.fn().mockResolvedValue(undefined);
+// Mock themes setup
+const mockMuiTheme = {
+  palette: {
+    primary: {
+      main: '#1976d2'
+    }
+  }
+};
 
-const renderWithRouter = (ui: React.ReactElement) => {
+const spacing = Object.assign(
+  (value: number) => `${value * 8}px`,
+  { xs: '8px', sm: '16px', md: '24px', lg: '32px', xl: '40px' }
+);
+
+const mockStyledTheme = {
+  ...mockMuiTheme,
+  palette: {
+    ...mockMuiTheme.palette,
+  },
+  breakpoints: {
+    ...mockMuiTheme.breakpoints,
+    mobile: '320px',
+    tablet: '768px',
+    desktop: '1024px',
+    large: '1440px'
+  },
+  spacing
+};
+
+const renderWithProviders = (ui: React.ReactElement) => {
   return render(
-    <AuthContext.Provider value={{ loginWithGoogle: mockLoginWithGoogle } as any}>
-      <MemoryRouter>{ui}</MemoryRouter>
-    </AuthContext.Provider>
+    <MUIThemeProvider theme={mockMuiTheme}>
+      <StyledThemeProvider theme={mockStyledTheme}>
+        <AuthContext.Provider value={{ 
+          loginWithGoogle: mockLoginWithGoogle,
+          user: null,
+          currentUser: null,
+          loading: false,
+          isAuthReady: true,
+          error: null,
+          login: jest.fn(),
+          signOut: jest.fn(),
+          signIn: jest.fn(),
+          clearError: jest.fn()
+        }}>
+          <MemoryRouter>
+            {ui}
+          </MemoryRouter>
+        </AuthContext.Provider>
+      </StyledThemeProvider>
+    </MUIThemeProvider>
   );
 };
 
@@ -29,14 +76,14 @@ describe('Home Component', () => {
   });
 
   test("renders Home component with correct content", () => {
-    renderWithRouter(<Home />);
-    expect(screen.getByText("Welcome to Geaux Academy")).toBeInTheDocument();
-    expect(screen.getByText("Empowering Personalized Learning through AI")).toBeInTheDocument();
-    expect(screen.getByText("Ready to Start Your Learning Journey?")).toBeInTheDocument();
+    renderWithProviders(<Home />);
+    expect(screen.getByRole('heading', { name: /welcome to geaux academy/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /empowering personalized learning through ai/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /ready to start your learning journey\?/i })).toBeInTheDocument();
   });
 
   test("handles Google login", async () => {
-    renderWithRouter(<Home />);
+    renderWithProviders(<Home />);
     const loginButton = screen.getByRole('button', { name: /sign in with google/i });
     
     fireEvent.click(loginButton);
