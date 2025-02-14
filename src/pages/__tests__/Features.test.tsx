@@ -1,32 +1,10 @@
 // File: /src/pages/__tests__/Features.test.tsx
 // Description: Unit test for Features page component.
 
-import { render, screen } from "@testing-library/react";
-import { ThemeProvider as MUIThemeProvider, createTheme } from '@mui/material/styles';
-import { ThemeProvider as StyledThemeProvider } from 'styled-components';
+import { screen } from "@testing-library/react";
+import '@testing-library/jest-dom';
+import { renderWithProviders } from "../../test/testUtils";
 import Features from "../Features";
-
-const mockTheme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2'
-    },
-    background: {
-      paper: '#ffffff'
-    }
-  }
-});
-
-const renderWithProviders = (ui: React.ReactNode) => {
-  return render(
-    <MUIThemeProvider theme={mockTheme}>
-      <StyledThemeProvider theme={mockTheme}>
-        {ui}
-      </StyledThemeProvider>
-    </MUIThemeProvider>
-  );
-};
 
 test("renders Features component with correct content", () => {
   renderWithProviders(<Features />);

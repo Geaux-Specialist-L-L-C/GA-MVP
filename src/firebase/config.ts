@@ -4,11 +4,11 @@
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
-  browserPopupRedirectResolver, 
   initializeAuth, 
   indexedDBLocalPersistence,
   browserLocalPersistence
 } from 'firebase/auth';
+import { browserPopupRedirectResolver } from 'firebase/auth/dist/esm2017/src/platform_browser/popup_redirect';
 import { 
   initializeFirestore,
   CACHE_SIZE_UNLIMITED,
