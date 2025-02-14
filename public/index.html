@@ -1,0 +1,17 @@
+<!-- File: /public/index.html
+Description: Main HTML file with updated CSP to allow external scripts from googleapis.com -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Geaux Academy</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
