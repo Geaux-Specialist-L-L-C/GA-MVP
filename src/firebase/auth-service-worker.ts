@@ -1,5 +1,5 @@
 // File: /src/firebase/auth-service-worker.ts
-// Description: Service worker registration for Firebase auth
+// Description: Service worker initialization with enhanced security
 // Author: GitHub Copilot
 // Created: 2024-02-12
 
@@ -36,56 +36,37 @@ const isSecureContext = (): boolean => {
   );
 };
 
-const registerAuthServiceWorker = async (): Promise<ServiceWorkerRegistrationResult> => {
+let serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
+
+export const registerAuthServiceWorker = async (): Promise<{
+  success: boolean;
+  isSecure: boolean;
+  supportsServiceWorker: boolean;
+  error?: string;
+}> => {
   if (!('serviceWorker' in navigator)) {
     return {
       success: false,
-      isSecure: isSecureContext(),
-      supportsServiceWorker: false,
-      error: 'Service Workers are not supported in this browser'
-    };
-  }
-
-  if (!isSecureContext()) {
-    return {
-      success: false,
       isSecure: false,
-      supportsServiceWorker: true,
-      error: 'Authentication requires a secure context (HTTPS)'
+      supportsServiceWorker: false,
+      error: 'Service workers are not supported in this browser'
     };
   }
 
   try {
-    // Unregister any existing service workers to ensure clean state
-    const existingRegistrations = await navigator.serviceWorker.getRegistrations();
-    await Promise.all(existingRegistrations.map(reg => reg.unregister()));
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    // Remove any existing service workers to avoid conflicts
+    await Promise.all(registrations.map(registration => registration.unregister()));
 
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-      scope: '/__/auth/',
-      type: 'module'
+    const scope = '/__/auth';
+    serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+      scope,
+      type: 'module',
+      updateViaCache: 'none'
     });
 
-    const timeout = Number(import.meta.env.VITE_SERVICE_WORKER_TIMEOUT) || SW_TIMEOUT;
-    
-    // Wait for the service worker to be ready with timeout
-    await Promise.race([
-      navigator.serviceWorker.ready,
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Service Worker registration timeout')), timeout)
-      )
-    ]);
-
-    // Configure service worker
-    if (registration.active) {
-      registration.active.postMessage({
-        type: 'FIREBASE_AUTH_POPUP',
-        origin: window.location.origin,
-        timestamp: Date.now()
-      });
-
-      // Add message listener for service worker communication
-      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
-
+    // Wait for the service worker to be ready
+    if (serviceWorkerRegistration.active) {
       return {
         success: true,
         isSecure: true,
@@ -93,16 +74,30 @@ const registerAuthServiceWorker = async (): Promise<ServiceWorkerRegistrationRes
       };
     }
 
-    throw new Error('Service worker registration succeeded but worker is not active');
+    // Wait for activation
+    await new Promise<void>((resolve) => {
+      if (serviceWorkerRegistration?.active) {
+        resolve();
+        return;
+      }
+
+      serviceWorkerRegistration?.addEventListener('activate', () => {
+        resolve();
+      });
+    });
+
+    return {
+      success: true,
+      isSecure: window.isSecureContext,
+      supportsServiceWorker: true
+    };
   } catch (error) {
-    const serviceWorkerError = error as ServiceWorkerError;
-    console.error('Service worker registration failed:', serviceWorkerError);
-    
+    console.error('Service worker registration failed:', error);
     return {
       success: false,
-      isSecure: isSecureContext(),
+      isSecure: window.isSecureContext,
       supportsServiceWorker: true,
-      error: serviceWorkerError.message
+      error: error instanceof Error ? error.message : 'Service worker registration failed'
     };
   }
 };

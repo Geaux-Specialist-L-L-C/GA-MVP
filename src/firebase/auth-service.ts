@@ -4,11 +4,14 @@ import { auth } from './config';
 export class AuthService {
   private provider: GoogleAuthProvider;
   private initialized: boolean = false;
+  private popupOpen: boolean = false;
 
   constructor() {
     this.provider = new GoogleAuthProvider();
     this.provider.setCustomParameters({
-      prompt: 'select_account'
+      prompt: 'select_account',
+      // Add additional OAuth 2.0 scopes if needed
+      scope: 'email profile'
     });
   }
 
@@ -31,19 +34,33 @@ export class AuthService {
 
   async signInWithGoogle() {
     try {
+      if (this.popupOpen) {
+        throw new Error('Authentication popup is already open');
+      }
+
       await this.ensureInitialized();
-      return await signInWithPopup(auth, this.provider);
+      this.popupOpen = true;
+
+      const result = await signInWithPopup(auth, this.provider);
+      return result;
     } catch (error: any) {
       console.error('Google sign-in error:', error);
-      // Rethrow with a more specific error message
+      // Handle specific Firebase auth errors
+      if (error.code === 'auth/popup-closed-by-user') {
+        throw new Error('Sign-in cancelled by user');
+      } else if (error.code === 'auth/popup-blocked') {
+        throw new Error('Sign-in popup was blocked. Please allow popups for this site');
+      }
       throw new Error(error.message || 'Failed to sign in with Google');
+    } finally {
+      this.popupOpen = false;
     }
   }
 
   async signOut() {
     try {
       await this.ensureInitialized();
-      return await firebaseSignOut(auth);
+      await firebaseSignOut(auth);
     } catch (error: any) {
       console.error('Sign out error:', error);
       throw new Error(error.message || 'Failed to sign out');
