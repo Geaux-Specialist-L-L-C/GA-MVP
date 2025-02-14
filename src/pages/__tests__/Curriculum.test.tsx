@@ -3,44 +3,41 @@
 
 import { render, screen } from "@testing-library/react";
 import { AuthContext } from "../../contexts/AuthContext";
-import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
+import { ThemeProvider as MUIThemeProvider, createTheme } from '@mui/material/styles';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
-import type { Breakpoint } from '@mui/material';
 import Curriculum from "../Curriculum";
 
 const mockLoginWithGoogle = jest.fn();
 
-// Mock MUI theme for testing
-const mockMuiTheme = {
+// Create a proper MUI theme for testing
+const mockMuiTheme = createTheme({
   palette: {
     primary: {
       main: '#1976d2'
     }
-  },
-  spacing: (factor: number) => `${0.25 * factor}rem`
-};
-
-// Mock styled-components theme with full interface
-const mockStyledTheme = {
-  breakpoints: mockMuiTheme.breakpoints,
-  spacing: mockMuiTheme.spacing,
-  palette: {
-    common: { black: '#000', white: '#fff' },
-    mode: 'light',
-    primary: { main: '#1976d2' },
-    secondary: { main: '#dc004e' },
-    error: { main: '#f44336' },
-    warning: { main: '#ff9800' },
-    info: { main: '#2196f3' },
-    success: { main: '#4caf50' },
-    grey: { 500: '#9e9e9e' },
-    text: { primary: 'rgba(0, 0, 0, 0.87)' },
-    background: { default: '#fff' },
-    action: { active: 'rgba(0, 0, 0, 0.54)' },
-    contrastThreshold: 3,
-    tonalOffset: 0.2,
-    divider: 'rgba(0, 0, 0, 0.12)'
   }
+});
+
+// Create spacing function with required properties
+const spacing = Object.assign(
+  (value: number) => `${value * 8}px`,
+  { xs: '8px', sm: '16px', md: '24px', lg: '32px', xl: '40px' }
+);
+
+// Mock styled-components theme
+const mockStyledTheme = {
+  ...mockMuiTheme,
+  palette: {
+    ...mockMuiTheme.palette,
+  },
+  breakpoints: {
+    ...mockMuiTheme.breakpoints,
+    mobile: '320px',
+    tablet: '768px',
+    desktop: '1024px',
+    large: '1440px'
+  },
+  spacing
 };
 
 const renderWithProviders = (ui: React.ReactElement) => {
@@ -71,17 +68,10 @@ describe('Curriculum Component', () => {
     jest.clearAllMocks();
   });
 
-  test("renders Curriculum component", () => {
+  test("renders Curriculum component with correct content", () => {
     renderWithProviders(<Curriculum />);
-    // Check for the component's basic structure
-    const curriculumElement = screen.getByTestId('curriculum-page');
-    expect(curriculumElement).toBeInTheDocument();
-  });
-
-  test("displays curriculum heading", () => {
-    renderWithProviders(<Curriculum />);
-    // Check for heading - if it doesn't exist, this test will fail
-    const heading = screen.queryByRole('heading', { name: /curriculum/i });
-    expect(heading).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /curriculum/i })).toBeInTheDocument();
+    expect(screen.getByText(/Our curriculum is designed to adapt to your learning style and pace./i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign in with google to get started/i })).toBeInTheDocument();
   });
 });
