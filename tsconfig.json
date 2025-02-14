@@ -35,8 +35,10 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "types": ["node", "jest"]
+    "types": ["node", "jest"],
+    "outDir": "./dist"
   },
   "include": ["src"],
+  "exclude": ["dist", "node_modules"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
