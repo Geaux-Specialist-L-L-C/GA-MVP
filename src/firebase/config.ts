@@ -10,10 +10,10 @@ import {
   browserLocalPersistence
 } from 'firebase/auth';
 import { 
-  getFirestore, 
-  enableIndexedDbPersistence, 
   initializeFirestore,
-  CACHE_SIZE_UNLIMITED
+  CACHE_SIZE_UNLIMITED,
+  persistentLocalCache,
+  persistentSingleTabManager
 } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -29,23 +29,13 @@ const firebaseConfig = {
 // Initialize Firebase App
 export const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with settings for better offline support
+// Initialize Firestore with persistent cache settings
 export const db = initializeFirestore(app, {
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-  experimentalForceLongPolling: true
-});
-
-// Enable Firestore persistence with error handling
-enableIndexedDbPersistence(db, {
-  forceOwnership: true
-}).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('Firestore persistence failed: Multiple tabs open');
-  } else if (err.code === 'unimplemented') {
-    console.warn('Firestore persistence not supported in this environment');
-  } else {
-    console.error('Firestore persistence initialization error:', err);
-  }
+  experimentalForceLongPolling: true,
+  localCache: persistentLocalCache({
+    tabManager: persistentSingleTabManager()
+  })
 });
 
 // Initialize Auth with persistence and popup support
