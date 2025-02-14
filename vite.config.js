@@ -50,17 +50,17 @@ export default defineConfig({
     },
     cors: true,
     headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
       'Content-Security-Policy': `
-        default-src 'self' https://*.googleapis.com https://*.google.com https://*.gstatic.com;
-        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.google.com https://*.gstatic.com;
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseio.com https://*.firebase.com https://*.googleapis.com https://*.gstatic.com;
+        connect-src 'self' https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com wss://firestore.googleapis.com;
+        frame-src 'self' https://*.firebaseapp.com https://*.firebase.com https://accounts.google.com https://*.googleapis.com;
         img-src 'self' data: https: blob:;
-        font-src 'self' data: https://fonts.gstatic.com;
-        frame-src 'self' https://*.google.com https://*.firebaseapp.com https://accounts.google.com;
-        connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com ws://localhost:* wss://localhost:*;
-        worker-src 'self' blob:;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        worker-src 'self' blob: 'unsafe-inline';
       `.replace(/\s+/g, ' '),
     },
     proxy: {

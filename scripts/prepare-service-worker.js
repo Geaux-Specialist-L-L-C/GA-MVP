@@ -1,9 +1,12 @@
 // File: /scripts/prepare-service-worker.js
 // Description: Script to prepare service worker with proper configuration
 
-// ES module syntax
 import fs from 'fs';
-const path = require('path');
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Read environment variables
 const firebaseConfig = {
@@ -20,19 +23,21 @@ if (!firebaseConfig.apiKey || !firebaseConfig.authDomain) {
   process.exit(1);
 }
 
-// Read the template
-const configTemplatePath = path.join(__dirname, '../public/firebase-config.js');
-let configTemplate = fs.readFileSync(configTemplatePath, 'utf8');
+// Read SSL certificate for service worker
+const sslConfig = {
+  key: fs.readFileSync('.cert/key.pem', 'utf8'),
+  cert: fs.readFileSync('.cert/cert.pem', 'utf8')
+};
 
-// Replace placeholders with actual values
-Object.entries(firebaseConfig).forEach(([key, value]) => {
-  configTemplate = configTemplate.replace(
-    `'__${key.toUpperCase()}__'`,
-    `'${value}'`
-  );
-});
+// Generate service worker config
+const configTemplate = `
+// This script injects Firebase configuration into the service worker
+self.FIREBASE_CONFIG = ${JSON.stringify(firebaseConfig, null, 2)};
+self.SSL_CONFIG = ${JSON.stringify(sslConfig, null, 2)};
+`;
 
 // Write the processed config
-fs.writeFileSync(configTemplatePath, configTemplate);
+const configPath = path.join(__dirname, '../public/firebase-config.js');
+fs.writeFileSync(configPath, configTemplate);
 
-console.log('✅ Service worker configuration updated successfully');
+console.log('✅ Service worker and SSL configuration updated successfully');

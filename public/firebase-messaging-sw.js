@@ -25,12 +25,12 @@ const CACHE_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     (async () => {
       try {
         const cache = await caches.open(CACHE_NAME);
         await cache.addAll(CACHE_ASSETS);
-        await self.skipWaiting(); // Ensure new service worker takes over immediately
         console.info('Service worker installed successfully');
       } catch (error) {
         console.error('Failed to install service worker:', error);
@@ -55,6 +55,17 @@ self.addEventListener('activate', (event) => {
       // Take control of all pages immediately
       await self.clients.claim();
       notifyWindowsAboutReadyState();
+      const allClients = await clients.matchAll({
+        includeUncontrolled: true,
+        type: 'window'
+      });
+      
+      allClients.forEach(client => {
+        client.postMessage({
+          type: 'FIREBASE_SERVICE_WORKER_READY',
+          secure: SECURE_ORIGIN
+        });
+      });
     } catch (error) {
       console.error('Activation error:', error);
     }
@@ -76,6 +87,18 @@ async function notifyWindowsAboutReadyState() {
 }
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.url.includes('firestore.googleapis.com') || 
+      event.request.url.includes('/__/auth/') ||
+      event.request.url.includes('apis.google.com')) {
+    event.respondWith(
+      fetch(event.request, {
+        credentials: 'include',
+        mode: 'cors',
+      })
+    );
+    return;
+  }
+
   if (!SECURE_ORIGIN && event.request.url.startsWith('https:')) {
     // Allow HTTPS requests in development
     event.respondWith(fetch(event.request));

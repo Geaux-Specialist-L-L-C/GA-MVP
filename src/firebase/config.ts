@@ -2,8 +2,19 @@
 // Description: Firebase configuration with Firestore persistence setup
 
 import { initializeApp } from 'firebase/app';
-import { getAuth, browserPopupRedirectResolver, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { 
+  getAuth, 
+  browserPopupRedirectResolver, 
+  initializeAuth, 
+  indexedDBLocalPersistence,
+  browserLocalPersistence
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  enableIndexedDbPersistence, 
+  initializeFirestore,
+  CACHE_SIZE_UNLIMITED
+} from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -18,11 +29,16 @@ const firebaseConfig = {
 // Initialize Firebase App
 export const app = initializeApp(firebaseConfig);
 
-// Create Firestore instance and enable persistence immediately
-export const db = getFirestore(app);
+// Initialize Firestore with settings for better offline support
+export const db = initializeFirestore(app, {
+  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+  experimentalForceLongPolling: true
+});
 
 // Enable Firestore persistence with error handling
-enableIndexedDbPersistence(db).catch((err) => {
+enableIndexedDbPersistence(db, {
+  forceOwnership: true
+}).catch((err) => {
   if (err.code === 'failed-precondition') {
     console.warn('Firestore persistence failed: Multiple tabs open');
   } else if (err.code === 'unimplemented') {
@@ -34,7 +50,7 @@ enableIndexedDbPersistence(db).catch((err) => {
 
 // Initialize Auth with persistence and popup support
 export const auth = initializeAuth(app, {
-  persistence: [indexedDBLocalPersistence],
+  persistence: [indexedDBLocalPersistence, browserLocalPersistence],
   popupRedirectResolver: browserPopupRedirectResolver
 });
 
