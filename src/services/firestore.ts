@@ -1,10 +1,5 @@
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { app } from "../firebase/config"; // ✅ Your Firebase Config
-
-const db = getFirestore(app);
-const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "../firebase/config";
 
 export async function getData(collectionName: string, docId: string) {
   const docRef = doc(db, collectionName, docId);

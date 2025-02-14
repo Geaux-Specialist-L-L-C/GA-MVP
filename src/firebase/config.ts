@@ -1,6 +1,20 @@
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+// File: /src/firebase/config.ts
+// Description: Firebase configuration with Firestore persistence setup
+
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  browserPopupRedirectResolver, 
+  initializeAuth, 
+  indexedDBLocalPersistence,
+  browserLocalPersistence
+} from 'firebase/auth';
+import { 
+  initializeFirestore,
+  CACHE_SIZE_UNLIMITED,
+  persistentLocalCache,
+  persistentSingleTabManager
+} from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -12,7 +26,23 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export default app;
+// Initialize Firebase App
+export const app = initializeApp(firebaseConfig);
+
+// Initialize Firestore with persistent cache settings
+export const db = initializeFirestore(app, {
+  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+  experimentalForceLongPolling: true,
+  localCache: persistentLocalCache({
+    tabManager: persistentSingleTabManager()
+  })
+});
+
+// Initialize Auth with persistence and popup support
+export const auth = initializeAuth(app, {
+  persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+  popupRedirectResolver: browserPopupRedirectResolver
+});
+
+// Export other Firebase services as needed
+export { app as firebase };

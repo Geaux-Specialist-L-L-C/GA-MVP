@@ -4,19 +4,19 @@ import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
 import fs from 'fs';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    vue() // Add Vue plugin
+    vue()
   ],
   build: {
-    target: 'esnext', // This enables top-level await
+    target: 'esnext',
     outDir: 'dist',
     sourcemap: true,
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
+        'firebase-messaging-sw': resolve(__dirname, 'public/firebase-messaging-sw.js')
       },
       output: {
         manualChunks: {
@@ -24,7 +24,7 @@ export default defineConfig({
           'firebase-app': ['firebase/app'],
           'firebase-auth': ['firebase/auth'],
           'firebase-firestore': ['firebase/firestore'],
-          'firebase-storage': ['firebase/storage'],
+          'firebase-storage': ['firebase/storage']
         }
       }
     }
@@ -37,33 +37,31 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       exclude: [
         'node_modules/',
-        'src/test/setup.ts',
-      ],
-    },
+        'src/test/setup.ts'
+      ]
+    }
   },
   server: {
-    port: 3000,
+    port: 3001,
     strictPort: true,
     https: {
       key: fs.readFileSync('.cert/key.pem'),
-      cert: fs.readFileSync('.cert/cert.pem'),
+      cert: fs.readFileSync('.cert/cert.pem')
     },
     cors: true,
     headers: {
-      'Cross-Origin-Opener-Policy': 'unsafe-none',
-      'Cross-Origin-Embedder-Policy': 'unsafe-none',
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
       'Content-Security-Policy': `
         default-src 'self';
-        connect-src 'self' https://*.firebaseio.com https://*.firebase.com 
-        wss://*.firebaseio.com wss://localhost:* https://localhost:* 
-        https://firebase.googleapis.com https://identitytoolkit.googleapis.com 
-        https://firebaseinstallations.googleapis.com https://www.googleapis.com;
-        script-src 'self' 'unsafe-inline' 'unsafe-eval';
-        style-src 'self' 'unsafe-inline';
-        img-src 'self' data: https:;
-        font-src 'self' data:;
-        frame-src 'self' https://*.firebaseapp.com https://*.firebase.com;
-      `.replace(/\s+/g, ' ').trim()
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseio.com https://*.firebase.com https://*.googleapis.com https://*.gstatic.com;
+        connect-src 'self' https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com wss://firestore.googleapis.com;
+        frame-src 'self' https://*.firebaseapp.com https://*.firebase.com https://accounts.google.com https://*.googleapis.com;
+        img-src 'self' data: https: blob:;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        worker-src 'self' blob: 'unsafe-inline';
+      `.replace(/\s+/g, ' '),
     },
     proxy: {
       '/api': {
@@ -97,6 +95,11 @@ export default defineConfig({
             proxyReq.setHeader('Cookie', 'Global=Auth');
           });
         }
+      },
+      '/__/auth/*': {
+        target: 'https://localhost:3001',
+        changeOrigin: true,
+        secure: false
       }
     },
     hmr: {
@@ -127,5 +130,8 @@ export default defineConfig({
       FIREBASE_APP_ID: JSON.stringify(process.env.FIREBASE_APP_ID),
       FIREBASE_MEASUREMENT_ID: JSON.stringify(process.env.FIREBASE_MEASUREMENT_ID)
     }
+  },
+  optimizeDeps: {
+    include: ['firebase/app', 'firebase/auth']
   }
 });

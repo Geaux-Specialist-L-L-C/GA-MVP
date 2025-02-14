@@ -7,100 +7,101 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { User } from "firebase/auth";
 import { AuthService } from "../firebase/auth-service";
 import AuthErrorDialog from "../components/auth/AuthErrorDialog";
-import { useNavigate } from "react-router-dom";
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
+  login: (_email: string, _password: string) => Promise<void>;
+  currentUser: User | null;
+  loading: boolean;
   isAuthReady: boolean;
+  error: string | null;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface AuthError {
-  message: string;
-  retry?: boolean;
-}
-
 function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isAuthReady, setIsAuthReady] = useState(false);
-  const [error, setError] = useState<AuthError | null>(null);
-  const [showError, setShowError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const authService = new AuthService();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         const auth = await authService.getAuth();
         auth.onAuthStateChanged((firebaseUser) => {
-          setUser(firebaseUser);
+          setCurrentUser(firebaseUser);
+          setLoading(false);
           setIsAuthReady(true);
-          if (firebaseUser) {
-            navigate("/dashboard");
-          } else {
-            navigate("/login");
-          }
         });
       } catch (error) {
         console.error("Failed to initialize auth:", error);
+        setLoading(false);
         setIsAuthReady(true);
       }
     };
 
     initializeAuth();
-  }, [navigate]);
+  }, []);
 
   const handleSignIn = async () => {
     try {
-      const response = await authService.signInWithGoogle();
-      if (!response.success && response.error) {
-        setError(response.error);
-        setShowError(true);
+      setError(null);
+      await authService.signInWithGoogle();
+    } catch (error: any) {
+      console.error("Sign in failed:", error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        setError('Sign in was cancelled. Please try again.');
+      } else {
+        setError(error.message || "Failed to sign in. Please try again.");
       }
-    } catch (error) {
-      setError({
-        message: "An unexpected error occurred. Please try again.",
-        retry: true
-      });
-      setShowError(true);
+      throw error; // Re-throw to be handled by components
     }
   };
 
   const handleSignOut = async () => {
     try {
+      setError(null);
       await authService.signOut();
-    } catch (error) {
-      setError({
-        message: "Failed to sign out. Please try again.",
-        retry: true
-      });
-      setShowError(true);
+    } catch (error: any) {
+      setError("Failed to sign out. Please try again.");
+      throw error;
     }
   };
 
-  const handleErrorClose = () => {
-    setShowError(false);
+  const clearError = () => {
     setError(null);
   };
 
+  const login = async (_email: string, _password: string): Promise<void> => {
+    throw new Error("Email/password login is not implemented");
+  };
+
   return (
-    <AuthContext.Provider 
+    <AuthContext.Provider
       value={{
-        user,
+        user: currentUser,
+        currentUser,
+        loading,
         isAuthReady,
+        error,
+        login,
         signIn: handleSignIn,
-        signOut: handleSignOut
+        signOut: handleSignOut,
+        loginWithGoogle: handleSignIn,
+        clearError,
       }}
     >
       {children}
       <AuthErrorDialog
-        open={showError}
-        error={error}
-        onClose={handleErrorClose}
-        onRetry={error?.retry ? handleSignIn : undefined}
+        open={!!error}
+        error={error ? { message: error } : null}
+        onClose={clearError}
       />
     </AuthContext.Provider>
   );

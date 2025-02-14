@@ -5,10 +5,9 @@
 
 import React from 'react';
 import styled from 'styled-components';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaHeadphones, FaBook, FaRunning, FaBrain, FaUsers, FaEye } from 'react-icons/fa';
-import Header from '../components/layout/Header';
-import GoogleLoginButton from '../components/GoogleLoginButton';
 import Card from '../components/common/Card';
 
 const LearningStyles: React.FC = () => {
@@ -60,7 +59,7 @@ const StylesGrid = styled.div`
   margin: 2rem 0;
 `;
 
-const StyleCard = styled(Card)`
+const StyleCard = styled(motion(Card))`
   padding: 2rem;
   text-align: center;
   background: ${({ theme }) => theme.palette.background.paper};
@@ -82,8 +81,11 @@ const CTASection = styled.div`
     margin-bottom: 2rem;
   }
 `;
+interface ButtonProps {
+  $variant?: 'primary' | 'secondary';
+}
 
-const Button = styled(motion.a)`
+const Button = styled(motion(Link))<ButtonProps>`
   display: inline-block;
   padding: 1rem 2rem;
   background: ${({ theme }) => theme.palette.primary.main};

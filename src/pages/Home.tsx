@@ -1,11 +1,8 @@
 import React, { useState, memo } from "react";
-import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import styled from "styled-components";
 import { FaGraduationCap, FaChartLine, FaLightbulb } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
-import Button from '../components/common/Button';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -211,10 +208,39 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-4xl font-bold">Welcome to Geaux Academy</h1>
-      <p className="mt-4">Empowering Personalized Learning through AI.</p>
-    </div>
+    <Container>
+      <HeroSection>
+        <HeroContent>
+          <h1>Welcome to Geaux Academy</h1>
+          <p>Empowering Personalized Learning through AI</p>
+          <HeroImage src="/images/hero-learning.svg" alt="Learning illustration" />
+        </HeroContent>
+      </HeroSection>
+
+      <FeaturesGrid>
+        {features.map((feature, index) => (
+          <FlipCard
+            key={index}
+            icon={feature.icon}
+            title={feature.title}
+            description={feature.description}
+          />
+        ))}
+      </FeaturesGrid>
+
+      <CallToAction>
+        <h2>Ready to Start Your Learning Journey?</h2>
+        <p>Join Geaux Academy today and unlock your full potential.</p>
+        <GoogleLoginSection>
+          <p>Sign in with Google to get started</p>
+          <GoogleLoginButton onClick={handleGoogleLogin}>
+            <img src="/google-icon.svg" alt="Google" width="24" height="24" />
+            Sign in with Google
+          </GoogleLoginButton>
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+        </GoogleLoginSection>
+      </CallToAction>
+    </Container>
   );
 };
 

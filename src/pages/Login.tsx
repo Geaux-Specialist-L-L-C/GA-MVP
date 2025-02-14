@@ -15,6 +15,7 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [formData, setFormData] = useState<FormData>({ email: '', password: '' });
+  const [emailError, setEmailError] = useState<string>('');
   const [localError, setLocalError] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
@@ -76,14 +77,17 @@ const Login: React.FC = () => {
         
         <Form onSubmit={handleEmailLogin}>
           <FormGroup>
-            <Label htmlFor="email">Email</Label>
             <Input
               type="email"
               id="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, email: e.target.value });
+                setEmailError(e.target.validity.valid ? '' : 'Please enter a valid email address');
+              }}
               required
               disabled={loading}
+              aria-invalid={!!emailError}
             />
           </FormGroup>
 

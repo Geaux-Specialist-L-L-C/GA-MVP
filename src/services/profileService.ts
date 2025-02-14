@@ -1,19 +1,9 @@
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { Parent, Student, LearningStyle } from "../types/profiles";
-import { enableIndexedDbPersistence } from 'firebase/firestore';
 
 // Cache for storing profiles
 const profileCache = new Map();
-
-// Enable offline persistence
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('Multiple tabs open, persistence enabled in first tab only');
-  } else if (err.code === 'unimplemented') {
-    console.warn('Browser doesn\'t support persistence');
-  }
-});
 
 // Helper to check online status
 const isOnline = () => navigator.onLine;

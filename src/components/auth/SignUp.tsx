@@ -20,7 +20,7 @@ const SignUp: React.FC = () => {
   });
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const { signup, loginWithGoogle, authError } = useAuth();
+  const { signup, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const createCheshireAccount = async (uid: string, email: string) => {
@@ -45,14 +45,14 @@ const SignUp: React.FC = () => {
       setLoading(true);
       const userCredential = await signup(formData.email, formData.password);
       
-      // Create Cheshire account after successful Firebase signup
       if (userCredential?.user) {
         await createCheshireAccount(userCredential.user.uid, userCredential.user.email || '');
       }
       
       navigate('/dashboard');
-    } catch (error: any) {
-      setError(error.message || 'Failed to create account');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create account');
+      console.error('Signup error:', err);
     } finally {
       setLoading(false);
     }
@@ -62,14 +62,11 @@ const SignUp: React.FC = () => {
     try {
       setLoading(true);
       setError('');
-      const userCredential = await loginWithGoogle();
-      
-      // Create Cheshire account after successful Google signup
-      if (userCredential?.user) {
-        await createCheshireAccount(userCredential.user.uid, userCredential.user.email || '');
-      }
-    } catch (error: any) {
-      setError(error.message || 'Failed to sign up with Google');
+      await loginWithGoogle();
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sign up with Google');
+      console.error('Google signup error:', err);
     } finally {
       setLoading(false);
     }
@@ -79,7 +76,12 @@ const SignUp: React.FC = () => {
     <SignUpContainer>
       <SignUpCard>
         <h2>Create an Account</h2>
-        {(error || authError) && <ErrorMessage>{error || authError}</ErrorMessage>}
+        {error && (
+          <ErrorMessage>
+            <span>{error}</span>
+            <DismissButton onClick={() => setError('')}>✕</DismissButton>
+          </ErrorMessage>
+        )}
         
         <Form onSubmit={handleSubmit}>
           <FormGroup>
@@ -133,7 +135,7 @@ const SignUp: React.FC = () => {
         </GoogleButton>
 
         <LoginPrompt>
-          Already have an account? <Link href="/login">Log In</Link>
+          Already have an account? <Link to="/login">Log In</Link>
         </LoginPrompt>
       </SignUpCard>
     </SignUpContainer>

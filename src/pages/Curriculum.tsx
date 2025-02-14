@@ -6,7 +6,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { FcGoogle } from "react-icons/fc";
-import styled from "styled-components";
 import CourseCard from "../components/CourseCard";
 
 interface Course {
