@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, getAuth } from "firebase/auth";
 import { auth } from './config';
 
 export class AuthService {
@@ -10,7 +10,6 @@ export class AuthService {
     this.provider = new GoogleAuthProvider();
     this.provider.setCustomParameters({
       prompt: 'select_account',
-      // Add additional OAuth 2.0 scopes if needed
       scope: 'email profile'
     });
   }
@@ -45,7 +44,6 @@ export class AuthService {
       return result;
     } catch (error: any) {
       console.error('Google sign-in error:', error);
-      // Handle specific Firebase auth errors
       if (error.code === 'auth/popup-closed-by-user') {
         throw new Error('Sign-in cancelled by user');
       } else if (error.code === 'auth/popup-blocked') {
