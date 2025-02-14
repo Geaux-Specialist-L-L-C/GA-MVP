@@ -31,10 +31,9 @@ export const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore with persistent cache settings
 export const db = initializeFirestore(app, {
-  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-  experimentalForceLongPolling: true,
   localCache: persistentLocalCache({
-    tabManager: persistentSingleTabManager()
+    tabManager: persistentSingleTabManager(),
+    cacheSizeBytes: CACHE_SIZE_UNLIMITED // Specify cache size within the cache object
   })
 });
 

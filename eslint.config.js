@@ -1,66 +1,93 @@
+// File: /eslint.config.js
+// Description: ESLint flat configuration for Geaux Academy using new flat config format
+
 import globals from "globals";
-import tseslint from "typescript-eslint";
 import reactPlugin from "eslint-plugin-react";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
 import importPlugin from "eslint-plugin-import";
 
-/** @type {import('eslint').Linter.Config[]} */
-export default tseslint.config(
+export default [
+  // Global ignore patterns
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
+    ignores: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/coverage/**",
+      "**/dataconnect-generated/**",
+      "**/*.d.ts",
+      "vite.config.ts",
+      "jest.config.js"
+    ]
+  },
+
+  // JavaScript configuration
+  {
+    files: ["**/*.{js,jsx,mjs,cjs}"],
     languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      ecmaFeatures: { jsx: true },
       globals: {
         ...globals.browser,
         ...globals.node,
-        React: "readonly",
-      },
-      parser: tseslint.parser,
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
-        ecmaVersion: "latest",
-        sourceType: "module",
-        project: "./tsconfig.json",
-      },
+        React: "readonly"
+      }
     },
     plugins: {
       react: reactPlugin,
       "react-hooks": reactHooksPlugin,
-      import: importPlugin,
+      import: importPlugin
     },
     rules: {
-      "constructor-super": "error",
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": ["error", { 
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_"
-      }],
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
       "react/react-in-jsx-scope": "off",
-      "import/no-unresolved": "error",
+      "no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "import/order": [
+        "error",
+        {
+          groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
+          "newlines-between": "always",
+          alphabetize: { order: "asc" }
+        }
+      ]
+    },
+    settings: { react: { version: "detect" } }
+  },
+
+  // TypeScript configuration
+  {
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      parser: require.resolve("@typescript-eslint/parser"),
+      parserOptions: {
+        project: ["./tsconfig.json", "./functions/tsconfig.json"],
+        tsconfigRootDir: process.cwd()
+      }
+    },
+    plugins: {
+      "@typescript-eslint": require("typescript-eslint").plugin,
+      react: reactPlugin,
+      "react-hooks": reactHooksPlugin,
+      import: importPlugin
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "@typescript-eslint/explicit-function-return-type": [
+        "warn",
+        { allowExpressions: true, allowTypedFunctionExpressions: true }
+      ],
+      "@typescript-eslint/strict-boolean-expressions": "warn"
     },
     settings: {
-      react: {
-        version: "detect",
-      },
-      "import/parsers": {
-        "@typescript-eslint/parser": [".ts", ".tsx"]
-      },
+      react: { version: "detect" },
+      "import/parsers": { "@typescript-eslint/parser": [".ts", ".tsx"] },
       "import/resolver": {
-        typescript: {
-          alwaysTryTypes: true,
-          project: "./tsconfig.json"
-        },
-        alias: {
-          map: [
-            ["@", "./src"]
-          ],
-          extensions: [".ts", ".tsx", ".js", ".jsx", ".json"]
-        }
+        typescript: { project: ["./tsconfig.json", "./functions/tsconfig.json"] },
+        node: true
       }
     }
-  },
-  ...tseslint.configs.recommended,
-);
+  }
+];
