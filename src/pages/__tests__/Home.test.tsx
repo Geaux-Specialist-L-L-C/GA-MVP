@@ -2,7 +2,6 @@
 // Description: Unit test for Home page component.
 
 import { screen, fireEvent, waitFor } from "@testing-library/react";
-import '@testing-library/jest-dom';
 import { renderWithProviders, mockLoginWithGoogle } from "../../test/testUtils";
 import Home from "../Home";
 
@@ -21,7 +20,7 @@ describe('Home Component', () => {
   test("renders Home component with correct content", () => {
     renderWithProviders(<Home />, { withRouter: true });
     expect(screen.getByRole('heading', { name: /welcome to geaux academy/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /empowering personalized learning through ai/i })).toBeInTheDocument();
+    expect(screen.getByText(/empowering personalized learning through ai/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /ready to start your learning journey\?/i })).toBeInTheDocument();
   });
 

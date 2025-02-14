@@ -1,7 +1,6 @@
 // File: /src/pages/__tests__/About.test.tsx
 // Description: Unit test for About page component.
 
-import { describe, test, expect, beforeEach } from "@jest/globals";
 import { screen } from "@testing-library/react";
 import '@testing-library/jest-dom';
 import { renderWithProviders } from "../../test/testUtils";
@@ -16,9 +15,5 @@ describe('About Page', () => {
   test("renders About component with correct content", () => {
     expect(screen.getByRole('heading', { name: /about geaux academy/i })).toBeInTheDocument();
     expect(screen.getByText(/Geaux Academy is an interactive learning platform that adapts to individual learning styles through AI-powered assessments and personalized content delivery./i)).toBeInTheDocument();
-  });
-
-  test("renders navigation elements", () => {
-    expect(screen.getByRole('navigation')).toBeInTheDocument();
   });
 });

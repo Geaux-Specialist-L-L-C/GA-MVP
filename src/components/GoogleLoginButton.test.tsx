@@ -1,5 +1,6 @@
 /** @jest-environment jsdom */
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithProviders } from '../test/testUtils';
 import GoogleLoginButton from './GoogleLoginButton';
 
 describe('GoogleLoginButton', () => {
@@ -11,35 +12,35 @@ describe('GoogleLoginButton', () => {
   });
 
   it('renders sign in button with correct text', () => {
-    render(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} />);
+    renderWithProviders(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} />);
     expect(screen.getByText('Sign in with Google')).toBeInTheDocument();
   });
 
   it('shows loading state when loading prop is true', () => {
-    render(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} loading={true} />);
+    renderWithProviders(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} loading={true} />);
     expect(screen.getByText('Signing in...')).toBeInTheDocument();
   });
 
   it('displays error message when error prop is provided', () => {
     const errorMessage = 'Test error message';
-    render(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} error={errorMessage} />);
+    renderWithProviders(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} error={errorMessage} />);
     expect(screen.getByText(errorMessage)).toBeInTheDocument();
   });
 
   it('calls handleGoogleLogin when button is clicked', () => {
-    render(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} />);
+    renderWithProviders(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} />);
     fireEvent.click(screen.getByRole('button', { name: /sign in with google/i }));
     expect(mockHandleGoogleLogin).toHaveBeenCalledTimes(1);
   });
 
   it('disables button when loading is true', () => {
-    render(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} loading={true} />);
+    renderWithProviders(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} loading={true} />);
     expect(screen.getByRole('button')).toBeDisabled();
   });
 
   it('calls onDismissError when dismiss button is clicked', () => {
     const errorMessage = 'Test error message';
-    render(
+    renderWithProviders(
       <GoogleLoginButton 
         handleGoogleLogin={mockHandleGoogleLogin} 
         error={errorMessage}
@@ -54,7 +55,7 @@ describe('GoogleLoginButton', () => {
   });
 
   it('renders Google login button', () => {
-    render(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} />);
+    renderWithProviders(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} />);
     const button = screen.getByRole('button');
     expect(button).toBeInTheDocument();
   });

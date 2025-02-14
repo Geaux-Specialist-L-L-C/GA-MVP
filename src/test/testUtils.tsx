@@ -1,34 +1,62 @@
 // File: /src/test/testUtils.tsx
-// Description: Shared test utilities and providers with correctly typed theme objects
-
-import React, { Fragment } from "react";
+// Description: Common test utilities and setup
+import React from "react";
 import { render, RenderOptions } from "@testing-library/react";
-import { MemoryRouter } from 'react-router-dom';
-import { ThemeProvider as MUIThemeProvider, createTheme, Theme as MUITheme } from '@mui/material/styles';
+import { ThemeProvider as MUIThemeProvider, createTheme } from '@mui/material/styles';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
-import type { Breakpoint } from '@mui/material/styles';
+import { MemoryRouter } from 'react-router-dom';
 import { AuthContext } from "../contexts/AuthContext";
+import '@testing-library/jest-dom';
 
-const mockLoginWithGoogle = jest.fn();
+// Ensure correct breakpoint type
+type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
-// Create an array of 25 shadow values
-const shadowValues: ["none", ...string[]] = [
-  "none",
-  ...Array(24).fill("0px 2px 4px rgba(0,0,0,0.2)")
-];
-
-export const mockMuiTheme: MUITheme = createTheme({
+// Create a proper MUI theme with all required properties
+const muiTheme = createTheme({
   palette: {
     mode: 'light',
     primary: {
       main: '#1976d2'
     },
+    secondary: {
+      main: '#dc004e'
+    },
+    error: {
+      main: '#f44336'
+    },
+    warning: {
+      main: '#ff9800'
+    },
+    info: {
+      main: '#2196f3'
+    },
+    success: {
+      main: '#4caf50'
+    },
+    text: {
+      primary: 'rgba(0, 0, 0, 0.87)',
+      secondary: 'rgba(0, 0, 0, 0.6)',
+      disabled: 'rgba(0, 0, 0, 0.38)'
+    },
     background: {
-      paper: '#ffffff',
-      default: '#ffffff'
-    }
-  },
+      default: '#ffffff',
+      paper: '#ffffff'
+    },
+    common: {
+      black: '#000000',
+      white: '#ffffff'
+    },
+    contrastThreshold: 3,
+    tonalOffset: 0.2
+  }
+});
+
+// Create our mock theme by extending the MUI theme
+export const mockMuiTheme = {
+  ...muiTheme,
   breakpoints: {
+    ...muiTheme.breakpoints,
+    keys: ['xs', 'sm', 'md', 'lg', 'xl'] as Breakpoint[],
     values: {
       xs: 0,
       sm: 600,
@@ -36,54 +64,45 @@ export const mockMuiTheme: MUITheme = createTheme({
       lg: 1280,
       xl: 1920
     },
-    keys: ['xs', 'sm', 'md', 'lg', 'xl'] as Breakpoint[],
     up: jest.fn(),
     down: jest.fn(),
     between: jest.fn(),
     only: jest.fn(),
     not: jest.fn()
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif'
-  },
-  unstable_sx: {},
-  unstable_sxConfig: {},
-  mixins: {},
-  shadows: shadowValues,
-  shape: {},
-  transitions: {},
-  zIndex: {},
-  components: {},
-  direction: 'ltr',
-  applyStyles: {},
-  containerQueries: {}
-});
+  }
+};
 
+// Create spacing function with required properties
 const spacing = Object.assign(
   (value: number) => `${value * 8}px`,
   { xs: '8px', sm: '16px', md: '24px', lg: '32px', xl: '40px' }
 );
 
+// Styled components theme that extends MUI theme
 export const mockStyledTheme = {
   ...mockMuiTheme,
-  spacing,
   breakpoints: {
     ...mockMuiTheme.breakpoints,
     mobile: '320px',
     tablet: '768px',
     desktop: '1024px',
     large: '1440px'
-  }
+  },
+  spacing
 };
 
-type ProvidersProps = {
-  children: React.ReactNode;
-  withRouter?: boolean | undefined;
-};
+// Mock auth functions
+export const mockLoginWithGoogle = jest.fn();
 
-const AllTheProviders = ({ children, withRouter }: ProvidersProps) => {
-  const Wrapper = withRouter ? MemoryRouter : Fragment;
-  return (
+interface RenderWithProvidersOptions extends Omit<RenderOptions, 'wrapper'> {
+  withRouter?: boolean;
+}
+
+export const renderWithProviders = (
+  ui: React.ReactNode,
+  { withRouter = false, ...options }: RenderWithProvidersOptions = {}
+) => {
+  const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <MUIThemeProvider theme={mockMuiTheme}>
       <StyledThemeProvider theme={mockStyledTheme}>
         <AuthContext.Provider value={{ 
@@ -98,24 +117,11 @@ const AllTheProviders = ({ children, withRouter }: ProvidersProps) => {
           signIn: jest.fn(),
           clearError: jest.fn()
         }}>
-          <Wrapper>
-            {children}
-          </Wrapper>
+          {withRouter ? <MemoryRouter>{children}</MemoryRouter> : children}
         </AuthContext.Provider>
       </StyledThemeProvider>
     </MUIThemeProvider>
   );
-};
 
-export const renderWithProviders = (
-  ui: React.ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'> & { withRouter?: boolean }
-) => {
-  const { withRouter, ...renderOptions } = options || {};
-  return render(ui, { 
-    wrapper: (props) => <AllTheProviders {...props} withRouter={withRouter} />,
-    ...renderOptions 
-  });
+  return render(ui, { wrapper: Wrapper, ...options });
 };
-
-export { mockLoginWithGoogle };
