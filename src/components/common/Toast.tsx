@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import styled, { css } from 'styled-components';
 
 type ToastType = 'info' | 'success' | 'warning' | 'error';
@@ -31,8 +32,17 @@ const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration = 3000, 
   );
 };
 
-const showToast = (): void => {
-  // Function implementation
+const showToast = (props: ToastProps): void => {
+  const toastElement = document.createElement('div');
+  document.body.appendChild(toastElement);
+  
+  const onClose = () => {
+    document.body.removeChild(toastElement);
+    props.onClose?.();
+  };
+  
+  const toastComponent = React.createElement(Toast, { ...props, onClose });
+  ReactDOM.render(toastComponent, toastElement);
 };
 
 const getToastColor = (type: ToastType) => {

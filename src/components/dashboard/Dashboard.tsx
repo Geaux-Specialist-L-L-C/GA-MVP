@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import CreateStudent from '../../pages/profile/ParentProfile/CreateStudent';
-import StudentCard from '../../components/student/StudentCard';
 import { ProfileService, getStudentProfile } from '../../services/profileService';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -369,7 +368,5 @@ const RetryButton = styled.button`
     background: rgba(0, 0, 0, 0.05);
   }
 `;
-
-const regex = /some-pattern/;
 
 export default Dashboard;
