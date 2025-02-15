@@ -1,6 +1,15 @@
 import { createTheme } from '@mui/material/styles';
 import type { DefaultTheme } from 'styled-components';
 
+interface Spacing {
+  (value: number): string;
+  xs: string;
+  sm: string;
+  md: string;
+  lg: string;
+  xl: string;
+}
+
 const muiTheme = createTheme({
   palette: {
     primary: {
@@ -41,8 +50,8 @@ const muiTheme = createTheme({
   },
 });
 
-const createSpacing = () => {
-  const spacingFn = (value: number) => `${0.25 * value}rem`;
+const createSpacing = (): Spacing & { xs: string; sm: string; md: string; lg: string; xl: string; } => {
+  const spacingFn = (value: number): string => `${0.25 * value}rem`;
   return Object.assign(spacingFn, {
     xs: '0.25rem',
     sm: '0.5rem',
