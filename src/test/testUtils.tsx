@@ -2,7 +2,7 @@ import React from "react";
 import { render, RenderOptions, RenderResult } from "@testing-library/react";
 import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
-import { createMemoryRouter, RouterProvider, type RouterProviderProps } from 'react-router-dom';
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { AuthContext, type AuthContextProps } from "../contexts/AuthContext";
 import '@testing-library/jest-dom';
 import { mockMuiTheme, mockStyledTheme } from "./mockThemes";
@@ -39,7 +39,6 @@ export const renderWithProviders = (
   );
 
   if (withRouter) {
-    // Remove future flags since they're not yet available in the types
     const router = createMemoryRouter(
       [{ path: "*", element: <Providers>{ui}</Providers> }]
     );

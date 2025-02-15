@@ -1,4 +1,7 @@
-
+// File: /types/types.ts
+// Description: Core type definitions for user profiles, assessments, and course progress
+// Author: Geaux Academy Team
+// Created: 2024
 export interface ParentProfile {
   uid: string;
   email: string;
@@ -28,7 +31,7 @@ export interface AssessmentResult {
   date: string;
   score: number;
   subject: string;
-  details: any;
+  details: Record<string, unknown>;
 }
 
 export interface CourseProgress {
