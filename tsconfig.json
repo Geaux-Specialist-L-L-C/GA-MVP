@@ -39,7 +39,17 @@
     "types": ["node", "jest"],
     "outDir": "./dist"
   },
-  "include": ["src"],
+  "include": [
+    "src",
+    "public/JSX",
+    "backend",
+    "functions",
+    "scripts",
+    "test",
+    "types",
+    "**/*.ts",
+    "**/*.tsx"
+  ],
   "exclude": ["dist", "node_modules"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

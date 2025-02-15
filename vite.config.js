@@ -1,8 +1,10 @@
-import { defineConfig } from 'vite';
+import fs from 'fs';
+import { resolve } from 'path';
+
 import react from '@vitejs/plugin-react';
 import vue from '@vitejs/plugin-vue';
-import { resolve } from 'path';
-import fs from 'fs';
+import { defineConfig } from 'vite';
+
 
 export default defineConfig({
   plugins: [

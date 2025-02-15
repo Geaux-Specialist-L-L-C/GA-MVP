@@ -1,10 +1,12 @@
 // File: /eslint.config.js
 // Description: ESLint flat configuration for Geaux Academy using new flat config format
 
-import globals from "globals";
+import typescriptPlugin from "@typescript-eslint/eslint-plugin";
+import typescriptParser from "@typescript-eslint/parser";
+import importPlugin from "eslint-plugin-import";
 import reactPlugin from "eslint-plugin-react";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
-import importPlugin from "eslint-plugin-import";
+import globals from "globals";
 
 export default [
   // Global ignore patterns
@@ -27,7 +29,6 @@ export default [
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
-      ecmaFeatures: { jsx: true },
       globals: {
         ...globals.browser,
         ...globals.node,
@@ -60,14 +61,14 @@ export default [
   {
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
-      parser: require.resolve("@typescript-eslint/parser"),
+      parser: typescriptParser,
       parserOptions: {
         project: ["./tsconfig.json", "./functions/tsconfig.json"],
         tsconfigRootDir: process.cwd()
       }
     },
     plugins: {
-      "@typescript-eslint": require("typescript-eslint").plugin,
+      "@typescript-eslint": typescriptPlugin,
       react: reactPlugin,
       "react-hooks": reactHooksPlugin,
       import: importPlugin
