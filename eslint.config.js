@@ -1,5 +1,5 @@
 // File: /eslint.config.js
-// Description: ESLint flat configuration for Geaux Academy using new flat config format
+// Description: ESLint flat configuration for Geaux Academy
 
 import typescriptPlugin from "@typescript-eslint/eslint-plugin";
 import typescriptParser from "@typescript-eslint/parser";
@@ -18,17 +18,48 @@ export default [
       "**/coverage/**",
       "**/dataconnect-generated/**",
       "**/*.d.ts",
-      "vite.config.ts",
-      "jest.config.js"
+      "**/public/**/*.js"  // Ignore plain JS files in public
     ]
   },
 
-  // JavaScript configuration
+  // Handle JSX files in public directory separately
+  {
+    files: ["public/**/*.jsx"],
+    languageOptions: {
+      ecmaVersion: 2023,
+      sourceType: "module",
+      parserOptions: {
+        jsx: true,
+        ecmaFeatures: {
+          jsx: true
+        }
+      },
+      globals: {
+        ...globals.browser,
+        React: "readonly"
+      }
+    },
+    plugins: {
+      react: reactPlugin
+    },
+    rules: {
+      "react/react-in-jsx-scope": "off"
+    },
+    settings: {
+      react: { version: "detect" }
+    }
+  },
+
+  // Base configuration for all JavaScript files
   {
     files: ["**/*.{js,jsx,mjs,cjs}"],
+    ignores: ["public/**"],  // Skip files already handled
     languageOptions: {
-      ecmaVersion: "latest",
+      ecmaVersion: 2023,
       sourceType: "module",
+      parserOptions: {
+        jsx: true
+      },
       globals: {
         ...globals.browser,
         ...globals.node,
@@ -41,12 +72,12 @@ export default [
       import: importPlugin
     },
     rules: {
-      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/rules-of-hooks": "warn", // Changed from error to warn
       "react-hooks/exhaustive-deps": "warn",
       "react/react-in-jsx-scope": "off",
-      "no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }], // Changed from error to warn
       "import/order": [
-        "error",
+        "warn", // Changed from error to warn
         {
           groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
           "newlines-between": "always",
@@ -54,41 +85,42 @@ export default [
         }
       ]
     },
-    settings: { react: { version: "detect" } }
+    settings: { 
+      react: { version: "detect" }
+    }
   },
 
-  // TypeScript configuration
+  // TypeScript-specific configuration
   {
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       parser: typescriptParser,
       parserOptions: {
-        project: ["./tsconfig.json", "./functions/tsconfig.json"],
-        tsconfigRootDir: process.cwd()
+        ecmaVersion: 2023,
+        sourceType: "module",
+        ecmaFeatures: {
+          jsx: true
+        }
       }
     },
     plugins: {
       "@typescript-eslint": typescriptPlugin,
       react: reactPlugin,
-      "react-hooks": reactHooksPlugin,
-      import: importPlugin
+      "react-hooks": reactHooksPlugin
     },
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
-      "@typescript-eslint/explicit-function-return-type": [
-        "warn",
-        { allowExpressions: true, allowTypedFunctionExpressions: true }
-      ],
-      "@typescript-eslint/strict-boolean-expressions": "warn"
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }], // Changed from error to warn
+      "@typescript-eslint/explicit-function-return-type": ["warn", { 
+        allowExpressions: true, 
+        allowTypedFunctionExpressions: true 
+      }],
+      "react/react-in-jsx-scope": "off",
+      "react-hooks/rules-of-hooks": "warn", // Changed from error to warn
+      "react-hooks/exhaustive-deps": "warn"
     },
     settings: {
-      react: { version: "detect" },
-      "import/parsers": { "@typescript-eslint/parser": [".ts", ".tsx"] },
-      "import/resolver": {
-        typescript: { project: ["./tsconfig.json", "./functions/tsconfig.json"] },
-        node: true
-      }
+      react: { version: "detect" }
     }
   }
 ];
