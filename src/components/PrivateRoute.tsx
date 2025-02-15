@@ -3,7 +3,7 @@
 // Author: GitHub Copilot
 
 import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from './common/LoadingSpinner';
 import styled from 'styled-components';
@@ -20,12 +20,12 @@ interface PrivateRouteProps {
   children: React.ReactNode;
 }
 
-const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const { currentUser, loading } = useAuth();
+const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }): JSX.Element => {
+  const { currentUser, isAuthReady } = useAuth();
   const location = useLocation();
 
   // Show loading spinner while auth state is being determined
-  if (loading) {
+  if (!isAuthReady) {
     return (
       <LoadingContainer>
         <LoadingSpinner />
@@ -34,7 +34,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   }
 
   // If not authenticated, redirect to login with current location
-  if (!currentUser && !loading) {
+  if (!currentUser && isAuthReady) {
     // Only redirect if we're not already on the login page
     if (location.pathname !== '/login') {
       return (

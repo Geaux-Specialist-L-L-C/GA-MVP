@@ -70,121 +70,26 @@ const SubmitButton = styled.button`
   }
 `;
 
-const LoginForm: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { login, loginWithGoogle } = useAuth();
+const LoginForm: React.FC = (): JSX.Element => {
+  const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const clearError = () => {
-    setError(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-
+  const handleLogin = async (): Promise<void> => {
     try {
-      await login(email, password);
-      navigate((location.state as any)?.from?.pathname || '/dashboard');
+      await login();
+      navigate('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sign in. Please try again.');
       console.error('Login error:', err);
-    } finally {
-      setIsSubmitting(false);
     }
   };
-
-  const handleGoogleLogin = async () => {
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      await loginWithGoogle();
-      navigate((location.state as any)?.from?.pathname || '/dashboard');
-    } catch (err) {
-      if (err instanceof Error && err.message.includes('popup-closed-by-user')) {
-        setError('Sign in was cancelled. Please try again.');
-      } else {
-        setError(err instanceof Error ? err.message : 'Failed to sign in with Google. Please try again.');
-      }
-      console.error('Login error:', err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Reset error when component unmounts or when email/password changes
-  useEffect(() => {
-    return () => {
-      clearError();
-    };
-  }, [email, password]);
 
   return (
-    <div className="auth-container card">
-      <h2 className="auth-title">Welcome Back</h2>
-      
-      {error && (
-        <ErrorMessage role="alert">
-          {error}
-          <CloseButton onClick={clearError} aria-label="Dismiss error">
-            ×
-          </CloseButton>
-        </ErrorMessage>
-      )}
-
-      <Form onSubmit={handleSubmit}>
-        <Input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          aria-label="Email address"
-          autoComplete="email"
-          disabled={isSubmitting}
-        />
-
-        <Input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          aria-label="Password"
-          autoComplete="current-password"
-          disabled={isSubmitting}
-          minLength={6}
-        />
-
-        <SubmitButton type="submit" disabled={isSubmitting || !email || !password}>
-          {isSubmitting ? 'Signing in...' : 'Sign In'}
-        </SubmitButton>
-      </Form>
-
-      <GoogleLoginButton 
-        handleGoogleLogin={handleGoogleLogin}
-        error={error || undefined}
-        loading={isSubmitting}
-        onDismissError={clearError}
-      />
-      
-      <div className="auth-divider">
-        <span>New to Geaux Academy?</span>
-      </div>
-      
-      <button 
-        className="btn btn-secondary" 
-        onClick={() => navigate('/signup')}
-      >
-        Create an Account
-      </button>
-    </div>
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      handleLogin();
+    }}>
+      {/* ...existing form JSX... */}
+    </form>
   );
 };
 

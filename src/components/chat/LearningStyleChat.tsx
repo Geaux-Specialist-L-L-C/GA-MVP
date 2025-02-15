@@ -5,12 +5,32 @@ import { useAuth } from '../../contexts/AuthContext';
 import Message from '../Message';
 import { saveLearningStyle, updateStudentAssessmentStatus } from '../../services/profileService';
 import { CheshireService } from '../../services/cheshireService';
-import LoadingSpinner from '../common/LoadingSpinner';
+import { LearningStyle } from '../../types/profiles';
+
+type ValidLearningStyle = 'visual' | 'auditory' | 'kinesthetic' | 'reading/writing';
 
 interface ChatMessage {
   text: string;
   sender: 'user' | 'bot';
 }
+
+interface CheshireResponse {
+  data: string;
+  memories?: Array<{
+    metadata?: {
+      learning_style?: string;
+    };
+  }>;
+}
+
+interface CheshireError {
+  code?: string;
+  message: string;
+}
+
+const isValidLearningStyle = (style: string): style is ValidLearningStyle => {
+  return ['visual', 'auditory', 'kinesthetic', 'reading/writing'].includes(style);
+};
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
@@ -42,44 +62,45 @@ const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
     return () => clearInterval(intervalId);
   }, []);
 
-  const checkApiConnection = async () => {
+  const checkApiConnection = async (): Promise<void> => {
     const isConnected = await CheshireService.checkConnection();
     setConnectionError(!isConnected);
   };
 
-  const retryWithDelay = async (fn: () => Promise<any>, retries: number = MAX_RETRIES): Promise<any> => {
+  const retryWithDelay = async (fn: () => Promise<void>, maxRetries = 3, delay = 1000): Promise<void> => {
     try {
       return await fn();
     } catch (error) {
-      if (retries > 0) {
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-        return retryWithDelay(fn, retries - 1);
+      if (maxRetries > 0) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return retryWithDelay(fn, maxRetries - 1, delay);
       }
       throw error;
     }
   };
 
-  const handleResponse = async (response: any) => {
-    try {
-      // Check if response contains learning style data
-      const learningStyle = response?.data?.memories?.find((m: any) => 
-        m.metadata?.learning_style
-      )?.metadata?.learning_style;
-
-      if (learningStyle && studentId) {
+  const handleResponse = async (response: CheshireResponse): Promise<void> => {
+    const rawLearningStyle = response?.memories?.find(m => m.metadata?.learning_style)?.metadata?.learning_style;
+    if (rawLearningStyle && isValidLearningStyle(rawLearningStyle) && studentId) {
+      const learningStyle: LearningStyle = {
+        type: rawLearningStyle,
+        strengths: [],
+        recommendations: []
+      };
+      try {
         await saveLearningStyle(studentId, learningStyle);
         await updateStudentAssessmentStatus(studentId, "completed");
+      } catch (error) {
+        console.error('Error saving learning style:', error);
+        setMessages(prev => [...prev, { 
+          text: "There was an error saving your learning style. Please try again.", 
+          sender: "bot" 
+        }]);
       }
-    } catch (error) {
-      console.error('Error saving learning style:', error);
-      setMessages(prev => [...prev, { 
-        text: "There was an error saving your learning style. Please try again.", 
-        sender: "bot" 
-      }]);
     }
   };
 
-  const sendMessage = async () => {
+  const sendMessage = async (): Promise<void> => {
     if (!input.trim()) return;
 
     const userMessage = input.trim();
@@ -94,18 +115,18 @@ const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
         studentId || 'default'
       );
 
-      if (response.data) {
+      if (response) {
         setMessages(prev => [...prev, { text: response.data, sender: 'bot' }]);
+        await handleResponse(response);
       }
       
-      await handleResponse(response.data);
       setConnectionError(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error sending message:', error);
-      const errorMessage = CheshireService.getErrorMessage(error);
+      const errorMessage = CheshireService.getErrorMessage(error as CheshireError);
       setMessages(prev => [...prev, { text: errorMessage, sender: 'bot' }]);
       setConnectionError(true);
-      checkApiConnection();
+      await checkApiConnection();
     } finally {
       setLoading(false);
     }

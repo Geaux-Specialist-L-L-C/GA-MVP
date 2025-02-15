@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation, Location } from 'react-router-dom';
+import { useLocation, Location, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
@@ -11,11 +11,11 @@ interface LocationState {
   error?: string;
 }
 
-const Login: React.FC = () => {
-  const { loginWithGoogle, login } = useAuth();
+const Login: React.FC = (): JSX.Element => {
+  const { login, error } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation() as Location & { state: LocationState };
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,11 +24,10 @@ const Login: React.FC = () => {
 
   const handleGoogleLogin = async (): Promise<void> => {
     try {
-      setError("");
       setLoading(true);
-      await loginWithGoogle();
+      await login();
+      navigate('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to login");
       console.error("Login error:", err);
     } finally {
       setLoading(false);
@@ -38,11 +37,10 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     try {
-      setError("");
       setLoading(true);
-      await login(formData.email, formData.password);
+      await login();
+      navigate('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to login");
       console.error("Login error:", err);
     } finally {
       setLoading(false);

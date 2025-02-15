@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
@@ -30,9 +30,7 @@ const LearningStyleChat = React.lazy(() => import('./components/chat/LearningSty
 const ParentDashboard = React.lazy(() => import('./pages/profile/ParentProfile/ParentDashboard'));
 const TestChat = React.lazy(() => import('./components/chat/TestChat'));
 
-const App = () => {
-  const navigate = useNavigate();
-
+const App: React.FC = (): JSX.Element => {
   useEffect(() => {
     // Register service worker for auth handling
     if ('serviceWorker' in navigator) {
