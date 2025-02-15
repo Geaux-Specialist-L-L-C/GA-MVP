@@ -9,11 +9,6 @@ import { Link } from 'react-router-dom';
 import { motion as m } from 'framer-motion';
 import { FaHeadphones, FaBook, FaRunning, FaBrain, FaUsers, FaEye } from 'react-icons/fa';
 import Card from '../components/common/Card';
-import { DefaultTheme } from 'styled-components';
-
-interface ThemeProps {
-  theme: DefaultTheme;
-}
 
 const LearningStyles: React.FC = () => {
   const learningStyles = [

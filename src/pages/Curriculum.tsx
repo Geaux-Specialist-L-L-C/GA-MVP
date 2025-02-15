@@ -4,6 +4,7 @@
 // Created: 2023-10-10
 
 import React, { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from "../contexts/AuthContext";
 import { FcGoogle } from "react-icons/fc";
 import CourseCard from "../components/CourseCard";
@@ -21,13 +22,15 @@ interface Course {
 
 const Curriculum: React.FC = () => {
   const [selectedGrade, setSelectedGrade] = useState<'elementary' | 'middle' | 'high'>('middle');
-  const { loginWithGoogle } = useAuth();
+  const { login } = useAuth();
   const [error, setError] = useState<string>('');
+  const navigate = useNavigate();
 
-  const handleGoogleLogin = async (): Promise<void> => {
+  const handleLogin = async (): Promise<void> => {
     try {
       setError('');
-      await loginWithGoogle();
+      await login();
+      navigate('/dashboard');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');
       console.error('Login error:', error);
@@ -95,7 +98,7 @@ const Curriculum: React.FC = () => {
         <p className="mt-4">Join our platform to access the full curriculum and personalized learning paths.</p>
         <button 
           className="flex items-center gap-2 px-4 py-2 border rounded mt-4" 
-          onClick={handleGoogleLogin}
+          onClick={handleLogin}
         >
           <FcGoogle />
           <span>Sign in with Google to Get Started</span>

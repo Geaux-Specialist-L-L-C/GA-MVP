@@ -192,14 +192,14 @@ const features: Feature[] = [
 ];
 
 const Home: React.FC = () => {
-  const { loginWithGoogle } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string>("");
 
-  const handleGoogleLogin = async (): Promise<void> => {
+  const handleLogin = async (): Promise<void> => {
     try {
       setError("");
-      await loginWithGoogle();
+      await login();
       navigate("/dashboard");
     } catch (error) {
       setError(error instanceof Error ? error.message : "An error occurred");
@@ -233,7 +233,7 @@ const Home: React.FC = () => {
         <p>Join Geaux Academy today and unlock your full potential.</p>
         <GoogleLoginSection>
           <p>Sign in with Google to get started</p>
-          <GoogleLoginButton onClick={handleGoogleLogin}>
+          <GoogleLoginButton onClick={handleLogin}>
             <img src="/google-icon.svg" alt="Google" width="24" height="24" />
             Sign in with Google
           </GoogleLoginButton>

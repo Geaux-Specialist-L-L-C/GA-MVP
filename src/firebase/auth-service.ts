@@ -1,10 +1,11 @@
-import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, getAuth } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, Auth } from "firebase/auth";
 import { auth } from './config';
 
 export class AuthService {
   private provider: GoogleAuthProvider;
   private initialized: boolean = false;
   private popupOpen: boolean = false;
+  private _auth: Auth;
 
   constructor() {
     this.provider = new GoogleAuthProvider();
@@ -12,23 +13,23 @@ export class AuthService {
       prompt: 'select_account',
       scope: 'email profile'
     });
+    this._auth = auth;
+  }
+
+  get auth(): Auth {
+    return this._auth;
   }
 
   private async ensureInitialized() {
     if (!this.initialized) {
       await new Promise<void>((resolve) => {
-        const unsubscribe = auth.onAuthStateChanged(() => {
+        const unsubscribe = this._auth.onAuthStateChanged(() => {
           unsubscribe();
           this.initialized = true;
           resolve();
         });
       });
     }
-  }
-
-  async getAuth() {
-    await this.ensureInitialized();
-    return auth;
   }
 
   async signInWithGoogle() {
@@ -40,7 +41,7 @@ export class AuthService {
       await this.ensureInitialized();
       this.popupOpen = true;
 
-      const result = await signInWithPopup(auth, this.provider);
+      const result = await signInWithPopup(this._auth, this.provider);
       return result;
     } catch (error: any) {
       console.error('Google sign-in error:', error);
@@ -58,7 +59,7 @@ export class AuthService {
   async signOut() {
     try {
       await this.ensureInitialized();
-      await firebaseSignOut(auth);
+      await firebaseSignOut(this._auth);
     } catch (error: any) {
       console.error('Sign out error:', error);
       throw new Error(error.message || 'Failed to sign out');
