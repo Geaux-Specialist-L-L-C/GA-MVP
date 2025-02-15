@@ -2,17 +2,12 @@ import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import React from 'react';
 import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
-import type { DefaultTheme } from 'styled-components';
 
 interface GoogleLoginButtonProps {
   handleGoogleLogin: () => Promise<void>;
   loading?: boolean;
   error?: string;
   onDismissError?: () => void;
-}
-
-interface StyledProps {
-  theme: DefaultTheme;
 }
 
 const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
@@ -51,7 +46,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
       <LoginButton 
         onClick={handleClick}
         disabled={loading}
-        aria-label="sign in with google"
+        aria-label={loading ? 'Signing in...' : 'Sign in with Google'}
       >
         <FcGoogle />
         {loading ? 'Signing in...' : 'Sign in with Google'}
