@@ -9,5 +9,12 @@ declare module 'styled-components' {
       desktop: string;
       large: string;
     };
+    spacing: Theme['spacing'] & {
+      xs: string;
+      sm: string;
+      md: string;
+      lg: string;
+      xl: string;
+    };
   }
 }
