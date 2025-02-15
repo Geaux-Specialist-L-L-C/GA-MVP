@@ -31,6 +31,10 @@ const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration = 3000, 
   );
 };
 
+const showToast = (): void => {
+  // Function implementation
+};
+
 const getToastColor = (type: ToastType) => {
   switch (type) {
     case 'success':

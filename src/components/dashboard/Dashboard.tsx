@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import ParentProfileForm from '../../pages/profile/ParentProfile/ParentProfileForm';
 import CreateStudent from '../../pages/profile/ParentProfile/CreateStudent';
 import StudentCard from '../../components/student/StudentCard';
-import { ProfileService } from '../../services/profileService';
+import { ProfileService, getStudentProfile } from '../../services/profileService';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import LoadingSpinner from '../common/LoadingSpinner';
-import type { Student, UserProfile } from '../../types/profiles';
+import type { Student, BaseProfile } from '../../types/profiles';
 
 interface UserData {
   name: string;
@@ -23,7 +22,7 @@ interface ParentProfile {
 }
 
 interface DashboardProps {
-  onProfileUpdate?: (profile: UserProfile) => void;
+  onProfileUpdate?: (profile: BaseProfile) => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onProfileUpdate }): JSX.Element => {
@@ -101,9 +100,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onProfileUpdate }): JSX.Element =
       // Fetch students data if profile exists
       if (profile?.students?.length) {
         const studentsData = await Promise.all(
-          profile.students.map(async (studentId) => {
+          profile.students.map(async (studentId: string) => {
             try {
-              const student = await profileService.getStudentProfile(studentId);
+              const student = await getStudentProfile(studentId);
               return student;
             } catch (err) {
               console.error(`Error fetching student ${studentId}:`, err);
@@ -370,5 +369,7 @@ const RetryButton = styled.button`
     background: rgba(0, 0, 0, 0.05);
   }
 `;
+
+const regex = /some-pattern/;
 
 export default Dashboard;

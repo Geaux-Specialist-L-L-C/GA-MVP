@@ -1,10 +1,18 @@
-name: CI/CD
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - '.github/copilot-instructions.md'
+      - 'docs/**'
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - '.github/copilot-instructions.md'
+      - 'docs/**'
 
 permissions:
   checks: write
@@ -12,7 +20,7 @@ permissions:
   pull-requests: write
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   VITE_USE_SECURE_COOKIES: 'true'
   VITE_AUTH_PERSISTENCE: 'LOCAL'
   VITE_AUTH_POPUP_FALLBACK: 'true'
@@ -21,24 +29,43 @@ env:
   VITE_AUTH_POPUP_REDIRECT_RESOLVER: 'browser'
 
 jobs:
+  validate-environment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate development environment
+        run: |
+          if [ -f "devcontainer.json" ]; then
+            echo "✅ Development container configuration validated"
+          else
+            echo "❌ Error: Missing devcontainer.json"
+            exit 1
+          fi
+
   build-and-test:
+    needs: validate-environment
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
 
+    - name: Clear npm cache
+      run: npm cache clean --force
+      
     - name: Install dependencies
       run: npm ci --legacy-peer-deps
-      
+
     - name: Setup Firebase Tools
       run: npm install -g firebase-tools
 
@@ -95,6 +122,12 @@ jobs:
     - name: Check bundle size
       run: npm run analyze-bundle || true
 
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build
+        path: dist/
+
   deploy:
     needs: build-and-test
     if: github.ref == 'refs/heads/main'
@@ -104,34 +137,13 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
       with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci --legacy-peer-deps
-
-    - name: Build
-      run: npm run build
-      env:
-        NODE_ENV: production
-        VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-        VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-        VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-        VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-        VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-        VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-        VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
-        VITE_FIREBASE_DATABASE_URL: ${{ secrets.VITE_FIREBASE_DATABASE_URL }}
-        VITE_CHESHIRE_API_URL: ${{ secrets.VITE_CHESHIRE_API_URL }}
-        VITE_CHESHIRE_API_TOKEN: ${{ secrets.VITE_CHESHIRE_API_TOKEN }}
-        VITE_CHESHIRE_API_TOKEN_TYPE: ${{ secrets.VITE_CHESHIRE_API_TOKEN_TYPE }}
-        VITE_CHESHIRE_DEBUG: ${{ secrets.VITE_CHESHIRE_DEBUG }}
-        VITE_OPENAI_API_KEY: ${{ secrets.VITE_OPENAI_API_KEY }}
+        name: build
+        path: dist/
 
     - name: Deploy to Firebase
       uses: FirebaseExtended/action-hosting-deploy@v0
@@ -141,7 +153,7 @@ jobs:
         channelId: live
         projectId: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
 
-    - name: Configure Firebase Headers
+    - name: Configure Firebase Security Headers
       run: |
         cat > firebase.json << 'EOF'
         {
@@ -215,9 +227,3 @@ jobs:
         }
         EOF
         firebase deploy --only hosting:headers
-
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: build
-        path: dist/
