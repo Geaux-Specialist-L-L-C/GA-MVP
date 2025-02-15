@@ -40,7 +40,8 @@ export const renderWithProviders = (
 
   if (withRouter) {
     const router = createMemoryRouter(
-      [{ path: "*", element: <Providers>{ui}</Providers> }]
+      [{ path: "*", element: <Providers>{ui}</Providers> }],
+      { initialEntries: ['/'] }
     );
     return render(<RouterProvider router={router} />, options);
   }

@@ -1,33 +1,35 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: IconProp | string;
   title?: string;
   description?: string | string[];
-  children?: React.ReactNode;
   className?: string;
   onClick?: () => void;
 }
 
-const Card: React.FC<CardProps> = ({
+const Card = forwardRef<HTMLDivElement, CardProps>(({
   icon,
   title,
   description,
   children,
   className,
-  onClick
-}) => {
+  onClick,
+  ...props
+}, ref) => {
   const isImagePath = typeof icon === 'string' && (icon.startsWith('/') || icon.startsWith('http'));
   
   return (
     <StyledCard 
+      ref={ref}
       className={className} 
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
+      {...props}
     >
       {icon && (
         <IconContainer>
@@ -57,7 +59,9 @@ const Card: React.FC<CardProps> = ({
       {children}
     </StyledCard>
   );
-};
+});
+
+Card.displayName = 'Card';
 
 const StyledCard = styled.div`
   background: ${({ theme }) => theme.palette.background.paper};
