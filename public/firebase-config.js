@@ -1,11 +1,12 @@
-
 // This script injects Firebase configuration into the service worker
 self.FIREBASE_CONFIG = {
-  "apiKey": "AIzaSyB0V4iL1aQ_xtWeO_iWL1fuhu4_SLfqZeo",
-  "authDomain": "geaux-academy.firebaseapp.com",
-  "projectId": "geaux-academy",
-  "messagingSenderId": "145629211979",
-  "appId": "1:145629211979:web:1f9c854ecb392916adccce"
+  apiKey: "AIzaSyB0V4iL1aQ_xtWeO_iWL1fuhu4_SLfqZeo",
+  authDomain: "geaux-academy.firebaseapp.com",
+  projectId: "geaux-academy",
+  storageBucket: "geaux-academy.firebasestorage.app",
+  messagingSenderId: "145629211979",
+  appId: "1:145629211979:web:1f9c854ecb392916adccce",
+  measurementId: "G-6MBLBQ3NWS"
 };
 self.SSL_CONFIG = {
   "key": "-----BEGIN RSA PRIVATE KEY-----\r\nMIIEowIBAAKCAQEAoE3oomolNUmVJmPMkYFJx93P4DuW4imxLTg3ngC/g+2Qx+Of\r\nyWkOzgYt0DnR52ev/i0HS5xlw4PUqdAk3the98RIi6PmeldKUVTnYfP07jz+XnlP\r\nJy8ppY7ejdrjFRnpNN8lBlfH9mp3H0jbkGR6qvx7sIx3Gpx4TqJJl+0qKYWx15uE\r\nrcqpU81zJJmb0aQTZm7StcCy9wBmCC3MCNuB6x4kkb7YiaJprtNBsRzRGoeHiWOF\r\nLgO09wFdlvj20ilw9VRb/V2gTQxEZLoFkDfM1oh/bWlj1eXDPCd9++Ao4PqMcPSU\r\n61ocUu3Eqf4xiX9zLJgfbJ6FAF4Q00MFDULfjQIDAQABAoIBAAqYS51cbZwhgmGY\r\nq/8b7+/tSZ104sqM3eByvD5Np1rFW1HSyg9KSce1IdcG00g7kqa2fCpzqkgrUOVu\r\nU9mErHYsu2y7RvLkDQ3mEirnsFMEpf1BgElDNTnzgOMYSfTtkvvDGdPa/mTbcYcY\r\nTiazdWYSrOwkxIR2Pf9Ye4u2iZhX2nh4PnVD8k99hxHfdrd7S/rvNHoYjtBMCo3c\r\n85cZuR3XBCXIJERAZIye6W03qY96TjryEZN+byFjODck/2cpc8QpjMX3XMKcwV/f\r\ni23Mpu/ypWNYOkM73T/4pe+DVvo0XOzgl5agj3U9QsYCJRk5ybliDuxeBrFoSeIx\r\nGY7qpjMCgYEA0LOuiP0YfdlQ/eDqgYrahYMVVNVSx4joEvk+vhniquOmEgd3gBmq\r\nJmLH2q+Ug++aZy03bgIF26VpFP+F2xdhMlntRicQOHOXiDkn1zRkriYbPuYBsD2e\r\n7yWQwZlCNruY8Tc0OctV/wJrKA77+AtqtxFN7dfzz7tTYUfb6Vcap6cCgYEAxKJV\r\nAb9jcQuPuMPBgfHMRnMiNQQJRj+t1OGhwHoymWlkoO266ppOkD84wqLJalOB9lpw\r\ny5On4LeN9tUFcR9aSieactzTOoUOudP8mxX9sFcHuYLY7zsf4ZpNsP+icC2iq350\r\n02JwFrT4ddGYGcq+LtfHWnvRRL5Zex9Oax0wZasCgYB8vIf6tFrpDPQNaVp/5n/J\r\nAJnFRGLfg4JBpNrNQCdrv/hIGlJgK/a4Tp3opLx9Rr3gIPRaObdKmkh+FmLomcas\r\nE3dvUHWvZ9cPwil/xH7QX1I1e79SmOHfSXKFY5ZhpCo7MaVzTYaujcGCBcKvdBNq\r\nK1uKZmIArJOfNxXHFxqFTQKBgDDKrxk96mj0m3cXa/7Yhv28N/K7y6lYx8OZMU/X\r\ngpK6qjOcidMI8xGr/mOdjSkLC6abjn2VaATExz9GYJFPXFImPZbe4LMWrS7DQV0i\r\nOc716X7Izxedri2G4lxXMnFvgXvYZxjExld8FGL33SwZONPayybSrnzGVuHMROMj\r\nXQz9AoGBAM/YRHijn3ZCp++ZhkeqW15n1jVKPCIFUmyD9PSyMJH1Dx5h38qGHVW/\r\nM+wu50icw/sJ7o9POCju+eb9TGQWE+yeTOOepWt3i3GtwrZgEUvLrLh/hJYelMVV\r\nKaNrLD5fB28Flx58j/EW0PBuOUkAPM1iDlBii0AF3727GvFkmsXS\r\n-----END RSA PRIVATE KEY-----\r\n",
