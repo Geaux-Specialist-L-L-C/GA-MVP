@@ -160,6 +160,11 @@ jobs:
         name: build
         path: dist/
 
+    - name: Setup GCP Service Account
+      run: |
+        echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/service-account.json
+        echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/service-account.json" >> $GITHUB_ENV
+
     - name: Update Firebase Security Headers
       run: |
         cat > firebase.json << 'EOF'
@@ -259,7 +264,12 @@ jobs:
         }
         EOF
 
-    - name: Deploy to Firebase
-      run: firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --non-interactive
+    - name: Set Firebase Project
+      run: firebase use ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
       env:
-        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        GOOGLE_APPLICATION_CREDENTIALS: /tmp/service-account.json
+
+    - name: Deploy to Firebase
+      run: firebase deploy --only hosting --non-interactive
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: /tmp/service-account.json
