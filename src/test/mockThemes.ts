@@ -6,10 +6,20 @@ const muiTheme = createTheme({
   palette: {
     primary: {
       main: '#1976d2',
-      dark: '#115293'
+      dark: '#115293',
+      light: '#4791db'
+    },
+    error: {
+      main: '#d32f2f',
+      light: '#ef5350'
     },
     background: {
-      paper: '#ffffff'
+      paper: '#ffffff',
+      default: '#f5f5f5'
+    },
+    text: {
+      primary: '#000000',
+      secondary: '#666666'
     }
   },
   breakpoints: {
@@ -45,5 +55,19 @@ export const mockStyledTheme: DefaultTheme = {
     desktop: '1024px',
     large: '1440px'
   },
-  spacing
+  spacing,
+  colors: {
+    border: '#e0e0e0',
+    text: '#000000',
+    background: {
+      hover: '#f5f5f5'
+    },
+    error: {
+      main: '#d32f2f',
+      light: '#ffebee'
+    }
+  },
+  borderRadius: {
+    default: '4px'
+  }
 };

@@ -16,5 +16,19 @@ declare module 'styled-components' {
       lg: string;
       xl: string;
     };
+    colors: {
+      border: string;
+      text: string;
+      background: {
+        hover: string;
+      };
+      error: {
+        main: string;
+        light: string;
+      };
+    };
+    borderRadius: {
+      default: string;
+    };
   }
 }

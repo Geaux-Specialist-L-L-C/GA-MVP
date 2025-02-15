@@ -1,9 +1,8 @@
 import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import React from 'react';
-import styled, { ThemeProvider } from 'styled-components';
+import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
 import type { DefaultTheme } from 'styled-components';
-import { styledTheme } from '../theme/theme';
 
 interface GoogleLoginButtonProps {
   handleGoogleLogin: () => Promise<void>;
@@ -35,38 +34,36 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   };
 
   return (
-    <ThemeProvider theme={styledTheme}>
-      <ButtonContainer>
-        {error && (
-          <ErrorMessage role="alert">
-            <span>{error}</span>
-            {onDismissError && (
-              <DismissButton 
-                onClick={onDismissError}
-                aria-label="dismiss error"
-              >
-                ✕
-              </DismissButton>
-            )}
-          </ErrorMessage>
-        )}
-        <LoginButton 
-          onClick={handleClick}
-          disabled={loading}
-          aria-label="sign in with google"
-        >
-          <FcGoogle />
-          {loading ? 'Signing in...' : 'Sign in with Google'}
-        </LoginButton>
-      </ButtonContainer>
-    </ThemeProvider>
+    <ButtonContainer>
+      {error && (
+        <ErrorMessage role="alert">
+          <span>{error}</span>
+          {onDismissError && (
+            <DismissButton 
+              onClick={onDismissError}
+              aria-label="dismiss error"
+            >
+              ✕
+            </DismissButton>
+          )}
+        </ErrorMessage>
+      )}
+      <LoginButton 
+        onClick={handleClick}
+        disabled={loading}
+        aria-label="sign in with google"
+      >
+        <FcGoogle />
+        {loading ? 'Signing in...' : 'Sign in with Google'}
+      </LoginButton>
+    </ButtonContainer>
   );
 };
 
 const ButtonContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }: StyledProps) => theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.md};
   width: 100%;
 `;
 
@@ -74,19 +71,19 @@ const LoginButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${({ theme }: StyledProps) => theme.spacing.sm};
+  gap: ${({ theme }) => theme.spacing.sm};
   width: 100%;
-  padding: ${({ theme }: StyledProps) => theme.spacing.md};
-  border: 1px solid ${({ theme }: StyledProps) => theme.colors.border};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.default};
+  padding: ${({ theme }) => theme.spacing.md};
+  border: 1px solid ${({ theme }) => theme.palette.divider};
+  border-radius: 4px;
   background: white;
-  color: ${({ theme }: StyledProps) => theme.colors.text};
+  color: ${({ theme }) => theme.palette.text.primary};
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.2s;
 
   &:hover:not(:disabled) {
-    background-color: ${({ theme }: StyledProps) => theme.colors.background.hover};
+    background-color: ${({ theme }) => theme.palette.action?.hover || '#f5f5f5'};
   }
 
   &:disabled {
@@ -99,10 +96,10 @@ const ErrorMessage = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: ${({ theme }: StyledProps) => theme.spacing.sm};
-  background-color: ${({ theme }: StyledProps) => theme.colors.error.light};
-  color: ${({ theme }: StyledProps) => theme.colors.error.main};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.default};
+  padding: ${({ theme }) => theme.spacing.sm};
+  background-color: ${({ theme }) => theme.palette.error.light};
+  color: ${({ theme }) => theme.palette.error.main};
+  border-radius: 4px;
   font-size: 0.875rem;
 `;
 
@@ -111,8 +108,8 @@ const DismissButton = styled.button`
   border: none;
   color: inherit;
   cursor: pointer;
-  padding: ${({ theme }: StyledProps) => theme.spacing.xs};
-  margin-left: ${({ theme }: StyledProps) => theme.spacing.sm};
+  padding: ${({ theme }) => theme.spacing.xs};
+  margin-left: ${({ theme }) => theme.spacing.sm};
 
   &:hover {
     opacity: 0.8;
