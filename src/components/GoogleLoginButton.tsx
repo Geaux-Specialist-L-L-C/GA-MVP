@@ -1,15 +1,18 @@
 import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
-import { Theme } from '../../theme';
+import type { DefaultTheme } from 'styled-components';
 
 interface GoogleLoginButtonProps {
   handleGoogleLogin: () => Promise<void>;
   loading?: boolean;
   error?: string;
   onDismissError?: () => void;
+}
+
+interface StyledProps {
+  theme: DefaultTheme;
 }
 
 const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
@@ -45,22 +48,17 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
           )}
         </ErrorMessage>
       )}
-      <LoginButton
+      <LoginButton 
         onClick={handleClick}
         disabled={loading}
-        role="button"
-        aria-busy={loading}
+        aria-label="sign in with google"
       >
         <FcGoogle />
-        <span>{loading ? 'Signing in...' : 'Sign in with Google'}</span>
+        {loading ? 'Signing in...' : 'Sign in with Google'}
       </LoginButton>
     </ButtonContainer>
   );
 };
-
-interface StyledProps {
-  theme: Theme;
-}
 
 const ButtonContainer = styled.div`
   display: flex;

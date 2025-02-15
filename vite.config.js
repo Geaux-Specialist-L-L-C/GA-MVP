@@ -38,7 +38,8 @@ export default defineConfig({
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: [
-        'node_modules/',
+        '**/node_modules/**',
+        '**/dist/**',
         'src/test/setup.ts'
       ]
     }

@@ -28,16 +28,15 @@ const LearningStyles: React.FC = () => {
       <m.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <StylesGrid>
           {learningStyles.map((style, index) => (
-            <StyleCard 
-              key={index} 
-              as={m.div}
+            <MotionStyleCard 
+              key={index}
               whileHover={{ scale: 1.05 }} 
               transition={{ duration: 0.3 }}
             >
               <IconWrapper>{style.icon}</IconWrapper>
               <h3>{style.title}</h3>
               <p>{style.description}</p>
-            </StyleCard>
+            </MotionStyleCard>
           ))}
         </StylesGrid>
 
@@ -59,13 +58,15 @@ const StylesGrid = styled(m.div)`
   margin: 2rem 0;
 `;
 
-const StyleCard = styled(m(Card))`
+const StyleCard = styled(Card)`
   padding: 2rem;
   text-align: center;
   background: ${({ theme }) => theme.palette.background.paper};
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 `;
+
+const MotionStyleCard = m.create(StyleCard);
 
 const IconWrapper = styled.div`
   font-size: 2.5rem;
@@ -76,26 +77,27 @@ const IconWrapper = styled.div`
 const CTASection = styled.div`
   text-align: center;
   margin: 4rem 0;
-
+  
   h2 {
+    font-size: 2rem;
     margin-bottom: 2rem;
   }
 `;
-interface ButtonProps {
-  $variant?: 'primary' | 'secondary';
-}
 
-const Button = styled(m(Link))<ButtonProps>`
+const Button = styled(Link)<{ $variant?: 'primary' | 'secondary' }>`
   display: inline-block;
   padding: 1rem 2rem;
-  background: ${({ theme }) => theme.palette.primary.main};
+  background: ${({ theme, $variant }) => 
+    $variant === 'secondary' ? theme.palette.secondary.main : theme.palette.primary.main};
   color: white;
   border-radius: 4px;
   text-decoration: none;
   font-weight: 600;
-  
+  transition: background 0.2s;
+
   &:hover {
-    background: ${({ theme }) => theme.palette.primary.dark};
+    background: ${({ theme, $variant }) => 
+      $variant === 'secondary' ? theme.palette.secondary.dark : theme.palette.primary.dark};
   }
 `;
 

@@ -1,8 +1,8 @@
 import React from "react";
-import { render, RenderOptions } from "@testing-library/react";
+import { render, RenderOptions, RenderResult } from "@testing-library/react";
 import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
-import { MemoryRouter } from 'react-router-dom';
+import { createMemoryRouter, RouterProvider, type RouterProviderProps } from 'react-router-dom';
 import { AuthContext, type AuthContextProps } from "../contexts/AuthContext";
 import '@testing-library/jest-dom';
 import { mockMuiTheme, mockStyledTheme } from "./mockThemes";
@@ -17,7 +17,7 @@ interface RenderWithProvidersOptions extends Omit<RenderOptions, 'wrapper'> {
 export const renderWithProviders = (
   ui: React.ReactNode,
   { withRouter = true, mockAuthValue = {}, ...options }: RenderWithProvidersOptions = {}
-) => {
+): RenderResult => {
   const defaultAuthValue: AuthContextProps = {
     currentUser: null,
     isAuthReady: true,
@@ -28,15 +28,23 @@ export const renderWithProviders = (
     ...mockAuthValue
   };
 
-  const Wrapper = ({ children }: { children: React.ReactNode }) => (
+  const Providers = ({ children }: { children: React.ReactNode }) => (
     <MUIThemeProvider theme={mockMuiTheme}>
       <StyledThemeProvider theme={mockStyledTheme}>
         <AuthContext.Provider value={defaultAuthValue}>
-          {withRouter ? <MemoryRouter>{children}</MemoryRouter> : children}
+          {children}
         </AuthContext.Provider>
       </StyledThemeProvider>
     </MUIThemeProvider>
   );
 
-  return render(ui, { wrapper: Wrapper, ...options });
+  if (withRouter) {
+    // Remove future flags since they're not yet available in the types
+    const router = createMemoryRouter(
+      [{ path: "*", element: <Providers>{ui}</Providers> }]
+    );
+    return render(<RouterProvider router={router} />, options);
+  }
+
+  return render(<Providers>{ui}</Providers>, options);
 };
