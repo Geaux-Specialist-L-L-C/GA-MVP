@@ -1,8 +1,9 @@
 import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import React from 'react';
-import styled from 'styled-components';
+import styled, { ThemeProvider } from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
 import type { DefaultTheme } from 'styled-components';
+import { styledTheme } from '../theme/theme';
 
 interface GoogleLoginButtonProps {
   handleGoogleLogin: () => Promise<void>;
@@ -34,29 +35,31 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   };
 
   return (
-    <ButtonContainer>
-      {error && (
-        <ErrorMessage role="alert">
-          <span>{error}</span>
-          {onDismissError && (
-            <DismissButton 
-              onClick={onDismissError}
-              aria-label="dismiss error"
-            >
-              ✕
-            </DismissButton>
-          )}
-        </ErrorMessage>
-      )}
-      <LoginButton 
-        onClick={handleClick}
-        disabled={loading}
-        aria-label="sign in with google"
-      >
-        <FcGoogle />
-        {loading ? 'Signing in...' : 'Sign in with Google'}
-      </LoginButton>
-    </ButtonContainer>
+    <ThemeProvider theme={styledTheme}>
+      <ButtonContainer>
+        {error && (
+          <ErrorMessage role="alert">
+            <span>{error}</span>
+            {onDismissError && (
+              <DismissButton 
+                onClick={onDismissError}
+                aria-label="dismiss error"
+              >
+                ✕
+              </DismissButton>
+            )}
+          </ErrorMessage>
+        )}
+        <LoginButton 
+          onClick={handleClick}
+          disabled={loading}
+          aria-label="sign in with google"
+        >
+          <FcGoogle />
+          {loading ? 'Signing in...' : 'Sign in with Google'}
+        </LoginButton>
+      </ButtonContainer>
+    </ThemeProvider>
   );
 };
 
