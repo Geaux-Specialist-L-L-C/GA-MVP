@@ -1,5 +1,6 @@
 import { createTheme } from '@mui/material/styles';
 import type { DefaultTheme } from 'styled-components';
+import type { Theme } from '@mui/material/styles';
 
 const muiTheme = createTheme({
   palette: {
@@ -24,6 +25,17 @@ const muiTheme = createTheme({
 
 export const mockMuiTheme = muiTheme;
 
+const spacing = Object.assign(
+  ((factor: number) => `${0.25 * factor}rem`) as Theme['spacing'],
+  {
+    xs: '0.25rem',
+    sm: '0.5rem',
+    md: '1rem',
+    lg: '2rem',
+    xl: '3rem',
+  }
+);
+
 export const mockStyledTheme: DefaultTheme = {
   ...muiTheme,
   breakpoints: {
@@ -32,5 +44,6 @@ export const mockStyledTheme: DefaultTheme = {
     tablet: '768px',
     desktop: '1024px',
     large: '1440px'
-  }
+  },
+  spacing
 };
