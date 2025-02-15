@@ -7,6 +7,12 @@ import { AuthContext, type AuthContextProps } from "../contexts/AuthContext";
 import '@testing-library/jest-dom';
 import { mockMuiTheme, mockStyledTheme } from "./mockThemes";
 
+// Enable React Router v7 future flags
+const future = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true
+};
+
 export const mockLoginWithGoogle = jest.fn();
 
 interface RenderWithProvidersOptions extends Omit<RenderOptions, 'wrapper'> {
@@ -21,8 +27,10 @@ export const renderWithProviders = (
   const defaultAuthValue: AuthContextProps = {
     currentUser: null,
     isAuthReady: true,
+    loading: false,
     error: null,
     login: mockLoginWithGoogle,
+    loginWithGoogle: mockLoginWithGoogle,
     logout: jest.fn(),
     clearError: jest.fn(),
     ...mockAuthValue
@@ -41,9 +49,12 @@ export const renderWithProviders = (
   if (withRouter) {
     const router = createMemoryRouter(
       [{ path: "*", element: <Providers>{ui}</Providers> }],
-      { initialEntries: ['/'] }
+      { 
+        initialEntries: ['/'],
+        future
+      }
     );
-    return render(<RouterProvider router={router} />, options);
+    return render(<RouterProvider router={router} future={future} />, options);
   }
 
   return render(<Providers>{ui}</Providers>, options);

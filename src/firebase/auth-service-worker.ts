@@ -27,23 +27,39 @@ interface ServiceWorkerRegistrationResult {
   error?: string;
 }
 
-const SW_TIMEOUT = 10000; // 10 seconds timeout for service worker registration
+const SW_TIMEOUT = Number(import.meta.env.VITE_SERVICE_WORKER_TIMEOUT) || 10000;
+const MAX_RETRIES = Number(import.meta.env.VITE_MAX_AUTH_RETRIES) || 3;
 
 const isSecureContext = (): boolean => {
   return window.isSecureContext && (
     window.location.protocol === 'https:' || 
-    window.location.hostname === 'localhost'
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
   );
 };
 
 let serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
+let retryCount = 0;
 
-export const registerAuthServiceWorker = async (): Promise<{
-  success: boolean;
-  isSecure: boolean;
-  supportsServiceWorker: boolean;
-  error?: string;
-}> => {
+const registerWithRetry = async (): Promise<ServiceWorkerRegistration> => {
+  try {
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+      scope: '/__/auth',
+      type: 'module',
+      updateViaCache: 'none'
+    });
+    return registration;
+  } catch (error) {
+    if (retryCount < MAX_RETRIES) {
+      retryCount++;
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return registerWithRetry();
+    }
+    throw error;
+  }
+};
+
+export const registerAuthServiceWorker = async (): Promise<ServiceWorkerRegistrationResult> => {
   if (!('serviceWorker' in navigator)) {
     return {
       success: false,
@@ -53,49 +69,51 @@ export const registerAuthServiceWorker = async (): Promise<{
     };
   }
 
+  if (!isSecureContext()) {
+    return {
+      success: false,
+      isSecure: false,
+      supportsServiceWorker: true,
+      error: 'Secure context required for authentication'
+    };
+  }
+
   try {
     const registrations = await navigator.serviceWorker.getRegistrations();
-    // Remove any existing service workers to avoid conflicts
     await Promise.all(registrations.map(registration => registration.unregister()));
 
-    const scope = '/__/auth';
-    serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-      scope,
-      type: 'module',
-      updateViaCache: 'none'
-    });
+    serviceWorkerRegistration = await registerWithRetry();
 
-    // Wait for the service worker to be ready
-    if (serviceWorkerRegistration.active) {
-      return {
-        success: true,
-        isSecure: true,
-        supportsServiceWorker: true
-      };
-    }
+    const activationPromise = new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Service worker activation timeout'));
+      }, SW_TIMEOUT);
 
-    // Wait for activation
-    await new Promise<void>((resolve) => {
       if (serviceWorkerRegistration?.active) {
+        clearTimeout(timeout);
         resolve();
         return;
       }
 
       serviceWorkerRegistration?.addEventListener('activate', () => {
+        clearTimeout(timeout);
         resolve();
       });
     });
 
+    await activationPromise;
+
     return {
       success: true,
-      isSecure: window.isSecureContext,
+      isSecure: isSecureContext(),
       supportsServiceWorker: true
     };
+
   } catch (error) {
     console.error('Service worker registration failed:', error);
     return {
       success: false,
-      isSecure: window.isSecureContext,
+      isSecure: isSecureContext(),
       supportsServiceWorker: true,
       error: error instanceof Error ? error.message : 'Service worker registration failed'
     };
@@ -105,18 +123,28 @@ export const registerAuthServiceWorker = async (): Promise<{
 export const initAuthServiceWorker = async (): Promise<boolean> => {
   const result = await registerAuthServiceWorker();
   
-  // Dispatch initialization status event
   window.dispatchEvent(new CustomEvent('firebase-auth-worker-status', { 
     detail: result 
   }));
 
   if (!result.success) {
     console.warn('Auth service worker initialization failed:', result.error);
-    // Log telemetry or analytics here if needed
     return false;
   }
 
-  return true;
+  // Initialize Firestore persistence after successful service worker registration
+  try {
+    const settings: FirestoreSettings = {
+      cacheSizeBytes: 50000000, // 50 MB
+    };
+    
+    await enableIndexedDbPersistence(db);
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to enable persistence:', error);
+    return false;
+  }
 };
 
 function handleServiceWorkerMessage(event: MessageEvent<AuthServiceWorkerMessage>) {
@@ -138,7 +166,7 @@ function handleServiceWorkerMessage(event: MessageEvent<AuthServiceWorkerMessage
       break;
       
     case 'FIREBASE_AUTH_POPUP_ERROR':
-      if (fallbackToRedirect) {
+      if (fallbackToRedirect && import.meta.env.VITE_AUTH_POPUP_FALLBACK === 'true') {
         console.warn('Popup authentication failed, falling back to redirect method');
       }
       dispatch('firebase-auth-error', { error, fallbackToRedirect });
@@ -161,5 +189,7 @@ function handleServiceWorkerMessage(event: MessageEvent<AuthServiceWorkerMessage
       break;
   }
 }
+
+navigator.serviceWorker?.addEventListener('message', handleServiceWorkerMessage);
 
 export default initAuthServiceWorker;

@@ -8,7 +8,17 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [
-    react(),
+    react({
+      jsxImportSource: '@emotion/react',
+      babel: {
+        plugins: ['@emotion/babel-plugin'],
+      },
+      // Enable React Router v7 future flags
+      future: {
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }
+    }),
     vue()
   ],
   build: {

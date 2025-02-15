@@ -1,27 +1,52 @@
 /* eslint-env serviceworker */
 /* global clients, firebase, importScripts */
 
+// Load Firebase essentials first
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
+
+// Load Firebase configuration
 importScripts('./firebase-config.js');
 
-// Firebase Service Worker for Auth and Messaging
+// Initialize Firebase
 const FIREBASE_CONFIG = self.FIREBASE_CONFIG || {};
-
 firebase.initializeApp(FIREBASE_CONFIG);
 
 const CACHE_NAME = 'geaux-academy-cache-v1';
 const OFFLINE_URL = '/offline.html';
 const SECURE_ORIGIN = self.location.protocol === 'https:';
 
-// Assets to cache for offline support
+// Define allowed domains for different purposes
+const ANALYTICS_DOMAINS = [
+  'www.googletagmanager.com',
+  'www.google-analytics.com',
+  'analytics.google.com',
+  'tagmanager.google.com'
+];
+
+const FIREBASE_DOMAINS = [
+  'firebaseinstallations.googleapis.com',
+  'firestore.googleapis.com',
+  'identitytoolkit.googleapis.com',
+  'securetoken.googleapis.com',
+  'firebaseio.com',
+  'firebase.googleapis.com'
+];
+
+const FONT_DOMAINS = [
+  'fonts.googleapis.com',
+  'fonts.gstatic.com',
+  '*.public.atl-paas.net'
+];
+
 const CACHE_ASSETS = [
   '/',
   '/index.html',
   '/offline.html',
   '/vite.svg',
-  '/google-icon.svg'
+  '/google-icon.svg',
+  '/images/logo.svg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -37,13 +62,11 @@ self.addEventListener('install', (event) => {
       }
     })()
   );
-  console.log('Service worker installed successfully');
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     try {
-      // Clean up old caches
       const cacheNames = await caches.keys();
       await Promise.all(
         cacheNames.map((cacheName) => {
@@ -52,30 +75,18 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-      // Take control of all pages immediately
       await self.clients.claim();
       notifyWindowsAboutReadyState();
-      const allClients = await clients.matchAll({
-        includeUncontrolled: true,
-        type: 'window'
-      });
-      
-      allClients.forEach(client => {
-        client.postMessage({
-          type: 'FIREBASE_SERVICE_WORKER_READY',
-          secure: SECURE_ORIGIN
-        });
-      });
     } catch (error) {
       console.error('Activation error:', error);
     }
   })());
-  console.log('Service worker installed successfully');
 });
 
 async function notifyWindowsAboutReadyState() {
   const allClients = await clients.matchAll({
-    includeUncontrolled: true
+    includeUncontrolled: true,
+    type: 'window'
   });
   
   allClients.forEach(client => {
@@ -87,9 +98,22 @@ async function notifyWindowsAboutReadyState() {
 }
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('firestore.googleapis.com') || 
-      event.request.url.includes('/__/auth/') ||
-      event.request.url.includes('apis.google.com')) {
+  const url = new URL(event.request.url);
+  
+  // Allow Google Analytics/Tag Manager requests
+  if (ANALYTICS_DOMAINS.some(domain => url.hostname.includes(domain))) {
+    event.respondWith(
+      fetch(event.request, {
+        mode: 'cors',
+        credentials: 'omit'
+      })
+    );
+    return;
+  }
+
+  // Handle Firebase/Google API requests
+  if (FIREBASE_DOMAINS.some(domain => url.hostname.includes(domain)) || 
+      event.request.url.includes('/__/auth/')) {
     event.respondWith(
       fetch(event.request, {
         credentials: 'include',
@@ -99,70 +123,69 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (!SECURE_ORIGIN && event.request.url.startsWith('https:')) {
-    // Allow HTTPS requests in development
-    event.respondWith(fetch(event.request));
+  // Handle font requests
+  if (FONT_DOMAINS.some(domain => {
+    if (domain.startsWith('*.')) {
+      return url.hostname.endsWith(domain.slice(2));
+    }
+    return url.hostname === domain;
+  })) {
+    event.respondWith(
+      fetch(event.request, {
+        mode: 'cors',
+        credentials: 'omit'
+      })
+    );
     return;
   }
 
-  event.respondWith((async () => {
-    try {
-      // Handle auth-related requests
-      if (event.request.url.includes('/__/auth/')) {
+  // Handle auth popup requests
+  if (event.request.url.includes('/__/auth/handler')) {
+    event.respondWith((async () => {
+      try {
         const response = await fetch(event.request);
-        const clonedResponse = response.clone();
-
         const clients = await self.clients.matchAll();
         clients.forEach((client) => {
           client.postMessage({
             type: 'AUTH_RESPONSE',
             status: response.status,
-            ok: response.ok,
-            secure: event.request.url.startsWith('https')
+            ok: response.ok
           });
-          // Log the auth fetch error to help diagnose issues with authentication requests
         });
-
-        return clonedResponse;
+        return response;
+      } catch (error) {
+        console.error('Auth handler error:', error);
+        return new Response(null, { status: 500 });
       }
+    })());
+    return;
+  }
 
-      // Network-first strategy for dynamic content
-      if (event.request.mode === 'navigate') {
-        try {
-          const response = await fetch(event.request);
-          if (response.ok) {
-            const cache = await caches.open(CACHE_NAME);
-            await cache.put(event.request, response.clone());
-          }
-          return response;
-        } catch {
-          const cached = await caches.match(OFFLINE_URL);
-          return cached || new Response('Offline');
-        }
-      }
-
-      // Cache-first strategy for static assets
-      if (event.request.destination === 'image' ||
-          event.request.destination === 'style' ||
-          event.request.destination === 'script') {
-        const cachedResponse = await caches.match(event.request);
-        return cachedResponse || await fetch(event.request);
-      }
-
-      // Network-first strategy for other requests
+  // Handle all other requests
+  event.respondWith((async () => {
+    try {
+      // Try network first
       const response = await fetch(event.request);
-      if (response.ok) {
-        const clonedResponse = response.clone();
-        const cache = await caches.open(CACHE_NAME);
-        await cache.put(event.request, clonedResponse);
+      if (!response || response.status === 404) {
+        throw new Error('Resource not found');
       }
+      
+      // Cache successful responses
+      if (response.ok && event.request.method === 'GET') {
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(event.request, response.clone());
+      }
+      
       return response;
     } catch (error) {
-      console.error('Fetch error:', error);
-      return await caches.match(event.request) || caches.match(OFFLINE_URL);
+      // Fall back to cache
+      const cache = await caches.open(CACHE_NAME);
+      const cachedResponse = await cache.match(event.request);
+      return cachedResponse || await cache.match(OFFLINE_URL);
     }
   })());
 });
+
 self.addEventListener('message', (event) => {
   if (event.data.type === 'FIREBASE_AUTH_POPUP') {
     event.waitUntil(handleFirebaseAuthPopup());
