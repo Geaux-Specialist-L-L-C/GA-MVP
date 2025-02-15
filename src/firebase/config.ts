@@ -7,41 +7,48 @@ import {
   initializeAuth, 
   indexedDBLocalPersistence,
   browserLocalPersistence,
-  browserPopupRedirectResolver // Corrected import path
+  browserPopupRedirectResolver,
+  type Auth
 } from 'firebase/auth';
 import { 
   initializeFirestore,
   CACHE_SIZE_UNLIMITED,
   persistentLocalCache,
-  persistentSingleTabManager
+  persistentSingleTabManager,
+  type Firestore
 } from 'firebase/firestore';
+import { getAnalytics, type Analytics } from 'firebase/analytics';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  apiKey: "AIzaSyB0V4iL1aQ_xtWeO_iWL1fuhu4_SLfqZeo",
+  authDomain: "geaux-academy.firebaseapp.com",
+  databaseURL: "https://geaux-academy-default-rtdb.firebaseio.com",
+  projectId: "geaux-academy",
+  storageBucket: "geaux-academy.firebasestorage.app",
+  messagingSenderId: "145629211979",
+  appId: "1:145629211979:web:1f9c854ecb392916adccce",
+  measurementId: "G-6MBLBQ3NWS"
 };
 
 // Initialize Firebase App
 export const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore with persistent cache settings
-export const db = initializeFirestore(app, {
+export const db: Firestore = initializeFirestore(app, {
   localCache: persistentLocalCache({
-    tabManager: persistentSingleTabManager(),
-    cacheSizeBytes: CACHE_SIZE_UNLIMITED // Specify cache size within the cache object
+    tabManager: persistentSingleTabManager({ forceOwnership: true }),
+    cacheSizeBytes: CACHE_SIZE_UNLIMITED
   })
 });
 
-// Initialize Auth with persistence and popup support
-export const auth = initializeAuth(app, {
+// Initialize Auth with persistence and popup support (preferred method)
+export const auth: Auth = initializeAuth(app, {
   persistence: [indexedDBLocalPersistence, browserLocalPersistence],
   popupRedirectResolver: browserPopupRedirectResolver
 });
 
-// Export other Firebase services as needed
+// Initialize Analytics
+export const analytics: Analytics = getAnalytics(app);
+
+// Export app instance for other Firebase services
 export { app as firebase };
