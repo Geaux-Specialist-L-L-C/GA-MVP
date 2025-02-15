@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion as m } from 'framer-motion';
 import styled from 'styled-components';
 import { FaGraduationCap, FaChartLine, FaBook } from 'react-icons/fa';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -8,6 +8,11 @@ import { getStudentProfile } from '../../../services/profileService';
 import { Student } from '../../../types/auth';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import LearningStyleChat from '../../../components/chat/LearningStyleChat';
+import { DefaultTheme } from 'styled-components';
+
+interface ThemeProps {
+  theme: DefaultTheme;
+}
 
 interface StudentData extends Student {
   recentActivities: Array<{
@@ -73,48 +78,46 @@ const StudentDashboard: React.FC = () => {
   }
 
   return (
-    <StyledDashboardContainer>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <StyledHeader>
-          <StyledHeaderLeft>
-            <h1>Welcome, {studentData?.name}!</h1>
-            <p>Grade {studentData?.grade}</p>
-          </StyledHeaderLeft>
-        </StyledHeader>
+    <m.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <StyledHeader>
+        <StyledHeaderLeft>
+          <h1>Welcome, {studentData?.name}!</h1>
+          <p>Grade {studentData?.grade}</p>
+        </StyledHeaderLeft>
+      </StyledHeader>
 
-        <DashboardGrid>
-          <MainSection>
-            {!studentData?.hasTakenAssessment && (
-              <AssessmentSection>
-                <h2>Learning Style Assessment</h2>
-                <p>Take your learning style assessment to get personalized recommendations.</p>
-                <LearningStyleChat />
-              </AssessmentSection>
-            )}
+      <DashboardGrid>
+        <MainSection>
+          {!studentData?.hasTakenAssessment && (
+            <AssessmentSection>
+              <h2>Learning Style Assessment</h2>
+              <p>Take your learning style assessment to get personalized recommendations.</p>
+              <LearningStyleChat />
+            </AssessmentSection>
+          )}
 
-            {studentData?.hasTakenAssessment && studentData.learningStyle && (
-              <LearningStyleSection>
-                <h2>Your Learning Style: {studentData.learningStyle}</h2>
-                <p>Based on your assessment, we've customized your learning experience.</p>
-              </LearningStyleSection>
-            )}
+          {studentData?.hasTakenAssessment && studentData.learningStyle && (
+            <LearningStyleSection>
+              <h2>Your Learning Style: {studentData.learningStyle}</h2>
+              <p>Based on your assessment, we've customized your learning experience.</p>
+            </LearningStyleSection>
+          )}
 
-            <ProgressSection>
-              <h2>Recent Progress</h2>
-              {/* Add progress visualization here */}
-            </ProgressSection>
-          </MainSection>
-        </DashboardGrid>
-      </motion.div>
-    </StyledDashboardContainer>
+          <ProgressSection>
+            <h2>Recent Progress</h2>
+            {/* Add progress visualization here */}
+          </ProgressSection>
+        </MainSection>
+      </DashboardGrid>
+    </m.div>
   );
 };
 
-const StyledDashboardContainer = styled.div`
+const DashboardContainer = styled(m.div)`
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
@@ -133,7 +136,7 @@ const StyledErrorContainer = styled.div`
   padding: 2rem;
 `;
 
-const StyledHeader = styled.div`
+const StyledHeader = styled(m.header)`
   margin-bottom: 2rem;
 `;
 

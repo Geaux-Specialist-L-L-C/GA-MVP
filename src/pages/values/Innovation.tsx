@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import { motion as m } from 'framer-motion';
 import { FaLightbulb } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import { FcGoogle } from 'react-icons/fc';
@@ -52,7 +52,7 @@ const Innovation: React.FC = () => {
   );
 };
 
-const ValueContainer = styled(motion.div)`
+const ValueContainer = styled(m.div)`
   background: white;
   padding: 2rem;
   border-radius: 12px;

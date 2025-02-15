@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import { motion as m } from 'framer-motion';
 import { FaUsers } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
+import { DefaultTheme } from 'styled-components';
 
-const Collaboration = () => {
+interface ThemeProps {
+  theme: DefaultTheme;
+}
+
+const Collaboration: React.FC = () => {
   const { loginWithGoogle } = useAuth();
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string>('');
 
   const handleGoogleLogin = async () => {
     try {
@@ -14,7 +19,8 @@ const Collaboration = () => {
       await loginWithGoogle();
       // Handle navigation to /dashboard after successful login
     } catch (err) {
-      setError(err.message);
+      // Handle error as string per user preference
+      setError(err instanceof Error ? err.message : 'An error occurred during login');
     }
   };
 
@@ -43,7 +49,7 @@ const Collaboration = () => {
   );
 };
 
-const ValueContainer = styled(motion.div)`
+const ValueContainer = styled(m.div)`
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);

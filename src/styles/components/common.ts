@@ -1,32 +1,41 @@
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import { motion as m } from 'framer-motion';
+import { DefaultTheme } from 'styled-components';
 
-export const Container = styled.div`
+interface ThemeProps {
+  theme: DefaultTheme;
+}
+
+interface ButtonProps extends ThemeProps {
+  $variant?: 'primary' | 'secondary';
+}
+
+export const Container = styled(m.div)`
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 ${({ theme }) => theme.spacing.md};
+  padding: 0 ${({ theme }: ThemeProps) => theme.spacing.md};
 `;
 
 export const Section = styled.section`
-  padding: ${({ theme }) => theme.spacing.xl} 0;
+  padding: ${({ theme }: ThemeProps) => theme.spacing.xl} 0;
 `;
 
-export const Card = styled(motion.div)`
-  background: ${({ theme }) => theme.palette.background.paper};
+export const Card = styled(m.div)`
+  background: ${({ theme }: ThemeProps) => theme.palette.background.paper};
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  padding: ${({ theme }) => theme.spacing.lg};
+  padding: ${({ theme }: ThemeProps) => theme.spacing.lg};
 `;
 
-export const Button = styled(motion.button)<{ $variant?: 'primary' | 'secondary' }>`
+export const Button = styled(m.button)<{ $variant?: 'primary' | 'secondary' }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.lg}`};
+  padding: ${({ theme }: ThemeProps) => `${theme.spacing.sm} ${theme.spacing.lg}`};
   border-radius: 4px;
   font-weight: 600;
-  background: ${({ theme, $variant }) => 
+  background: ${({ theme, $variant }: ButtonProps) => 
     $variant === 'secondary' 
       ? theme.palette.secondary.main 
       : theme.palette.primary.main};
@@ -34,7 +43,7 @@ export const Button = styled(motion.button)<{ $variant?: 'primary' | 'secondary'
   transition: background 0.2s ease;
 
   &:hover {
-    background: ${({ theme, $variant }) => 
+    background: ${({ theme, $variant }: ButtonProps) => 
       $variant === 'secondary' 
         ? theme.palette.secondary.dark 
         : theme.palette.primary.dark};
@@ -53,4 +62,19 @@ export const GridContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: ${({ theme }) => theme.spacing.lg};
+`;
+
+const StylesGrid = styled(m.div)`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+`;
+
+const StyleCard = styled(m.div)`
+  padding: 2rem;
+  text-align: center;
+  background: ${({ theme }) => theme.palette.background.paper};
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 `;

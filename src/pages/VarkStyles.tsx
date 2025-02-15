@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import { motion as m } from 'framer-motion';
 import { FaEye, FaHeadphones, FaBookReader, FaRunning } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -78,27 +78,26 @@ const VarkStyles: React.FC = () => {
   return (
     <Container>
       <Header>
-        <motion.h1
+        <m.h1
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           Discover Your VARK Learning Style
-        </motion.h1>
-        <motion.p
+        </m.h1>
+        <m.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
         >
           Understanding how you learn best is the first step to academic success
-        </motion.p>
+        </m.p>
       </Header>
 
       <StylesGrid>
         {styles.map((style, index) => (
           <StyleCard
             key={index}
-            as={motion.div}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 + 0.3 }}
@@ -134,13 +133,13 @@ const VarkStyles: React.FC = () => {
   );
 };
 
-const Container = styled.div`
+const Container = styled(m.div)`
   max-width: 1200px;
   margin: 0 auto;
   padding: 4rem 2rem;
 `;
 
-const Header = styled.header`
+const Header = styled(m.header)`
   text-align: center;
   margin-bottom: 3rem;
 
@@ -162,7 +161,7 @@ const StylesGrid = styled.div`
   margin: 3rem 0;
 `;
 
-const StyleCard = styled.div`
+const StyleCard = styled(m.div)`
   background: white;
   padding: 2rem;
   border-radius: 12px;

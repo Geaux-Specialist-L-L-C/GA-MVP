@@ -218,9 +218,11 @@ window.addEventListener('offline', () => {
   console.warn('Gone offline. Using cached data...');
 });
 
-export default {
-  getParentProfile,
-  getStudentProfile,
-  addStudentProfile,
-  updateStudentAssessmentStatus,
-};
+export class ProfileService {
+  async getUserProfile(userId: string): Promise<any> {
+    // ...existing API call logic...
+    // Example:
+    const response = await fetch(`/api/profiles/${userId}`);
+    return response.json();
+  }
+}

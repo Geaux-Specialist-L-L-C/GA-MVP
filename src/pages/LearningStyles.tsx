@@ -6,9 +6,14 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion as m } from 'framer-motion';
 import { FaHeadphones, FaBook, FaRunning, FaBrain, FaUsers, FaEye } from 'react-icons/fa';
 import Card from '../components/common/Card';
+import { DefaultTheme } from 'styled-components';
+
+interface ThemeProps {
+  theme: DefaultTheme;
+}
 
 const LearningStyles: React.FC = () => {
   const learningStyles = [
@@ -25,12 +30,12 @@ const LearningStyles: React.FC = () => {
       <h1 className="text-4xl font-bold">Learning Styles</h1>
       <p className="mt-4">Discover your preferred learning style and how Geaux Academy can help you learn more effectively.</p>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <m.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <StylesGrid>
           {learningStyles.map((style, index) => (
             <StyleCard 
               key={index} 
-              as={motion.div}
+              as={m.div}
               whileHover={{ scale: 1.05 }} 
               transition={{ duration: 0.3 }}
             >
@@ -47,19 +52,19 @@ const LearningStyles: React.FC = () => {
             Take the Assessment
           </Button>
         </CTASection>
-      </motion.div>
+      </m.div>
     </div>
   );
 };
 
-const StylesGrid = styled.div`
+const StylesGrid = styled(m.div)`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
   margin: 2rem 0;
 `;
 
-const StyleCard = styled(motion(Card))`
+const StyleCard = styled(m(Card))`
   padding: 2rem;
   text-align: center;
   background: ${({ theme }) => theme.palette.background.paper};
@@ -85,7 +90,7 @@ interface ButtonProps {
   $variant?: 'primary' | 'secondary';
 }
 
-const Button = styled(motion(Link))<ButtonProps>`
+const Button = styled(m(Link))<ButtonProps>`
   display: inline-block;
   padding: 1rem 2rem;
   background: ${({ theme }) => theme.palette.primary.main};

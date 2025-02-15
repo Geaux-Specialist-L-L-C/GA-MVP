@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import styled, { DefaultTheme } from 'styled-components';
+import { motion as m } from 'framer-motion';
 import { FaTrophy } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 
-const Excellence = () => {
+interface ThemeProps {
+  theme: DefaultTheme;
+}
+
+const Excellence: React.FC = () => {
   const { loginWithGoogle } = useAuth();
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string>('');
 
   const handleGoogleLogin = async () => {
     try {
@@ -14,7 +18,7 @@ const Excellence = () => {
       await loginWithGoogle();
       // Handle navigation to /dashboard after successful login
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'An error occurred during login');
       console.error('Login error:', err);
     }
   };
@@ -46,7 +50,7 @@ const Excellence = () => {
   );
 };
 
-const ValueContainer = styled(motion.div)`
+const ValueContainer = styled(m.div)`
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);

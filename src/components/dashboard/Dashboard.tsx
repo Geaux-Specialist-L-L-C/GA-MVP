@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import ParentProfileForm from '../../pages/profile/ParentProfile/ParentProfileForm';
 import CreateStudent from '../../pages/profile/ParentProfile/CreateStudent';
 import StudentCard from '../../components/student/StudentCard';
-import { getParentProfile, getStudentProfile } from '../../services/profileService';
+import { ProfileService } from '../../services/profileService';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import LoadingSpinner from '../common/LoadingSpinner';
-import type { Student } from '../../types/profiles';
+import type { Student, UserProfile } from '../../types/profiles';
 
 interface UserData {
   name: string;
@@ -22,7 +22,11 @@ interface ParentProfile {
   email?: string;
 }
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  onProfileUpdate?: (profile: UserProfile) => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onProfileUpdate }): JSX.Element => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -53,7 +57,7 @@ const Dashboard: React.FC = () => {
     };
   }, [currentUser]);
 
-  const fetchUserData = async (): Promise<void> => {
+  const fetchUserData = useCallback(async (): Promise<void> => {
     try {
       if (!currentUser?.uid) {
         navigate('/login');
@@ -72,9 +76,13 @@ const Dashboard: React.FC = () => {
       // Fetch parent profile with retry mechanism
       const fetchProfileWithRetry = async () => {
         try {
-          const profile = await getParentProfile(currentUser.uid);
+          const profileService = new ProfileService();
+          const profile = await profileService.getUserProfile(currentUser.uid);
           if (profile) {
             setParentProfile(profile);
+            if (onProfileUpdate) {
+              onProfileUpdate(profile);
+            }
             return profile;
           }
           throw new Error('Profile not found');
@@ -95,7 +103,7 @@ const Dashboard: React.FC = () => {
         const studentsData = await Promise.all(
           profile.students.map(async (studentId) => {
             try {
-              const student = await getStudentProfile(studentId);
+              const student = await profileService.getStudentProfile(studentId);
               return student;
             } catch (err) {
               console.error(`Error fetching student ${studentId}:`, err);
@@ -118,11 +126,11 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser, navigate, onProfileUpdate, retryCount, isOffline]);
 
   useEffect(() => {
     fetchUserData();
-  }, [currentUser, navigate]);
+  }, [fetchUserData]);
 
   const handleStudentSelect = (student: Student) => {
     if (isOffline) {

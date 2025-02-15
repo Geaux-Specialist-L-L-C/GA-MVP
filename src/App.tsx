@@ -36,14 +36,26 @@ const App = () => {
   useEffect(() => {
     // Register service worker for auth handling
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/firebase-messaging-sw.js', { scope: '/__/auth' })
-        .then((registration) => {
-          console.debug('Service Worker registered with scope:', registration.scope);
-        })
-        .catch((error) => {
-          console.error('Service Worker registration failed:', error);
-        });
+      // Only register in production or if running on HTTPS
+      if (window.location.protocol === 'https:' || process.env.NODE_ENV === 'production') {
+        navigator.serviceWorker
+          .register('/firebase-messaging-sw.js', { 
+            scope: '/__/auth',
+            // Allow registration to proceed even if there's an SSL warning 
+            // (only in development)
+            updateViaCache: process.env.NODE_ENV === 'development' ? 'none' : 'imports'
+          })
+          .then((registration) => {
+            console.debug('Service Worker registered with scope:', registration.scope);
+          })
+          .catch((error) => {
+            // Only log as error in production
+            const logMethod = process.env.NODE_ENV === 'production' ? console.error : console.warn;
+            logMethod('Service Worker registration failed:', error);
+          });
+      } else {
+        console.debug('Service Worker registration skipped - requires HTTPS or production environment');
+      }
     }
   }, []);
   
