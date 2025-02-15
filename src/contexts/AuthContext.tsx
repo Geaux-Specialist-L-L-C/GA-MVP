@@ -10,8 +10,10 @@ import { AuthService } from '../firebase/auth-service';
 export interface AuthContextProps {
   currentUser: User | null;
   isAuthReady: boolean;
+  loading: boolean;
   error: string | null;
   login: () => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -22,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const authService = new AuthService();
 
   useEffect(() => {
@@ -33,21 +36,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const login = async () => {
+  const loginWithGoogle = async () => {
     try {
+      setLoading(true);
       await authService.signInWithGoogle();
       setError(null);
     } catch (err) {
       setError((err as Error).message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const login = async () => {
+    try {
+      setLoading(true);
+      await authService.signInWithGoogle();
+      setError(null);
+    } catch (err) {
+      setError((err as Error).message);
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = async () => {
     try {
+      setLoading(true);
       await authService.signOut();
       setError(null);
     } catch (err) {
       setError((err as Error).message);
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,8 +80,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value: AuthContextProps = {
     currentUser,
     isAuthReady,
+    loading,
     error,
     login,
+    loginWithGoogle,
     logout,
     clearError
   };

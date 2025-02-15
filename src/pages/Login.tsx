@@ -20,7 +20,6 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Clear any existing auth errors when component mounts
     clearError();
   }, [clearError]);
 
@@ -29,8 +28,9 @@ const Login: React.FC = () => {
     try {
       setLocalError('');
       setLoading(true);
-      await login(formData.email, formData.password);
-      // Navigation is handled by AuthContext
+      await login();
+      const destination = location.state?.from?.pathname || '/dashboard';
+      navigate(destination, { replace: true });
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to sign in');
       console.error('Login error:', err);
@@ -44,9 +44,9 @@ const Login: React.FC = () => {
       setLocalError('');
       setLoading(true);
       await loginWithGoogle();
-      // Navigation is handled by AuthContext
+      const destination = location.state?.from?.pathname || '/dashboard';
+      navigate(destination, { replace: true });
     } catch (err) {
-      // Don't set local error here as AuthContext handles it
       console.error('Login error:', err);
     } finally {
       setLoading(false);
@@ -113,6 +113,7 @@ const Login: React.FC = () => {
         <GoogleButton 
           onClick={handleGoogleLogin} 
           disabled={loading}
+          type="button"
         >
           <FcGoogle />
           Sign in with Google
