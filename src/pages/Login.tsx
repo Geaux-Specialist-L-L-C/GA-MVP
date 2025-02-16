@@ -5,39 +5,16 @@ import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
-interface FormData {
-  email: string;
-  password: string;
-}
-
 const Login: React.FC = () => {
-  const { loginWithGoogle, login, loading: authLoading, error: authError, clearError } = useAuth();
+  const { loginWithGoogle, loading: authLoading, error: authError, clearError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [formData, setFormData] = useState<FormData>({ email: '', password: '' });
-  const [emailError, setEmailError] = useState<string>('');
   const [localError, setLocalError] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     clearError();
   }, [clearError]);
-
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      setLocalError('');
-      setLoading(true);
-      await login();
-      const destination = location.state?.from?.pathname || '/dashboard';
-      navigate(destination, { replace: true });
-    } catch (err) {
-      setLocalError(err instanceof Error ? err.message : 'Failed to sign in');
-      console.error('Login error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleGoogleLogin = async (): Promise<void> => {
     try {
@@ -47,6 +24,7 @@ const Login: React.FC = () => {
       const destination = location.state?.from?.pathname || '/dashboard';
       navigate(destination, { replace: true });
     } catch (err) {
+      setLocalError(err instanceof Error ? err.message : 'Failed to sign in');
       console.error('Login error:', err);
     } finally {
       setLoading(false);
@@ -75,50 +53,15 @@ const Login: React.FC = () => {
           </ErrorMessage>
         )}
         
-        <Form onSubmit={handleEmailLogin}>
-          <FormGroup>
-            <Input
-              type="email"
-              id="email"
-              value={formData.email}
-              onChange={(e) => {
-                setFormData({ ...formData, email: e.target.value });
-                setEmailError(e.target.validity.valid ? '' : 'Please enter a valid email address');
-              }}
-              required
-              disabled={loading}
-              aria-invalid={!!emailError}
-            />
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              type="password"
-              id="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-              disabled={loading}
-            />
-          </FormGroup>
-
-          <LoginButton type="submit" disabled={loading}>
-            Sign in with Email
-          </LoginButton>
-        </Form>
-
-        <Divider>or</Divider>
-        
         <GoogleButton 
           onClick={handleGoogleLogin} 
           disabled={loading}
           type="button"
+          aria-label="Sign in with Google"
         >
           <FcGoogle />
           Sign in with Google
         </GoogleButton>
-
         <SignUpPrompt>
           Don't have an account? <StyledLink to="/signup">Sign up</StyledLink>
         </SignUpPrompt>
@@ -157,47 +100,6 @@ const Title = styled.h1`
   margin-bottom: 2rem;
 `;
 
-const Form = styled.form`
-  margin-bottom: 1rem;
-`;
-
-const FormGroup = styled.div`
-  margin-bottom: 1rem;
-`;
-
-const Label = styled.label`
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #555;
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  
-  &:focus {
-    outline: none;
-    border-color: var(--primary-color);
-  }
-`;
-
-const LoginButton = styled.button`
-  width: 100%;
-  padding: 0.75rem;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-`;
-
 const GoogleButton = styled.button`
   width: 100%;
   padding: 0.75rem;
@@ -214,23 +116,6 @@ const GoogleButton = styled.button`
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;
-  }
-`;
-
-const Divider = styled.div`
-  text-align: center;
-  margin: 1rem 0;
-  color: #777;
-  
-  &::before,
-  &::after {
-    content: '';
-    display: inline-block;
-    width: 45%;
-    height: 1px;
-    background-color: #ddd;
-    margin: 0 0.5rem;
-    vertical-align: middle;
   }
 `;
 
