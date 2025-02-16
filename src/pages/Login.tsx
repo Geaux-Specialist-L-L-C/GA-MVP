@@ -13,8 +13,17 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    clearError();
+    if (typeof clearError === 'function') {
+      clearError();
+    }
   }, [clearError]);
+
+  const handleDismissError = () => {
+    setLocalError('');
+    if (typeof clearError === 'function') {
+      clearError();
+    }
+  };
 
   const handleGoogleLogin = async (): Promise<void> => {
     try {
@@ -46,10 +55,11 @@ const Login: React.FC = () => {
         {(localError || authError) && (
           <ErrorMessage>
             <span>{localError || authError}</span>
-            <DismissButton onClick={() => {
-              setLocalError('');
-              clearError();
-            }}>✕</DismissButton>
+            <DismissButton 
+              onClick={handleDismissError}
+              type="button"
+              aria-label="Dismiss error message"
+            >✕</DismissButton>
           </ErrorMessage>
         )}
         
