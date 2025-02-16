@@ -14,17 +14,16 @@ const About = React.lazy(() => import('./pages/About'));
 const Contact = React.lazy(() => import('./pages/Contact'));
 const Features = React.lazy(() => import('./pages/Features'));
 const Login = React.lazy(() => import('./pages/Login'));
-const SignUp = React.lazy(() => import('./pages/SignUp'));
+const SignUp = React.lazy(() => import('./components/auth/SignUp'));
 const LearningStyles = React.lazy(() => import('./pages/LearningStyles'));
 const Curriculum = React.lazy(() => import('./pages/Curriculum'));
-const Dashboard = React.lazy(() => import('./pages/profile/Dashboard'));
 const ParentDashboard = React.lazy(() => import('./pages/profile/ParentProfile/ParentDashboard'));
 const StudentDashboard = React.lazy(() => import('./pages/profile/StudentProfile/StudentDashboard'));
 const StudentProfile = React.lazy(() => import('./pages/profile/StudentProfile/StudentProfile'));
 const LearningPlan = React.lazy(() => import('./pages/LearningPlan'));
 const TakeAssessment = React.lazy(() => import('./pages/TakeAssessment'));
-const LearningStyleChat = React.lazy(() => import('./pages/LearningStyleChat'));
-const TestChat = React.lazy(() => import('./pages/profile/TestChat'));
+const LearningStyleChat = React.lazy(() => import('./components/chat/LearningStyleChat'));
+const TestChat = React.lazy(() => import('./components/chat/TestChat'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
 const App: React.FC = (): JSX.Element => {
@@ -68,7 +67,7 @@ const App: React.FC = (): JSX.Element => {
                 <Route path="/curriculum" element={<Curriculum />} />
                 
                 {/* Protected Routes */}
-                <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+                <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
                 <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
                 <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
                 <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
