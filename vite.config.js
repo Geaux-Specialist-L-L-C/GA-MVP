@@ -140,7 +140,12 @@ export default defineConfig({
     __VITE_FIREBASE_MESSAGING_SENDER_ID__: `"${process.env.VITE_FIREBASE_MESSAGING_SENDER_ID}"`,
     __VITE_FIREBASE_APP_ID__: `"${process.env.VITE_FIREBASE_APP_ID}"`,
     __VITE_FIREBASE_MEASUREMENT_ID__: `"${process.env.VITE_FIREBASE_MEASUREMENT_ID}"`,
-    __VITE_FIREBASE_DATABASE_URL__: `"${process.env.VITE_FIREBASE_DATABASE_URL}"`
+    __VITE_FIREBASE_DATABASE_URL__: `"${process.env.VITE_FIREBASE_DATABASE_URL}"`,
+    // Enable React Router v7 future flags
+    'process.env.ROUTER_FUTURE_FLAGS': JSON.stringify({
+      v7_startTransition: true,
+      v7_relativeSplatPath: true
+    })
   },
   optimizeDeps: {
     include: ['firebase/app', 'firebase/auth']
