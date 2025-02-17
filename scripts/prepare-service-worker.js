@@ -3,9 +3,14 @@
 // Author: GitHub Copilot
 // Created: 2024-02-17
 
-const fs = require('fs');
-const path = require('path');
-const esbuild = require('esbuild');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import esbuild from 'esbuild';
+
+// Get __dirname equivalent in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function buildServiceWorker() {
   try {
@@ -40,7 +45,6 @@ async function buildServiceWorker() {
 
     // Write back the modified service worker
     fs.writeFileSync(swPath, swContent);
-
     console.log('✅ Service worker prepared successfully');
   } catch (error) {
     console.error('❌ Error preparing service worker:', error);
@@ -48,4 +52,5 @@ async function buildServiceWorker() {
   }
 }
 
-buildServiceWorker();
+// Use top-level await since we're in an ES module
+await buildServiceWorker();
