@@ -6,6 +6,7 @@ import { ProfileService, getStudentProfile } from '../../services/profileService
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import LoadingSpinner from '../common/LoadingSpinner';
+import Button from '../common/Button';
 import type { Student, BaseProfile } from '../../types/profiles';
 
 interface UserData {
@@ -177,7 +178,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onProfileUpdate }): JSX.Element =
 
       <DashboardHeader>
         <h1>Welcome, {userData?.name}</h1>
-        <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
+        <Button onClick={handleLogout} $variant="primary">
+          Logout
+        </Button>
       </DashboardHeader>
 
       {error && (

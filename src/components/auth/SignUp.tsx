@@ -5,6 +5,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { useAuth } from '../../contexts/AuthContext';
 import { CheshireService } from '../../services/cheshireService';
 import Button from '../common/Button';
+import FormGroup from '../molecules/FormGroup';
 
 interface FormData {
   email: string;
@@ -84,45 +85,36 @@ const SignUp: React.FC = () => {
         )}
         
         <Form onSubmit={handleSubmit}>
-          <FormGroup>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              type="email"
-              id="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-              disabled={loading}
-            />
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              type="password"
-              id="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-              disabled={loading}
-            />
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input
-              type="password"
-              id="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              required
-              disabled={loading}
-            />
-          </FormGroup>
-
-          <StyledButton type="submit" disabled={loading}>
+          <FormGroup
+            label="Email"
+            inputs={[{
+              placeholder: 'Enter your email',
+              value: formData.email,
+              onChange: (e) => setFormData({ ...formData, email: e.target.value }),
+              error: false
+            }]}
+          />
+          <FormGroup
+            label="Password"
+            inputs={[{
+              placeholder: 'Enter your password',
+              value: formData.password,
+              onChange: (e) => setFormData({ ...formData, password: e.target.value }),
+              error: false
+            }]}
+          />
+          <FormGroup
+            label="Confirm Password"
+            inputs={[{
+              placeholder: 'Confirm your password',
+              value: formData.confirmPassword,
+              onChange: (e) => setFormData({ ...formData, confirmPassword: e.target.value }),
+              error: false
+            }]}
+          />
+          <Button type="submit" $variant="primary">
             {loading ? 'Creating Account...' : 'Sign Up'}
-          </StyledButton>
+          </Button>
         </Form>
 
         <Divider>
@@ -170,65 +162,6 @@ const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: 1rem;
-`;
-
-const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const Label = styled.label`
-  font-weight: 500;
-  color: var(--text-color);
-`;
-
-const Input = styled.input`
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-
-  &:focus {
-    outline: none;
-    border-color: var(--primary-color);
-  }
-
-  &:disabled {
-    background-color: #f5f5f5;
-  }
-`;
-
-const StyledButton = styled.button`
-  width: 100%;
-  margin-top: 1rem;
-  padding: 0.75rem;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: var(--primary-dark);
-  }
-
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-`;
-
-const ErrorMessage = styled.div`
-  color: #dc2626;
-  background-color: #fee2e2;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
 `;
 
 const Divider = styled.div`
@@ -288,6 +221,27 @@ const Link = styled.a`
 
   &:hover {
     text-decoration: underline;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: #dc2626;
+  background-color: #fee2e2;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+`;
+
+const DismissButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 5px;
+  color: #dc2626;
+  &:hover {
+    opacity: 0.7;
   }
 `;
 
