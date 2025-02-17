@@ -1,44 +1,52 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../contexts/AuthContext';
 
 const Navbar: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to log out:', error);
+    }
+  };
 
   return (
-    <NavContainer>
-      <NavWrapper>
-        <LogoSection>
-          <Link to="/">
-            <img src="/images/logo.svg" alt="Geaux Academy Logo" height="50" />
-          </Link>
-        </LogoSection>
+    <NavbarContainer>
+      <NavContent>
+        <LogoLink to="/">
+          <Logo>Geaux Academy</Logo>
+        </LogoLink>
         
         <NavLinks>
-          <NavLink to="/">Home</NavLink>
-          <NavLink to="/about">About</NavLink>
-          <NavLink to="/features">Features</NavLink>
-          <NavLink to="/curriculum">Curriculum</NavLink>
-          <NavLink to="/contact">Contact</NavLink>
-        </NavLinks>
-
-        <AuthSection>
-          {!currentUser ? (
+          <StyledLink to="/about">About Us</StyledLink>
+          <StyledLink to="/curriculum">Curriculum</StyledLink>
+          <StyledLink to="/learning-styles">Learning Styles</StyledLink>
+          <StyledLink to="/contact">Contact</StyledLink>
+          
+          {currentUser ? (
             <>
-              <AuthButton to="/login" $variant="login">Login</AuthButton>
-              <AuthButton to="/signup" $variant="signup">Sign Up</AuthButton>
+              <StyledLink to="/dashboard">Dashboard</StyledLink>
+              <ActionButton onClick={handleLogout}>Log Out</ActionButton>
             </>
           ) : (
-            <AuthButton to="/dashboard">Dashboard</AuthButton>
+            <>
+              <ActionButton as={Link} to="/login" $primary>Login</ActionButton>
+              <ActionButton as={Link} to="/signup">Sign Up</ActionButton>
+            </>
           )}
-        </AuthSection>
-      </NavWrapper>
-    </NavContainer>
+        </NavLinks>
+      </NavContent>
+    </NavbarContainer>
   );
 };
 
-const NavContainer = styled.nav`
+const NavbarContainer = styled.nav`
   position: fixed;
   top: 0;
   left: 0;
@@ -49,7 +57,7 @@ const NavContainer = styled.nav`
   z-index: 1000;
 `;
 
-const NavWrapper = styled.div`
+const NavContent = styled.div`
   max-width: var(--max-width, 1200px);
   margin: 0 auto;
   padding: 0 var(--spacing-md, 1rem);
@@ -59,25 +67,32 @@ const NavWrapper = styled.div`
   justify-content: space-between;
 `;
 
-const LogoSection = styled.div`
-  display: flex;
-  align-items: center;
+const LogoLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
+`;
+
+const Logo = styled.h1`
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin: 0;
 `;
 
 const NavLinks = styled.div`
   display: flex;
+  align-items: center;
   gap: var(--spacing-md, 1rem);
 
   @media (max-width: 768px) {
-    display: none;
+    gap: var(--spacing-sm, 0.5rem);
   }
 `;
 
-const NavLink = styled(Link)`
-  text-decoration: none;
+const StyledLink = styled(Link)`
   color: var(--text-primary);
-  font-weight: 600;
-  padding: var(--spacing-xs, 0.5rem);
+  text-decoration: none;
+  font-weight: 500;
   transition: color var(--transition-speed, 0.3s) var(--transition-timing, ease);
 
   &:hover {
@@ -85,39 +100,26 @@ const NavLink = styled(Link)`
   }
 `;
 
-const AuthSection = styled.div`
-  display: flex;
-  gap: var(--spacing-sm, 0.75rem);
-`;
+interface ActionButtonProps {
+  $primary?: boolean;
+}
 
-const AuthButton = styled(Link)<{ $variant?: 'login' | 'signup' }>`
+const ActionButton = styled.button<ActionButtonProps>`
   padding: 0.5rem 1rem;
-  border-radius: 4px;
+  border-radius: 0.375rem;
+  font-weight: 500;
   text-decoration: none;
-  font-weight: 600;
   transition: all var(--transition-speed, 0.3s) var(--transition-timing, ease);
+  border: none;
+  cursor: pointer;
   
-  ${props => props.$variant === 'signup' ? `
-    background: var(--btn-primary-bg, #C29A47);
-    color: var(--btn-primary-text, white);
-    
-    &:hover {
-      background: var(--btn-hover-bg, #B8860B);
-    }
-  ` : props.$variant === 'login' ? `
-    background: var(--btn-secondary-bg, #2C3E50);
-    color: var(--btn-secondary-text, white);
-    
-    &:hover {
-      opacity: 0.9;
-    }
-  ` : `
-    color: var(--text-primary);
-    
-    &:hover {
-      color: var(--link-color);
-    }
-  `}
+  background-color: ${props => props.$primary ? 'var(--btn-primary-bg, #D4AF37)' : 'transparent'};
+  color: ${props => props.$primary ? 'var(--btn-primary-text, #FFFFFF)' : 'var(--text-primary)'};
+  border: 1px solid ${props => props.$primary ? 'var(--btn-primary-bg, #D4AF37)' : 'currentColor'};
+
+  &:hover {
+    background-color: ${props => props.$primary ? 'var(--btn-hover-bg, #C19B26)' : 'var(--light-bg)'};
+  }
 `;
 
 export default Navbar;

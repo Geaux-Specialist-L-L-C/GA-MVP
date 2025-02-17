@@ -1,54 +1,105 @@
 // File: /src/firebase/config.ts
-// Description: Firebase configuration with Firestore persistence setup
+// Description: Firebase configuration and service initialization with TypeScript types
+// Author: GitHub Copilot
+// Created: 2024-02-17
 
-import { initializeApp } from 'firebase/app';
+import { initializeApp, FirebaseApp, getApps } from 'firebase/app';
 import { 
   getAuth, 
-  initializeAuth, 
-  indexedDBLocalPersistence,
-  browserLocalPersistence,
+  Auth,
+  initializeAuth,
   browserPopupRedirectResolver,
-  type Auth
+  indexedDBLocalPersistence,
+  browserLocalPersistence 
 } from 'firebase/auth';
 import { 
+  getFirestore, 
+  Firestore,
   initializeFirestore,
-  CACHE_SIZE_UNLIMITED,
   persistentLocalCache,
-  persistentSingleTabManager,
-  type Firestore
+  persistentSingleTabManager
 } from 'firebase/firestore';
-import { getAnalytics, type Analytics } from 'firebase/analytics';
+import { Analytics, getAnalytics, isSupported } from 'firebase/analytics';
+import { getMessaging, Messaging, isSupported as isMessagingSupported } from 'firebase/messaging';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+// Firebase configuration
+export const firebaseConfig = {
+  apiKey: "AIzaSyBfhBZbRRVsARX5u0biqVHQA6vudYw2F8U",
+  authDomain: "gacentral-53615.firebaseapp.com",
+  projectId: "gacentral-53615",
+  storageBucket: "gacentral-53615.firebasestorage.app",
+  messagingSenderId: "467988177048",
+  appId: "1:467988177048:web:5dd07a8fe519ec030a30ed",
+  measurementId: "G-H9285DBXK7"
 };
 
-// Initialize Firebase App
-export const app = initializeApp(firebaseConfig);
+let app: FirebaseApp;
+let auth: Auth;
+let firestore: Firestore;
+let analytics: Analytics | null = null;
+let messaging: Messaging | null = null;
+let storage: FirebaseStorage;
 
-// Initialize Firestore with persistent cache settings
-export const db: Firestore = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentSingleTabManager({ forceOwnership: true }),
-    cacheSizeBytes: CACHE_SIZE_UNLIMITED
-  })
-});
+// Initialize Firebase only if it hasn't been initialized
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
 
-// Initialize Auth with persistence and popup support (preferred method)
-export const auth: Auth = initializeAuth(app, {
-  persistence: [indexedDBLocalPersistence, browserLocalPersistence],
-  popupRedirectResolver: browserPopupRedirectResolver
-});
+  // Initialize Auth with persistence
+  auth = initializeAuth(app, {
+    persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+    popupRedirectResolver: browserPopupRedirectResolver,
+  });
 
-// Initialize Analytics
-export const analytics: Analytics = getAnalytics(app);
+  // Initialize Firestore with persistence
+  firestore = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentSingleTabManager({
+        forceOwnership: true
+      })
+    })
+  });
 
-// Export app instance for other Firebase services
-export { app as firebase };
+  // Initialize Storage
+  storage = getStorage(app);
+
+  // Initialize Analytics if supported
+  isSupported().then(supported => {
+    if (supported) {
+      analytics = getAnalytics(app);
+    }
+  }).catch(err => {
+    console.warn('Firebase Analytics initialization failed:', err);
+  });
+
+  // Initialize Cloud Messaging if supported and in secure context
+  if (window.isSecureContext) {
+    isMessagingSupported().then(supported => {
+      if (supported) {
+        messaging = getMessaging(app);
+      }
+    }).catch(err => {
+      console.warn('Firebase Cloud Messaging initialization failed:', err);
+    });
+  }
+} else {
+  app = getApps()[0];
+  auth = getAuth(app);
+  firestore = getFirestore(app);
+  storage = getStorage(app);
+}
+
+export {
+  app,
+  auth,
+  firestore,
+  analytics,
+  messaging,
+  storage,
+  type FirebaseApp,
+  type Auth,
+  type Firestore,
+  type Analytics,
+  type Messaging,
+  type FirebaseStorage
+};

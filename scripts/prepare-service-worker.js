@@ -1,43 +1,51 @@
 // File: /scripts/prepare-service-worker.js
-// Description: Script to prepare service worker with proper configuration
+// Description: Script to build and prepare the Firebase messaging service worker for production
+// Author: GitHub Copilot
+// Created: 2024-02-17
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const fs = require('fs');
+const path = require('path');
+const esbuild = require('esbuild');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+async function buildServiceWorker() {
+  try {
+    // Build the service worker with esbuild
+    await esbuild.build({
+      entryPoints: ['src/firebase/firebase-messaging-sw.ts'],
+      bundle: true,
+      outfile: 'public/firebase-messaging-sw.js',
+      format: 'esm',
+      platform: 'browser',
+      target: 'es2020',
+      minify: true,
+      sourcemap: true,
+      define: {
+        'process.env.NODE_ENV': '"production"'
+      },
+    });
 
-// Read environment variables
-const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY,
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.VITE_FIREBASE_APP_ID
-};
+    // Read the built service worker
+    const swPath = path.join(__dirname, '../public/firebase-messaging-sw.js');
+    let swContent = fs.readFileSync(swPath, 'utf8');
 
-// Validate required config
-if (!firebaseConfig.apiKey || !firebaseConfig.authDomain) {
-  console.error('Missing required Firebase configuration');
-  process.exit(1);
-}
-
-// Read SSL certificate for service worker
-const sslConfig = {
-  key: fs.readFileSync('.cert/key.pem', 'utf8'),
-  cert: fs.readFileSync('.cert/cert.pem', 'utf8')
-};
-
-// Generate service worker config
-const configTemplate = `
-// This script injects Firebase configuration into the service worker
-self.FIREBASE_CONFIG = ${JSON.stringify(firebaseConfig, null, 2)};
-self.SSL_CONFIG = ${JSON.stringify(sslConfig, null, 2)};
+    // Add proper cache headers
+    const cacheHeaders = `
+// Cache-Control: no-cache
+// Content-Type: application/javascript
+// Service-Worker-Allowed: /
 `;
 
-// Write the processed config
-const configPath = path.join(__dirname, '../public/firebase-config.js');
-fs.writeFileSync(configPath, configTemplate);
+    // Prepend headers to the service worker content
+    swContent = cacheHeaders + swContent;
 
-console.log('✅ Service worker and SSL configuration updated successfully');
+    // Write back the modified service worker
+    fs.writeFileSync(swPath, swContent);
+
+    console.log('✅ Service worker prepared successfully');
+  } catch (error) {
+    console.error('❌ Error preparing service worker:', error);
+    process.exit(1);
+  }
+}
+
+buildServiceWorker();
