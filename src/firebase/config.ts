@@ -1,5 +1,5 @@
 // File: /src/firebase/config.ts
-// Description: Firebase configuration and service initialization with TypeScript types
+// Description: Firebase configuration with secure initialization and proper TypeScript types
 // Author: GitHub Copilot
 // Created: 2024-02-17
 
@@ -11,7 +11,7 @@ import {
   browserPopupRedirectResolver,
   indexedDBLocalPersistence,
   browserLocalPersistence,
-  PopupRedirectResolver 
+  PopupRedirectResolver
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -25,20 +25,38 @@ import { Analytics, getAnalytics, isSupported as isAnalyticsSupported } from 'fi
 import { getMessaging, Messaging, isSupported as isMessagingSupported } from 'firebase/messaging';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
-// Type for initialization errors
+// Interface for initialization errors
 interface InitializationError extends Error {
   service: string;
+  code?: string;
 }
 
-// Firebase configuration
-export const firebaseConfig = {
-  apiKey: "AIzaSyBfhBZbRRVsARX5u0biqVHQA6vudYw2F8U",
-  authDomain: "gacentral-53615.firebaseapp.com",
-  projectId: "gacentral-53615",
-  storageBucket: "gacentral-53615.firebasestorage.app",
-  messagingSenderId: "467988177048",
-  appId: "1:467988177048:web:5dd07a8fe519ec030a30ed",
-  measurementId: "G-H9285DBXK7"
+// Validate required environment variables
+const requiredEnvVars = [
+  'VITE_FIREBASE_API_KEY',
+  'VITE_FIREBASE_AUTH_DOMAIN',
+  'VITE_FIREBASE_PROJECT_ID',
+  'VITE_FIREBASE_STORAGE_BUCKET',
+  'VITE_FIREBASE_MESSAGING_SENDER_ID',
+  'VITE_FIREBASE_APP_ID'
+] as const;
+
+for (const envVar of requiredEnvVars) {
+  if (!import.meta.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+}
+
+// Firebase configuration with environment variables
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL
 };
 
 // Service instances
@@ -52,23 +70,26 @@ let storage: FirebaseStorage;
 // Check for secure context
 const isSecureContext = window.isSecureContext;
 if (!isSecureContext) {
-  console.warn('Application is not running in a secure context. Some features may be disabled.');
+  console.warn('Application is not running in a secure context. Some features will be disabled.');
 }
 
-// Initialize Firebase services
-async function initializeFirebaseServices(): Promise<void> {
+// Maximum retries for initialization
+const MAX_INIT_RETRIES = Number(import.meta.env.VITE_MAX_AUTH_RETRIES) || 3;
+
+// Initialize Firebase services with retry mechanism
+async function initializeFirebaseServices(retryCount = 0): Promise<void> {
   try {
     // Only initialize once
     if (!getApps().length) {
       app = initializeApp(firebaseConfig);
 
-      // Initialize Auth with persistence
+      // Initialize Auth with persistence and popup (preferred method)
       auth = initializeAuth(app, {
         persistence: [indexedDBLocalPersistence, browserLocalPersistence],
-        popupRedirectResolver: browserPopupRedirectResolver as PopupRedirectResolver,
+        popupRedirectResolver: browserPopupRedirectResolver as PopupRedirectResolver
       });
 
-      // Initialize Firestore with persistence
+      // Initialize Firestore with persistence and single tab manager
       firestore = initializeFirestore(app, {
         localCache: persistentLocalCache({
           tabManager: persistentSingleTabManager({
@@ -81,7 +102,7 @@ async function initializeFirebaseServices(): Promise<void> {
       // Initialize Storage
       storage = getStorage(app);
 
-      // Initialize Analytics if supported
+      // Initialize Analytics if supported and in secure context
       if (isSecureContext) {
         const analyticsSupported = await isAnalyticsSupported();
         if (analyticsSupported) {
@@ -106,13 +127,21 @@ async function initializeFirebaseServices(): Promise<void> {
   } catch (error) {
     const err = error as InitializationError;
     console.error('Firebase initialization error:', err);
-    throw new Error(`Failed to initialize Firebase services: ${err.message}`);
+
+    // Retry initialization if under max attempts
+    if (retryCount < MAX_INIT_RETRIES) {
+      console.log(`Retrying Firebase initialization (${retryCount + 1}/${MAX_INIT_RETRIES})...`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s before retry
+      return initializeFirebaseServices(retryCount + 1);
+    }
+
+    throw new Error(`Failed to initialize Firebase services after ${MAX_INIT_RETRIES} attempts: ${err.message}`);
   }
 }
 
 // Initialize services immediately
 initializeFirebaseServices().catch(error => {
-  console.error('Failed to initialize Firebase:', error);
+  console.error('Critical: Failed to initialize Firebase:', error);
 });
 
 export {

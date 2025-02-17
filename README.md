@@ -44,6 +44,20 @@ For detailed security guidelines, see [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE
 - AI-powered learning style assessment through interactive chat
 - Personalized learning paths based on VARK model
 - Real-time progress tracking
+- Google authentication
+- Interactive dashboard for students and educators
+
+## Documentation
+- [Development Guide](./DEVELOPMENT_GUIDE.md) - Detailed setup, architecture, and development roadmap
+- [Component Structure](./src/components/README.md) - UI component documentation
+- [API Documentation](./backend/README.md) - Backend API reference
+
+## Scripts
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run preview  # Preview production build
+npm run deploy   # Deploy to Firebase
 ```
 
 ## Contributing
