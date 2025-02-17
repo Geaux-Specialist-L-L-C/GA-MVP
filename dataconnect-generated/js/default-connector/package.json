@@ -17,9 +17,15 @@
       "require": "./index.cjs.js",
       "default": "./esm/index.esm.js"
     },
+    "./react": {
+      "types": "./react/index.d.ts",
+      "import": "./react/esm/index.esm.js",
+      "default": "./react/esm/index.esm.js"
+    },
     "./package.json": "./package.json"
   },
   "peerDependencies": {
-    "firebase": "^10.14.0 || ^11.0.0"
+    "firebase": "^11.3.0",
+    "@tanstack-query-firebase/react": "^1.0.5"
   }
 }

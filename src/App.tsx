@@ -7,8 +7,9 @@ import Layout from './components/layout/Layout';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import PrivateRoute from './components/PrivateRoute';
 import { muiTheme, styledTheme } from './theme/theme';
+import ErrorBoundary from './components/shared/ErrorBoundary';
 
-// Lazy load components for better performance
+// Lazy load components with explicit types
 const Home = React.lazy(() => import('./pages/Home'));
 const About = React.lazy(() => import('./pages/About'));
 const Contact = React.lazy(() => import('./pages/Contact'));
@@ -27,61 +28,66 @@ const TestChat = React.lazy(() => import('./components/chat/TestChat'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
 const App: React.FC = (): JSX.Element => {
+  // Register service worker for Firebase messaging
   useEffect(() => {
-    // Initialize service worker for Firebase messaging
-    if ('serviceWorker' in navigator && (window.isSecureContext || process.env.NODE_ENV === 'development')) {
-      navigator.serviceWorker
-        .register('/firebase-messaging-sw.js', {
+    const registerServiceWorker = async (): Promise<void> => {
+      if (!('serviceWorker' in navigator) || 
+          (!window.isSecureContext && process.env.NODE_ENV !== 'development')) {
+        console.debug('Service Worker registration skipped - requires HTTPS or development environment');
+        return;
+      }
+
+      try {
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
           scope: '/__/auth/',
           type: 'module',
           updateViaCache: process.env.NODE_ENV === 'development' ? 'none' : 'imports'
-        })
-        .then((registration) => {
-          console.debug('Service Worker registered with scope:', registration.scope);
-        })
-        .catch((error) => {
-          // Only log as error in production
-          const logMethod = process.env.NODE_ENV === 'production' ? console.error : console.warn;
-          logMethod('Service Worker registration failed:', error);
         });
-    } else {
-      console.debug('Service Worker registration skipped - requires HTTPS or production environment');
-    }
+        console.debug('Service Worker registered with scope:', registration.scope);
+      } catch (error) {
+        const logMethod = process.env.NODE_ENV === 'production' ? console.error : console.warn;
+        logMethod('Service Worker registration failed:', error instanceof Error ? error.message : 'Unknown error');
+      }
+    };
+
+    void registerServiceWorker();
   }, []);
   
   return (
-    <MUIThemeProvider theme={muiTheme}>
-      <StyledThemeProvider theme={styledTheme}>
-        <AppContainer>
-          <Suspense fallback={<LoadingSpinner />}>
-            <Routes>
-              <Route element={<Layout />}>
-                {/* Public Routes */}
-                <Route path="/" element={<Home />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/features" element={<Features />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/learning-styles" element={<LearningStyles />} />
-                <Route path="/curriculum" element={<Curriculum />} />
-                
-                {/* Protected Routes */}
-                <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
-                <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
-                <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
-                <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
-                <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />
-                <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
-                <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
-                <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
-          </Suspense>
-        </AppContainer>
-      </StyledThemeProvider>
-    </MUIThemeProvider>
+    <ErrorBoundary>
+      <MUIThemeProvider theme={muiTheme}>
+        <StyledThemeProvider theme={styledTheme}>
+          <AppContainer>
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                <Route element={<Layout />}>
+                  {/* Public Routes */}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/features" element={<Features />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route path="/learning-styles" element={<LearningStyles />} />
+                  <Route path="/curriculum" element={<Curriculum />} />
+                  
+                  {/* Protected Routes */}
+                  <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+                  <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
+                  <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+                  <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
+                  <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />
+                  <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
+                  <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
+                  <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
+                  <Route path="*" element={<NotFound />} />
+                </Route>
+              </Routes>
+            </Suspense>
+          </AppContainer>
+        </StyledThemeProvider>
+      </MUIThemeProvider>
+    </ErrorBoundary>
   );
 };
 

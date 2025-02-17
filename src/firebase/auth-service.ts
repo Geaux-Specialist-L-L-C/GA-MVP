@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, Auth } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, Auth, User } from "firebase/auth";
 import { auth } from './config';
 
 export class AuthService {
@@ -32,6 +32,16 @@ export class AuthService {
     }
   }
 
+  private async refreshUserToken(user: User): Promise<string> {
+    try {
+      const token = await user.getIdToken(true);
+      return token;
+    } catch (error: any) {
+      console.error('Token refresh error:', error);
+      throw new Error(error.message || 'Failed to refresh authentication token');
+    }
+  }
+
   async signInWithGoogle() {
     try {
       if (this.popupOpen) {
@@ -42,6 +52,13 @@ export class AuthService {
       this.popupOpen = true;
 
       const result = await signInWithPopup(this._auth, this.provider);
+      const token = await this.refreshUserToken(result.user);
+      
+      // Store token in a secure way
+      if (window.isSecureContext) {
+        sessionStorage.setItem('authToken', token);
+      }
+      
       return result;
     } catch (error: any) {
       console.error('Google sign-in error:', error);
@@ -59,10 +76,42 @@ export class AuthService {
   async signOut() {
     try {
       await this.ensureInitialized();
+      if (window.isSecureContext) {
+        sessionStorage.removeItem('authToken');
+      }
       await firebaseSignOut(this._auth);
     } catch (error: any) {
       console.error('Sign out error:', error);
       throw new Error(error.message || 'Failed to sign out');
     }
+  }
+
+  async refreshToken(): Promise<string | null> {
+    try {
+      await this.ensureInitialized();
+      const currentUser = this._auth.currentUser;
+      
+      if (!currentUser) {
+        return null;
+      }
+
+      const token = await this.refreshUserToken(currentUser);
+      
+      if (window.isSecureContext) {
+        sessionStorage.setItem('authToken', token);
+      }
+      
+      return token;
+    } catch (error: any) {
+      console.error('Token refresh error:', error);
+      throw new Error(error.message || 'Failed to refresh authentication token');
+    }
+  }
+
+  getCurrentToken(): string | null {
+    if (!window.isSecureContext) {
+      return null;
+    }
+    return sessionStorage.getItem('authToken');
   }
 }

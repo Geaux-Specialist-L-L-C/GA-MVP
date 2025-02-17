@@ -1,33 +1,17 @@
-// File: /tsconfig.json
-// Description: Root TypeScript configuration for the project
-// Author: GitHub Copilot
-// Created: 2023-10-10
-
 {
   "compilerOptions": {
-    "target": "es2017",
-    "module": "commonjs",
-    "lib": [],
-    "allowJs": false,
-    "skipLibCheck": true,
+    "module": "NodeNext",
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": false,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": false,
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "types": ["node"],
+    "moduleResolution": "nodenext",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
     "sourceMap": true,
-    "typeRoots": ["node_modules/@types"]
+    "strict": true,
+    "target": "es2017"
   },
   "compileOnSave": true,
-  "include": ["src"],
-  "exclude": ["node_modules", "dist", "public"]
+  "include": [
+    "src"
+  ]
 }

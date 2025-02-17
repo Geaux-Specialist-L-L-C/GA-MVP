@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import styled from 'styled-components';
-import Header from './Header';
+import Navbar from '../Navbar';
 import Footer from './Footer';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/global.css';
@@ -11,7 +11,7 @@ const Layout = () => {
 
   return (
     <LayoutWrapper>
-      <Header />
+      <Navbar />
       <PageContainer>
         <Outlet />
       </PageContainer>
@@ -24,7 +24,7 @@ const LayoutWrapper = styled.div`
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-top: var(--header-height);
+  padding-top: var(--navbar-height);
 `;
 
 const PageContainer = styled.main`

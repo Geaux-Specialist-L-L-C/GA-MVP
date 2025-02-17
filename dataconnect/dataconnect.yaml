@@ -1,5 +1,5 @@
 specVersion: "v1beta"
-serviceId: "geaux-academy"
+serviceId: "ga-mvp"
 location: "us-central1"
 schema:
   source: "./schema"
@@ -7,6 +7,6 @@ schema:
     postgresql:
       database: "fdcdb"
       cloudSql:
-        instanceId: "geaux-academy-fdc"
+        instanceId: "ga-mvp-fdc"
       # schemaValidation: "COMPATIBLE"
 connectorDirs: ["./connector"]
