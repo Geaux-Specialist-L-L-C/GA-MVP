@@ -4,19 +4,28 @@ import styled from 'styled-components';
 import Navbar from '../Navbar';
 import Footer from './Footer';
 import { useAuth } from '../../contexts/AuthContext';
+import DashboardLayout from '../templates/DashboardLayout';
 import '../../styles/global.css';
 
 const Layout = () => {
   const { currentUser } = useAuth();
 
   return (
-    <LayoutWrapper>
+    <DashboardLayout
+      userData={{
+        name: currentUser?.displayName || '',
+        email: currentUser?.email || '',
+        profilePicture: currentUser?.photoURL || ''
+      }}
+      routeContext={{ currentRoute: window.location.pathname }}
+      onLogout={() => console.log('Logout')}
+    >
       <Navbar />
       <PageContainer>
         <Outlet />
       </PageContainer>
       <Footer />
-    </LayoutWrapper>
+    </DashboardLayout>
   );
 };
 

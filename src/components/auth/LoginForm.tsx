@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../contexts/AuthContext';
 import GoogleLoginButton from '../GoogleLoginButton';
+import Button from '../common/Button';
+import FormGroup from '../molecules/FormGroup';
 import './auth.css';
 
 const ErrorMessage = styled.div`
@@ -50,26 +52,6 @@ const Input = styled.input`
   }
 `;
 
-const SubmitButton = styled.button`
-  padding: 0.75rem;
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
-
-  &:hover:not(:disabled) {
-    background-color: #357abd;
-  }
-`;
-
 const LoginForm: React.FC = (): JSX.Element => {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -84,12 +66,33 @@ const LoginForm: React.FC = (): JSX.Element => {
   };
 
   return (
-    <form onSubmit={(e) => {
+    <Form onSubmit={(e) => {
       e.preventDefault();
       handleLogin();
     }}>
-      {/* ...existing form JSX... */}
-    </form>
+      <FormGroup
+        label="Email"
+        inputs={[{
+          placeholder: 'Enter your email',
+          value: '',
+          onChange: () => {},
+          error: false
+        }]}
+      />
+      <FormGroup
+        label="Password"
+        inputs={[{
+          placeholder: 'Enter your password',
+          value: '',
+          onChange: () => {},
+          error: false
+        }]}
+      />
+      <Button type="submit" $variant="primary">
+        Login
+      </Button>
+      <GoogleLoginButton />
+    </Form>
   );
 };
 

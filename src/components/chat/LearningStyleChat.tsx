@@ -6,6 +6,7 @@ import Message from '../Message';
 import { saveLearningStyle, updateStudentAssessmentStatus } from '../../services/profileService';
 import { CheshireService } from '../../services/cheshireService';
 import { LearningStyle } from '../../types/profiles';
+import Button from '../common/Button';
 
 type ValidLearningStyle = 'visual' | 'auditory' | 'kinesthetic' | 'reading/writing';
 
@@ -158,9 +159,9 @@ const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
           onKeyPress={(e) => e.key === "Enter" && sendMessage()}
           className="form-input"
         />
-        <SendButton onClick={sendMessage} className="btn btn-primary">
+        <Button onClick={sendMessage} $variant="primary">
           <FaPaperPlane />
-        </SendButton>
+        </Button>
       </ChatFooter>
     </ChatContainer>
   );
@@ -199,13 +200,6 @@ const ChatFooter = styled.div`
 
 const ChatInput = styled.input`
   flex: 1;
-`;
-
-const SendButton = styled.button`
-  padding: var(--spacing-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 `;
 
 export default LearningStyleChat;
