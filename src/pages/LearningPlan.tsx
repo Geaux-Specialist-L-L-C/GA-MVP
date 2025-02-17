@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { db } from "../firebase/config";
+import { firestore } from "../firebase/config";
 import { getDoc, doc, updateDoc } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
 import LoadingSpinner from "../components/common/LoadingSpinner";
@@ -37,7 +37,7 @@ const LearningPlan: React.FC = () => {
     if (!currentUser?.uid) return;
     
     try {
-      const userRef = doc(db, "users", currentUser.uid);
+      const userRef = doc(firestore, "users", currentUser.uid);
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
@@ -104,7 +104,7 @@ const LearningPlan: React.FC = () => {
     }
     
     try {
-      const userRef = doc(db, "users", currentUser.uid);
+      const userRef = doc(firestore, "users", currentUser.uid);
       await updateDoc(userRef, {
         learningPlan: plan
       });

@@ -1,4 +1,4 @@
-import { db } from '../firebase/config';
+import { firestore } from '../firebase/config';
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { Parent, Student, LearningStyle } from "../types/profiles";
 
@@ -20,7 +20,7 @@ export const createParentProfile = async (parentData: Partial<Parent>): Promise<
   try {
     if (!parentData.uid) throw new Error('User ID is required');
     
-    const parentRef = doc(db, 'parents', parentData.uid);
+    const parentRef = doc(firestore, 'parents', parentData.uid);
     await setDoc(parentRef, {
       ...parentData,
       createdAt: new Date().toISOString(),
@@ -46,7 +46,7 @@ export const getParentProfile = async (userId: string): Promise<Parent | null> =
       return profileCache.get(`parent_${userId}`);
     }
 
-    const docRef = doc(db, 'parents', userId);
+    const docRef = doc(firestore, 'parents', userId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
@@ -88,7 +88,7 @@ export const getStudentProfile = async (studentId: string): Promise<Student> => 
       return profileCache.get(`student_${studentId}`);
     }
 
-    const studentRef = doc(db, "students", studentId);
+    const studentRef = doc(firestore, "students", studentId);
     const studentDoc = await getDoc(studentRef);
 
     if (!studentDoc.exists()) {
@@ -119,14 +119,14 @@ export const addStudentProfile = async (parentId: string, studentData: {
     console.log('📝 Adding student profile for parent:', parentId);
     
     // Add the student to the students collection
-    const studentRef = await addDoc(collection(db, 'students'), {
+    const studentRef = await addDoc(collection(firestore, 'students'), {
       ...studentData,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
 
     // Update the parent's students array
-    const parentRef = doc(db, 'parents', parentId);
+    const parentRef = doc(firestore, 'parents', parentId);
     const parentDoc = await getDoc(parentRef);
 
     if (parentDoc.exists()) {
@@ -151,7 +151,7 @@ export const updateStudentAssessmentStatus = async (studentId: string, status: s
     throw handleOfflineError('update assessment status');
   }
 
-  const studentRef = doc(db, "students", studentId);
+  const studentRef = doc(firestore, "students", studentId);
   try {
     await updateDoc(studentRef, {
       hasTakenAssessment: status === 'completed',
@@ -184,7 +184,7 @@ export const saveLearningStyle = async (studentId: string, learningStyle: Learni
 
   try {
     console.log('📝 Saving learning style for student:', studentId);
-    const studentRef = doc(db, 'students', studentId);
+    const studentRef = doc(firestore, 'students', studentId);
     
     await updateDoc(studentRef, {
       learningStyle,

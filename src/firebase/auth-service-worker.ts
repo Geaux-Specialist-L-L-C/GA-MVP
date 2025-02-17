@@ -4,7 +4,7 @@
 // Created: 2024-02-12
 
 import { enableIndexedDbPersistence, type FirestoreSettings } from 'firebase/firestore';
-import { db } from './config';
+import { firestore } from './config';
 
 interface ServiceWorkerError extends Error {
   name: string;
