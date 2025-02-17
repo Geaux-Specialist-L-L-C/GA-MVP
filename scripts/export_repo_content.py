@@ -75,14 +75,14 @@ def write_chunk(chunk_number, content, base_path):
     return output_file
 
 def export_repo_content(repo_path, output_base):
-    """Export repository content to multiple markdown files of ~1MB each."""
+    """Export repository content to multiple markdown files of ~500KB each."""
     repo_path = Path(repo_path).resolve()
     
     # Initialize variables
     current_chunk = []
     current_chunk_size = 0
     chunk_number = 1
-    max_chunk_size = 1024 * 1024  # 1MB in bytes
+    max_chunk_size = 512 * 1024  # 500KB in bytes
     files_processed = 0
     generated_files = []
     
@@ -111,18 +111,60 @@ def export_repo_content(repo_path, output_base):
                 # Calculate size of this block
                 block_size = len(file_block.encode('utf-8'))
                 
+                # If this single block is larger than max chunk size, split it into smaller pieces
+                if block_size > max_chunk_size:
+                    # Write current chunk if it exists
+                    if current_chunk:
+                        chunk_content = ''.join(current_chunk)
+                        output_file = write_chunk(chunk_number, chunk_content, output_base)
+                        generated_files.append(output_file)
+                        chunk_number += 1
+                        current_chunk = []
+                        current_chunk_size = 0
+                    
+                    # Split large file into multiple chunks
+                    content_lines = content.splitlines()
+                    sub_chunk = []
+                    sub_chunk_size = 0
+                    
+                    for line in content_lines:
+                        line_block = f"{line}\n"
+                        line_size = len(line_block.encode('utf-8'))
+                        
+                        if sub_chunk_size + line_size > max_chunk_size:
+                            # Write current sub-chunk
+                            sub_content = f'## /{relative_file_path} (continued)\n\n```{language}\n{"".join(sub_chunk)}```\n\n---\n\n'
+                            output_file = write_chunk(chunk_number, sub_content, output_base)
+                            generated_files.append(output_file)
+                            chunk_number += 1
+                            sub_chunk = []
+                            sub_chunk_size = 0
+                        
+                        sub_chunk.append(line_block)
+                        sub_chunk_size += line_size
+                    
+                    # Write remaining sub-chunk if it exists
+                    if sub_chunk:
+                        sub_content = f'## /{relative_file_path} (continued)\n\n```{language}\n{"".join(sub_chunk)}```\n\n---\n\n'
+                        output_file = write_chunk(chunk_number, sub_content, output_base)
+                        generated_files.append(output_file)
+                        chunk_number += 1
+                
                 # If adding this block would exceed chunk size, write current chunk
-                if current_chunk_size + block_size > max_chunk_size and current_chunk:
+                elif current_chunk_size + block_size > max_chunk_size and current_chunk:
                     chunk_content = ''.join(current_chunk)
                     output_file = write_chunk(chunk_number, chunk_content, output_base)
                     generated_files.append(output_file)
                     chunk_number += 1
                     current_chunk = []
                     current_chunk_size = 0
+                    current_chunk.append(file_block)
+                    current_chunk_size = block_size
+                else:
+                    # Add block to current chunk
+                    current_chunk.append(file_block)
+                    current_chunk_size += block_size
                 
-                # Add block to current chunk
-                current_chunk.append(file_block)
-                current_chunk_size += block_size
                 files_processed += 1
                 
         except (UnicodeDecodeError, IOError):
