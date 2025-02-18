@@ -31,9 +31,6 @@
       "**/node_modules/**"
     ]
   },
-  "storage": {
-    "rules": "storage.rules"
-  },
   "remoteconfig": {
     "template": "remoteconfig.template.json"
   },
@@ -55,14 +52,6 @@
     },
     "pubsub": {
       "port": 8085
-    },
-    "storage": {
-      "port": 9199
-    },
-    "ui": {
-      "enabled": true,
-      "host": "localhost",
-      "port": 4000
     },
     "dataconnect": {
       "dataDir": "dataconnect/.dataconnect/pgliteData",

@@ -35,8 +35,7 @@ export default defineConfig({
           vendor: ['react', 'react-dom', 'react-router-dom'],
           'firebase-app': ['firebase/app'],
           'firebase-auth': ['firebase/auth'],
-          'firebase-firestore': ['firebase/firestore'],
-          'firebase-storage': ['firebase/storage']
+          'firebase-firestore': ['firebase/firestore']
         }
       }
     }
