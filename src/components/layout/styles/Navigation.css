@@ -15,11 +15,28 @@
   color: #333;
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.2s;
+  transition: color 0.3s ease;
+  position: relative;
+  padding: 0.5rem 1rem;
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  background-color: var(--primary-color);
+  transition: width 0.3s ease;
 }
 
 .nav-links a:hover {
   color: #4f46e5;
+}
+
+.nav-links a:hover::after {
+  width: 100%;
 }
 
 .mobile-menu-toggle {
@@ -72,4 +89,14 @@
 
 .hamburger::after {
   bottom: -6px;
+}
+
+.auth-buttons button, 
+.auth-buttons a {
+  transition: transform 0.2s ease;
+}
+
+.auth-buttons button:hover,
+.auth-buttons a:hover {
+  transform: scale(1.05);
 }
