@@ -3,9 +3,6 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
-  "dataconnect": {
-    "source": "dataconnect"
-  },
   "hosting": {
     "public": "dist",
     "ignore": [
@@ -35,10 +32,6 @@
     },
     "pubsub": {
       "port": 8085
-    },
-    "dataconnect": {
-      "dataDir": "dataconnect/.dataconnect/pgliteData",
-      "port": 9399
     },
     "database": {
       "port": 9000

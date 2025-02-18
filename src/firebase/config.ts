@@ -151,6 +151,7 @@ export {
   analytics,
   messaging,
   storage,
+  firebaseConfig,
   initializeFirebaseServices,
   type FirebaseApp,
   type Auth,

@@ -7,7 +7,7 @@ Description: Main HTML file with updated CSP to allow external scripts from goog
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self' https://*.google.com https://*.googleapis.com https://*.gstatic.com;
-               script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.googleapis.com https://*.gstatic.com;
+               script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.firebase.com https://*.google-analytics.com https://*.googletagmanager.com;
                style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
                img-src 'self' data: https: blob:;
                font-src 'self' https://fonts.gstatic.com;
@@ -16,8 +16,10 @@ Description: Main HTML file with updated CSP to allow external scripts from goog
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Geaux Academy</title>
+    <link rel="stylesheet" href="/index.css">
   </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
