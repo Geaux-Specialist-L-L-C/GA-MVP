@@ -11,7 +11,7 @@
 - **Implement learning style assessment and storage/ingestion of all files using Cheshire AI framework**
 
 ### 1.[2 AI-Powered Recommendation Engine](pplx://action/followup)
-- Integrate Amazon SageMaker for ML models
+- Integrate Azure for ML models
 - Develop resource suggestion algorithm based on learning analytics
 - Create content tagging system for 50+ resource types
 
