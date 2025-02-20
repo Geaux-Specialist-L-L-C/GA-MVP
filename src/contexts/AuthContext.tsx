@@ -1,101 +1,53 @@
 // File: /src/contexts/AuthContext.tsx
-// Description: Context for authentication using Firebase
-// Author: GitHub Copilot
-// Created: 2024-02-12
+// Description: Auth context using Supabase
+// Author: [Your Name]
+// Created: [Date]
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from 'firebase/auth';
-import { AuthService } from '../firebase/auth-service';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/supabaseClient';
 
-export interface AuthContextProps {
-  currentUser: User | null;
-  isAuthReady: boolean;
-  loading: boolean;
-  error: string | null;
-  login: () => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  logout: () => Promise<void>;
-  clearError: () => void;
+interface AuthContextProps {
+  user: any;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
-export const AuthContext = createContext<AuthContextProps | undefined>(undefined);
+const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const authService = new AuthService();
+export const AuthProvider: React.FC = ({ children }) => {
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const unsubscribe = authService.auth.onAuthStateChanged((firebaseUser: User | null) => {
-      setCurrentUser(firebaseUser);
-      setIsAuthReady(true);
+    const session = supabase.auth.session();
+    setUser(session?.user ?? null);
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
     });
 
-    return () => unsubscribe();
+    return () => {
+      authListener?.unsubscribe();
+    };
   }, []);
 
-  const loginWithGoogle = async () => {
-    try {
-      setLoading(true);
-      await authService.signInWithGoogle();
-      setError(null);
-    } catch (err) {
-      setError((err as Error).message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signIn({ email, password });
+    if (error) throw error;
   };
 
-  const login = async () => {
-    try {
-      setLoading(true);
-      await authService.signInWithGoogle();
-      setError(null);
-    } catch (err) {
-      setError((err as Error).message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const logout = async () => {
-    try {
-      setLoading(true);
-      await authService.signOut();
-      setError(null);
-    } catch (err) {
-      setError((err as Error).message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const clearError = () => setError(null);
-
-  const value: AuthContextProps = {
-    currentUser,
-    isAuthReady,
-    loading,
-    error,
-    login,
-    loginWithGoogle,
-    logout,
-    clearError
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = (): AuthContextProps => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
