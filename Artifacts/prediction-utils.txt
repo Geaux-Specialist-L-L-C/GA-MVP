@@ -1,0 +1,145 @@
+# File: /backend/monitoring/prediction_utils.py
+# Description: Utility functions for prediction analysis
+
+import numpy as np
+from scipy import stats
+from typing import List, Dict, Tuple
+import pandas as pd
+from datetime import datetime, timedelta
+from dataclasses import dataclass
+from sklearn.preprocessing import StandardScaler
+from statsmodels.tsa.seasonal import seasonal_decompose
+import logging
+
+@dataclass
+class ConfidenceInterval:
+    lower: float
+    upper: float
+    confidence: float
+
+@dataclass
+class TrendAnalysis:
+    slope: float
+    direction: str
+    strength: float
+    seasonality: bool
+    cycle_length: Optional[int]
+
+class PredictionAnalyzer:
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.scaler = StandardScaler()
+
+    def calculate_confidence_intervals(
+        self,
+        predictions: np.ndarray,
+        confidence_level: float = 0.95
+    ) -> List[ConfidenceInterval]:
+        """Calculate confidence intervals for predictions"""
+        try:
+            intervals = []
+            std_error = np.std(predictions) / np.sqrt(len(predictions))
+            z_score = stats.norm.ppf((1 + confidence_level) / 2)
+            
+            for pred in predictions:
+                margin = z_score * std_error
+                intervals.append(ConfidenceInterval(
+                    lower=pred - margin,
+                    upper=pred + margin,
+                    confidence=confidence_level
+                ))
+            
+            return intervals
+        except Exception as e:
+            self.logger.error(f"Error calculating confidence intervals: {e}")
+            return []
+
+    def analyze_trend(
+        self,
+        data: pd.Series,
+        window_size: int = 24
+    ) -> TrendAnalysis:
+        """Analyze trend patterns in time series data"""
+        try:
+            # Decompose time series
+            decomposition = seasonal_decompose(
+                data,
+                period=window_size,
+                extrapolate_trend='freq'
+            )
+            
+            # Calculate trend slope
+            trend = decomposition.trend
+            slope = (trend.iloc[-1] - trend.iloc[0]) / len(trend)
+            
+            # Determine trend direction and strength
+            direction = "increasing" if slope > 0 else "decreasing"
+            strength = abs(slope) / np.std(data)
+            
+            # Check for seasonality
+            seasonal = decomposition.seasonal
+            seasonality = np.std(seasonal) > 0.1 * np.std(data)
+            
+            # Detect cycle length if seasonal
+            cycle_length = None
+            if seasonality:
+                acf = stats.acf(seasonal, nlags=len(seasonal)//2)
+                peaks = np.where(acf > 0.7)[0]  # Find significant peaks
+                if len(peaks) > 1:
+                    cycle_length = peaks[1]  # First peak is at lag 0
+            
+            return TrendAnalysis(
+                slope=slope,
+                direction=direction,
+                strength=strength,
+                seasonality=seasonality,
+                cycle_length=cycle_length
+            )
+        except Exception as e:
+            self.logger.error(f"Error analyzing trend: {e}")
+            return TrendAnalysis(0, "stable", 0, False, None)
+
+    def detect_change_points(
+        self,
+        data: pd.Series,
+        window_size: int = 10
+    ) -> List[Dict]:
+        """Detect significant changes in the time series"""
+        try:
+            change_points = []
+            rolling_mean = data.rolling(window=window_size).mean()
+            rolling_std = data.rolling(window=window_size).std()
+            
+            # Calculate z-scores
+            z_scores = np.abs((data - rolling_mean) / rolling_std)
+            
+            # Detect significant changes
+            threshold = 2.5  # Standard deviations
+            for i, z_score in enumerate(z_scores):
+                if z_score > threshold:
+                    change_points.append({
+                        "index": i,
+                        "value": data.iloc[i],
+                        "z_score": z_score,
+                        "timestamp": data.index[i]
+                    })
+            
+            return change_points
+        except Exception as e:
+            self.logger.error(f"Error detecting change points: {e}")
+            return []
+
+    def calculate_forecast_accuracy(
+        self,
+        predictions: np.ndarray,
+        actuals: np.ndarray
+    ) -> Dict:
+        """Calculate various accuracy metrics for forecasts"""
+        try:
+            # Mean Absolute Error
+            mae = np.mean(np.abs(predictions - actuals))
+            
+            # Mean Squared Error
+            mse = np.mean((predictions - actuals) ** 2)
+            
+            

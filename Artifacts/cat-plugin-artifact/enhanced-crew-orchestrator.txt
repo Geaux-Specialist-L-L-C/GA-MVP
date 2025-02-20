@@ -1,0 +1,215 @@
+// File: functions/src/services/crewOrchestrator.ts
+import { Agent, Task } from 'crewai-ts';
+import { logger } from "firebase-functions";
+import { cheshireService } from './cheshire';
+
+interface AgentConfig {
+  role: string;
+  maxConcurrent: number;
+  allowDelegation: boolean;
+  toolset: string[];
+  modelConfig: {
+    model: string;
+    temperature: number;
+    maxTokens: number;
+  };
+}
+
+interface AnalysisAgents {
+  patternDetector: Agent;
+  styleAnalyzer: Agent;
+  confidenceEvaluator: Agent;
+}
+
+interface CurriculumAgents {
+  contentGenerator: Agent;
+  styleAdapter: Agent;
+  qualityAssessor: Agent;
+}
+
+export class CrewOrchestrator {
+  private analysisAgents: AnalysisAgents | null = null;
+  private curriculumAgents: CurriculumAgents | null = null;
+
+  /**
+   * Initializes agents for learning style analysis
+   */
+  async initializeAnalysisAgents(context: {
+    historicalProfile: any;
+    recentInteractions: any[];
+  }): Promise<void> {
+    // Pattern Detection Agent
+    const patternDetector = new Agent({
+      role: "Pattern Detective",
+      goal: "Identify recurring patterns in learning interactions",
+      backstory: "Expert in behavioral pattern recognition with focus on educational interactions",
+      allowDelegation: true,
+      verbose: true,
+      modelConfig: {
+        model: "gpt-4-turbo",
+        temperature: 0.7,
+        maxTokens: 2000
+      }
+    });
+
+    // Style Analysis Agent
+    const styleAnalyzer = new Agent({
+      role: "Learning Style Analyst",
+      goal: "Determine optimal learning style based on interaction patterns",
+      backstory: "Specialist in VARK learning style assessment and educational psychology",
+      allowDelegation: true,
+      verbose: true,
+      modelConfig: {
+        model: "gpt-4-turbo",
+        temperature: 0.5,
+        maxTokens: 2000
+      }
+    });
+
+    // Confidence Evaluation Agent
+    const confidenceEvaluator = new Agent({
+      role: "Confidence Assessor",
+      goal: "Evaluate confidence levels in learning style predictions",
+      backstory: "Expert in statistical analysis and confidence scoring",
+      allowDelegation: true,
+      verbose: true,
+      modelConfig: {
+        model: "gpt-4-turbo",
+        temperature: 0.3,
+        maxTokens: 2000
+      }
+    });
+
+    this.analysisAgents = {
+      patternDetector,
+      styleAnalyzer,
+      confidenceEvaluator
+    };
+
+    // Initialize memory context
+    await this.initializeMemoryContext(context);
+  }
+
+  /**
+   * Initializes agents for curriculum generation
+   */
+  async initializeCurriculumAgents(context: {
+    learningProfile: any;
+    curriculumMetadata: any;
+  }): Promise<void> {
+    // Content Generation Agent
+    const contentGenerator = new Agent({
+      role: "Curriculum Creator",
+      goal: "Generate comprehensive curriculum content",
+      backstory: "Expert educator with experience in curriculum development",
+      allowDelegation: true,
+      verbose: true,
+      modelConfig: {
+        model: "gpt-4-turbo",
+        temperature: 0.7,
+        maxTokens: 4000
+      }
+    });
+
+    // Style Adaptation Agent
+    const styleAdapter = new Agent({
+      role: "Content Adapter",
+      goal: "Adapt curriculum content for specific learning styles",
+      backstory: "Specialist in personalized learning and content adaptation",
+      allowDelegation: true,
+      verbose: true,
+      modelConfig: {
+        model: "gpt-4-turbo",
+        temperature: 0.6,
+        maxTokens: 3000
+      }
+    });
+
+    // Quality Assessment Agent
+    const qualityAssessor = new Agent({
+      role: "Quality Controller",
+      goal: "Ensure curriculum meets educational standards and effectiveness",
+      backstory: "Educational quality assurance expert",
+      allowDelegation: true,
+      verbose: true,
+      modelConfig: {
+        model: "gpt-4-turbo",
+        temperature: 0.4,
+        maxTokens: 2000
+      }
+    });
+
+    this.curriculumAgents = {
+      contentGenerator,
+      styleAdapter,
+      qualityAssessor
+    };
+
+    // Initialize curriculum context
+    await this.initializeCurriculumContext(context);
+  }
+
+  /**
+   * Runs the learning style analysis workflow
+   */
+  async runAnalysisWorkflow(params: {
+    taskType: string;
+    userId: string;
+    confidence_threshold: number;
+  }): Promise<any> {
+    if (!this.analysisAgents) {
+      throw new Error('Analysis agents not initialized');
+    }
+
+    try {
+      // Pattern Detection Task
+      const patternTask = new Task({
+        description: "Analyze interaction patterns and identify learning tendencies",
+        agent: this.analysisAgents.patternDetector
+      });
+
+      const patterns = await this.analysisAgents.patternDetector.executeTask(patternTask);
+
+      // Style Analysis Task
+      const styleTask = new Task({
+        description: "Determine primary and secondary learning styles",
+        agent: this.analysisAgents.styleAnalyzer,
+        context: { patterns }
+      });
+
+      const styleAnalysis = await this.analysisAgents.styleAnalyzer.executeTask(styleTask);
+
+      // Confidence Evaluation Task
+      const confidenceTask = new Task({
+        description: "Evaluate confidence in style determination",
+        agent: this.analysisAgents.confidenceEvaluator,
+        context: { styleAnalysis, patterns }
+      });
+
+      const confidenceAnalysis = await this.analysisAgents.confidenceEvaluator
+        .executeTask(confidenceTask);
+
+      // Process and return final results
+      return this.processFinalAnalysis({
+        patterns,
+        styleAnalysis,
+        confidenceAnalysis,
+        threshold: params.confidence_threshold
+      });
+
+    } catch (error) {
+      logger.error('Analysis workflow failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generates base curriculum content
+   */
+  async generateBaseCurriculum(metadata: any): Promise<any> {
+    if (!this.curriculumAgents) {
+      throw new Error('Curriculum agents not initialized');
+    }
+
+    // Content Generation Task
+    
