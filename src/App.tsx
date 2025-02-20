@@ -40,7 +40,7 @@ const App: React.FC = (): JSX.Element => {
       try {
         const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
           scope: '/__/auth/',
-          type: 'module',
+          // Removed type: 'module' to support importScripts in firebase-messaging-sw.js
           updateViaCache: process.env.NODE_ENV === 'development' ? 'none' : 'imports'
         });
         console.debug('Service Worker registered with scope:', registration.scope);
