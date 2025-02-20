@@ -6,8 +6,13 @@ export default {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: './tsconfig.json' }],
-    '^.+\\.(js|jsx)$': ['babel-jest', { presets: ['@babel/preset-env', '@babel/preset-react'] }]
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+      tsconfig: './tsconfig.json',
+      useESM: true
+    }],
+    '^.+\\.(js|jsx)$': ['babel-jest', { 
+      presets: ['@babel/preset-env', '@babel/preset-react']
+    }]
   },
   moduleNameMapper: {
     '@/(.*)$': '<rootDir>/src/$1',
@@ -25,5 +30,10 @@ export default {
     '/dist/',
     '\\.d\\.ts$'
   ],
-  watchPathIgnorePatterns: ['node_modules', 'dist', '.git']
-};
+  watchPathIgnorePatterns: ['node_modules', 'dist', '.git'],
+  globals: {
+    'ts-jest': {
+      useESM: true
+    }
+  }
+}

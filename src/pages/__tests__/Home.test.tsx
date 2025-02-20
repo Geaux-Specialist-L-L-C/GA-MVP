@@ -2,7 +2,7 @@
 // Description: Unit test for Home page component.
 
 import { screen, fireEvent, waitFor } from "@testing-library/react";
-import { renderWithProviders, mockLoginWithGoogle } from "../../test/testUtils";
+import { renderWithProviders } from "../../test/testUtils";
 import Home from "../Home";
 
 const mockNavigate = jest.fn();
@@ -24,13 +24,19 @@ describe('Home Component', () => {
     expect(screen.getByRole('heading', { name: /ready to start your learning journey\?/i })).toBeInTheDocument();
   });
 
-  test("handles Google login", async () => {
-    renderWithProviders(<Home />, { withRouter: true });
-    const loginButton = screen.getByRole('button', { name: /sign in with google/i });
+  test("handles sign in", async () => {
+    const mockSignIn = jest.fn();
+    renderWithProviders(<Home />, { 
+      withRouter: true,
+      mockAuthValue: {
+        signIn: mockSignIn
+      }
+    });
     
+    const loginButton = screen.getByRole('button', { name: /sign in/i });
     fireEvent.click(loginButton);
     
-    expect(mockLoginWithGoogle).toHaveBeenCalled();
+    expect(mockSignIn).toHaveBeenCalled();
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
     });

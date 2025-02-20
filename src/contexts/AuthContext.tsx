@@ -7,7 +7,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session, AuthError, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 
-interface AuthContextProps {
+export interface AuthContextProps {
   user: User | null;
   session: Session | null;
   signIn: (email: string, password: string) => Promise<void>;
@@ -16,7 +16,7 @@ interface AuthContextProps {
   loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextProps | undefined>(undefined);
+export const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -25,9 +25,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      // Get initial session
-      supabase.auth.getSession().then(({ data: { session }, error }) => {
+    let subscription: { unsubscribe: () => void } | undefined;
+
+    const initAuth = async () => {
+      try {
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           setError('Failed to get session: ' + error.message);
         } else {
@@ -35,24 +38,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(session?.user ?? null);
         }
         setLoading(false);
-      });
 
-      // Listen for auth changes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event: AuthChangeEvent, session: Session | null) => {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setError(null);
-        }
-      );
+        // Listen for auth changes
+        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
+          async (_event: AuthChangeEvent, session: Session | null) => {
+            setSession(session);
+            setUser(session?.user ?? null);
+            setError(null);
+          }
+        );
+        subscription = authSubscription;
+      } catch (err) {
+        setError('Authentication service initialization failed');
+        setLoading(false);
+      }
+    };
 
-      return () => {
-        subscription.unsubscribe();
-      };
-    } catch (err) {
-      setError('Authentication service initialization failed');
-      setLoading(false);
-    }
+    initAuth();
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string): Promise<void> => {

@@ -5,6 +5,10 @@ import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 import React from 'react';
 
+// Mock environment variables
+process.env.VITE_SUPABASE_ANON_KEY = 'test-anon-key';
+process.env.VITE_SUPABASE_URL = 'https://test.supabase.co';
+
 // Run cleanup after each test
 afterEach(() => {
   cleanup();
@@ -28,3 +32,13 @@ jest.mock('../firebase/config', () => ({
     setCustomParameters: jest.fn()
   }
 }));
+
+// Mock window.crypto for tests
+Object.defineProperty(window, 'crypto', {
+  value: {
+    getRandomValues: () => new Uint32Array(10),
+    subtle: {
+      digest: () => Promise.resolve(new ArrayBuffer(32))
+    }
+  }
+});

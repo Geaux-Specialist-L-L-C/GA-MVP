@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://yivklahcdksdpifmapoh.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || import.meta?.env?.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseKey) {
   throw new Error('Missing Supabase anon key. Please check your environment variables.');

@@ -1,7 +1,7 @@
 {
-  "project_id": "your-project-id",
+  "project_id": "yivklahcdksdpifmapoh",
   "db": {
-    "host": "db.your-project-id.supabase.co",
+    "host": "db.yivklahcdksdpifmapoh.supabase.co",
     "port": 5432,
     "schema": "public"
   },

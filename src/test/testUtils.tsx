@@ -13,7 +13,8 @@ const future = {
   v7_relativeSplatPath: true
 };
 
-export const mockLoginWithGoogle = jest.fn();
+export const mockSignIn = jest.fn();
+export const mockSignOut = jest.fn();
 
 interface RenderWithProvidersOptions extends Omit<RenderOptions, 'wrapper'> {
   withRouter?: boolean;
@@ -25,14 +26,12 @@ export const renderWithProviders = (
   { withRouter = true, mockAuthValue = {}, ...options }: RenderWithProvidersOptions = {}
 ): RenderResult => {
   const defaultAuthValue: AuthContextProps = {
-    currentUser: null,
-    isAuthReady: true,
-    loading: false,
+    user: null,
+    session: null,
+    signIn: mockSignIn,
+    signOut: mockSignOut,
     error: null,
-    login: mockLoginWithGoogle,
-    loginWithGoogle: mockLoginWithGoogle,
-    logout: jest.fn(),
-    clearError: jest.fn(),
+    loading: false,
     ...mockAuthValue
   };
 
