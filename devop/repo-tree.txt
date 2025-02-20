@@ -1,0 +1,19 @@
+// File: /file_tree.txt
+// Description: Sample file tree structure for the Geaux Academy repository.
+
+GA-MVP/
+├── .github/
+│   └── copilot-instructions.md
+├── backend/
+│   ├── routes/
+│   ├── models/
+│   ├── schemas/
+│   └── auth/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   ├── hooks/
+│   ├── utils/
+│   └── styles/
+└── scripts/
+    └── index_repo.py
