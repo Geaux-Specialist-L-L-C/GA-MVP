@@ -1,7 +1,7 @@
 // File: /src/firebase/config.ts
-// Description: Firebase configuration with secure initialization and proper TypeScript types
+// Description: Firebase configuration and initialization for Geaux Academy
 // Author: GitHub Copilot
-// Created: 2024-02-17
+// Created: 2023-10-24
 
 import { initializeApp, FirebaseApp, getApps } from 'firebase/app';
 import { 
@@ -11,7 +11,8 @@ import {
   browserPopupRedirectResolver,
   indexedDBLocalPersistence,
   browserLocalPersistence,
-  PopupRedirectResolver
+  PopupRedirectResolver,
+  GoogleAuthProvider
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -66,6 +67,7 @@ let firestore: Firestore;
 let analytics: Analytics | null = null;
 let messaging: Messaging | null = null;
 let storage: FirebaseStorage;
+const provider = new GoogleAuthProvider();
 
 // Check for secure context
 const isSecureContext = window.isSecureContext;
@@ -153,6 +155,7 @@ export {
   storage,
   firebaseConfig,
   initializeFirebaseServices,
+  provider,
   type FirebaseApp,
   type Auth,
   type Firestore,

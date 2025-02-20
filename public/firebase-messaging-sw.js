@@ -7,22 +7,17 @@
 // Service-Worker-Allowed: /
 
 // Load Firebase essentials first
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js');
+importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging.js');
 
-// Firebase configuration for service worker
-const firebaseConfig = {
-  apiKey: "AIzaSyBfhBZbRRVsARX5u0biqVHQA6vudYw2F8U",
-  authDomain: "gacentral-53615.firebaseapp.com",
-  projectId: "gacentral-53615",
-  storageBucket: "gacentral-53615.firebasestorage.app",
-  messagingSenderId: "467988177048",
-  appId: "1:467988177048:web:5dd07a8fe519ec030a30ed"
-};
-
-// Initialize Firebase for service worker
-firebase.initializeApp(firebaseConfig);
+// Initialize Firebase in Service Worker using configuration placeholders
+firebase.initializeApp({
+  apiKey: 'YOUR_API_KEY',
+  authDomain: 'YOUR_AUTH_DOMAIN',
+  projectId: 'YOUR_PROJECT_ID',
+  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+  appId: 'YOUR_APP_ID'
+});
 
 const messaging = firebase.messaging();
 

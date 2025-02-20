@@ -1,3 +1,8 @@
+// File: /src/firebase/auth-service.ts
+// Description: Provides Google authentication functionality for Geaux Academy
+// Author: GitHub Copilot
+// Created: 2023-10-24
+
 import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, Auth, User } from "firebase/auth";
 import { auth } from './config';
 

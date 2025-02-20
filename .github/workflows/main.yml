@@ -2,13 +2,13 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, firebase ]
     paths-ignore:
       - '**.md'
       - '.github/copilot-instructions.md'
       - 'docs/**'
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, firebase ]
     paths-ignore:
       - '**.md'
       - '.github/copilot-instructions.md'
