@@ -5,7 +5,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL!;
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY!;
+// Changed environment variable names to use VITE_ prefix
+const supabaseUrl = process.env.VITE_SUPABASE_URL!;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
