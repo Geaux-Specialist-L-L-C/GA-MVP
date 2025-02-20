@@ -66,41 +66,25 @@ jobs:
     - name: Install dependencies
       run: npm ci --legacy-peer-deps
 
-    - name: Setup Firebase Tools
-      run: npm install -g firebase-tools
+    - name: Setup Supabase CLI
+      uses: supabase/setup-cli@v1
+      with:
+        version: latest
+
+    - name: Start Supabase Local Development
+      run: |
+        supabase init
+        supabase start
 
     - name: Run linter
       run: npm run lint
 
-    - name: Prepare Service Worker
-      run: node scripts/prepare-service-worker.js
-      env:
-        VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-        VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-        VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-        VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-        VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-      
-    - name: Start Firebase Emulators
-      run: firebase emulators:start --only auth,firestore,functions &
-      
-    - name: Wait for Emulators
-      run: sleep 10
-
     - name: Run tests
       run: npm test
       env:
-        FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
-        FIRESTORE_EMULATOR_HOST: localhost:8080
-        FIREBASE_FUNCTIONS_EMULATOR_HOST: localhost:5001
-        VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-        VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-        VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-        VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-        VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-        VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-        VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
-        VITE_FIREBASE_DATABASE_URL: ${{ secrets.VITE_FIREBASE_DATABASE_URL }}
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        VITE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.VITE_SUPABASE_SERVICE_ROLE_KEY }}
         VITE_CHESHIRE_API_URL: ${{ secrets.VITE_CHESHIRE_API_URL }}
         VITE_CHESHIRE_API_TOKEN: ${{ secrets.VITE_CHESHIRE_API_TOKEN }}
         VITE_CHESHIRE_API_TOKEN_TYPE: ${{ secrets.VITE_CHESHIRE_API_TOKEN_TYPE }}
@@ -111,14 +95,9 @@ jobs:
       run: npm run build
       env:
         NODE_ENV: production
-        VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-        VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-        VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-        VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-        VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-        VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-        VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
-        VITE_FIREBASE_DATABASE_URL: ${{ secrets.VITE_FIREBASE_DATABASE_URL }}
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        VITE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.VITE_SUPABASE_SERVICE_ROLE_KEY }}
         VITE_CHESHIRE_API_URL: ${{ secrets.VITE_CHESHIRE_API_URL }}
         VITE_CHESHIRE_API_TOKEN: ${{ secrets.VITE_CHESHIRE_API_TOKEN }}
         VITE_CHESHIRE_API_TOKEN_TYPE: ${{ secrets.VITE_CHESHIRE_API_TOKEN_TYPE }}
@@ -151,8 +130,10 @@ jobs:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
 
-    - name: Install Firebase CLI
-      run: npm install -g firebase-tools
+    - name: Install Supabase CLI
+      uses: supabase/setup-cli@v1
+      with:
+        version: latest
 
     - name: Download build artifacts
       uses: actions/download-artifact@v4
@@ -160,109 +141,21 @@ jobs:
         name: build
         path: dist/
 
-    - name: Update Firebase Security Headers
+    - name: Setup Supabase Project
       run: |
-        cat > firebase.json << 'EOF'
-        {
-          "hosting": {
-            "public": "dist",
-            "ignore": [
-              "firebase.json",
-              "**/.*",
-              "**/node_modules/**"
-            ],
-            "headers": [
-              {
-                "source": "**",
-                "headers": [
-                  {
-                    "key": "Content-Security-Policy",
-                    "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseapp.com https://*.firebase.com https://*.googleapis.com https://*.gstatic.com https://www.googletagmanager.com https://tagmanager.google.com; connect-src 'self' https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://*.googleapis.com https://www.googletagmanager.com https://*.google-analytics.com; frame-src 'self' https://*.firebaseapp.com https://*.firebase.com https://accounts.google.com https://*.googleapis.com; img-src 'self' data: https: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://tagmanager.google.com; font-src 'self' data: https://fonts.gstatic.com https://*.public.atl-paas.net; worker-src 'self' blob: 'unsafe-inline'; manifest-src 'self'; media-src 'self' blob:;"
-                  },
-                  {
-                    "key": "Cross-Origin-Opener-Policy",
-                    "value": "same-origin-allow-popups"
-                  },
-                  {
-                    "key": "Cross-Origin-Embedder-Policy",
-                    "value": "unsafe-none"
-                  },
-                  {
-                    "key": "Cross-Origin-Resource-Policy",
-                    "value": "cross-origin"
-                  },
-                  {
-                    "key": "X-Content-Type-Options",
-                    "value": "nosniff"
-                  },
-                  {
-                    "key": "X-Frame-Options",
-                    "value": "DENY"
-                  },
-                  {
-                    "key": "X-XSS-Protection",
-                    "value": "1; mode=block"
-                  },
-                  {
-                    "key": "Referrer-Policy",
-                    "value": "strict-origin-when-cross-origin"
-                  },
-                  {
-                    "key": "Permissions-Policy",
-                    "value": "accelerometer=(), autoplay=(), camera=(), cross-origin-isolated=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), keyboard-map=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(self), usb=(), web-share=(), xr-spatial-tracking=()"
-                  }
-                ]
-              },
-              {
-                "source": "**/*.@(js|css|png|jpg|jpeg|gif|webp|svg|woff|woff2)",
-                "headers": [
-                  {
-                    "key": "Cache-Control",
-                    "value": "public, max-age=31536000, immutable"
-                  }
-                ]
-              },
-              {
-                "source": "/firebase-messaging-sw.js",
-                "headers": [
-                  {
-                    "key": "Service-Worker-Allowed",
-                    "value": "/"
-                  },
-                  {
-                    "key": "Cache-Control",
-                    "value": "no-cache, no-store, must-revalidate"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/javascript; charset=utf-8"
-                  }
-                ]
-              },
-              {
-                "source": "/__/auth/**",
-                "headers": [
-                  {
-                    "key": "Cache-Control",
-                    "value": "no-cache, no-store, must-revalidate"
-                  }
-                ]
-              }
-            ],
-            "rewrites": [
-              {
-                "source": "**",
-                "destination": "/index.html"
-              }
-            ]
-          }
-        }
-        EOF
-
-    - name: Deploy to Firebase
-      run: |
-        echo ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }} > $HOME/service-account.json
-        firebase use ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
-        firebase deploy --only hosting --non-interactive
+        supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} -p ${{ secrets.SUPABASE_DB_PASSWORD }}
       env:
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+        SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+    - name: Deploy Supabase Functions
+      run: |
+        supabase functions deploy
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+    - name: Deploy Static Assets
+      uses: supabase/hosting-deploy@v1
+      with:
+        project_id: ${{ secrets.SUPABASE_PROJECT_ID }}
+        access_token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        dist_dir: dist/

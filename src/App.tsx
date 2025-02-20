@@ -25,6 +25,7 @@ const LearningPlan = React.lazy(() => import('./pages/LearningPlan'));
 const TakeAssessment = React.lazy(() => import('./pages/TakeAssessment'));
 const LearningStyleChat = React.lazy(() => import('./components/chat/LearningStyleChat'));
 const TestChat = React.lazy(() => import('./components/chat/TestChat'));
+const Todos = React.lazy(() => import('./pages/Todos'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
 const App: React.FC = (): JSX.Element => {
@@ -70,6 +71,7 @@ const App: React.FC = (): JSX.Element => {
                   <Route path="/signup" element={<SignUp />} />
                   <Route path="/learning-styles" element={<LearningStyles />} />
                   <Route path="/curriculum" element={<Curriculum />} />
+                  <Route path="/todos" element={<Todos />} />
                   
                   {/* Protected Routes */}
                   <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
