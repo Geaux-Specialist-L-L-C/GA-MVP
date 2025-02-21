@@ -1,5 +1,4 @@
-// File: /eslint.config.js
-// Description: ESLint flat configuration for Geaux Academy
+// Renamed to disable ESLint
 
 import typescriptPlugin from "@typescript-eslint/eslint-plugin";
 import typescriptParser from "@typescript-eslint/parser";
