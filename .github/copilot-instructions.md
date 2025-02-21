@@ -204,7 +204,7 @@ _(Too vague; lacks context on file path, TypeScript, testing, or expected functi
 ✔ **Strict TypeScript best practices**  
 ✔ **Use absolute imports (`@/src/...`)**  
 ✔ **Ensure API security (JWT, RBAC, Firestore rules)**  
-✔ **Follow ESLint + Prettier formatting**  
+✔ **Follow Rollup + Prettier formatting**  
 ✔ **Write unit tests (`.test.tsx` or `.test.py`) for all new code**  
 ✔ **Use Tailwind CSS or Styled Components for styling**  
 
