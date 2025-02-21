@@ -1,9 +1,11 @@
-import React, { useEffect, useCallback, useRef } from 'react';
-import { LineChart, RadarChart, ResponsiveContainer } from 'recharts';
+import React, { useEffect, useCallback, useRef, useState, useMemo } from 'react';
+import { LineChart, RadarChart, ResponsiveContainer, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip, Legend } from 'recharts';
 import { useFirestore, useFirestoreCollectionData } from 'reactfire';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AgentContext } from '@/contexts/AgentContext';
 import { useAssessmentState } from '@/hooks/useAssessmentState';
+import { useTheme, useId } from '@mui/material';
+import { PathGraph, NodeDetailPanel, CustomTooltip, TimelineEvent, TimelineConnectors, ContentHeader, DynamicContent, ContentControls, MetricsHeader, MetricCard, TrendLineChart, MetricsFooter, VisualizerHeader } from '@/components';
 
 /**
  * LearningPathVisualizer - Interactive visualization of student learning path
