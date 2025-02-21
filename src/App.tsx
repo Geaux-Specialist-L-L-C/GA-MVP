@@ -9,6 +9,9 @@ import PrivateRoute from './components/PrivateRoute';
 import { muiTheme, styledTheme } from './theme/theme';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import { messaging } from './firebase/config';
+import Navigation from './components/Navigation';
+import Profile from './pages/Profile';
+import Assessment from './pages/Assessment';
 
 // Lazy load components with explicit types
 const Home = React.lazy(() => import('./pages/Home'));
@@ -70,10 +73,12 @@ const App: React.FC = (): JSX.Element => {
         <StyledThemeProvider theme={styledTheme}>
           <AppContainer>
             <Suspense fallback={<LoadingSpinner />}>
-              <Routes>
-                <Route element={<Layout />}>
-                  {/* Public Routes */}
+              <Layout>
+                <Navigation />
+                <Routes>
                   <Route path="/" element={<Home />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/assessment" element={<Assessment />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/features" element={<Features />} />
@@ -92,8 +97,8 @@ const App: React.FC = (): JSX.Element => {
                   <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
                   <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
                   <Route path="*" element={<NotFound />} />
-                </Route>
-              </Routes>
+                </Routes>
+              </Layout>
             </Suspense>
           </AppContainer>
         </StyledThemeProvider>

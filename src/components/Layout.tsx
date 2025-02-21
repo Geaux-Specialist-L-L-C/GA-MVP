@@ -1,46 +1,20 @@
 // File: /src/components/Layout.tsx
-// Description: Common layout container that provides consistent page structure with navbar and proper spacing
+// Description: Layout system component for the application.
 // Author: GitHub Copilot
-// Created: 2024-02-17
+// Created: [Date]
 
-import React from "react";
-import { Outlet } from "react-router-dom";
-import styled from "styled-components";
-import Navbar from "./Navbar";
-import Footer from "./layout/Footer";
-import ErrorBoundary from "./shared/ErrorBoundary";
+import React from 'react';
 
-const Layout: React.FC = () => {
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <LayoutWrapper>
-      <Navbar />
-      <MainContent>
-        <ErrorBoundary>
-          <Outlet />
-        </ErrorBoundary>
-      </MainContent>
-      <Footer />
-    </LayoutWrapper>
+    <div className="container mx-auto p-4">
+      {children}
+    </div>
   );
 };
-
-const LayoutWrapper = styled.div`
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding-top: var(--navbar-height, 64px);
-`;
-
-const MainContent = styled.main`
-  flex: 1;
-  width: 100%;
-  max-width: var(--max-width, 1200px);
-  margin: 0 auto;
-  padding: var(--spacing-lg, 2rem) var(--spacing-md, 1rem);
-
-  @media (max-width: 768px) {
-    padding: var(--spacing-md, 1rem) var(--spacing-sm, 0.5rem);
-  }
-`;
 
 export default Layout;
