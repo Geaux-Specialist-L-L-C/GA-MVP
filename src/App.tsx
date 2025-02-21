@@ -8,6 +8,7 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 import PrivateRoute from './components/PrivateRoute';
 import { muiTheme, styledTheme } from './theme/theme';
 import ErrorBoundary from './components/shared/ErrorBoundary';
+import { messaging } from './firebase/config';
 
 // Lazy load components with explicit types
 const Home = React.lazy(() => import('./pages/Home'));
@@ -31,21 +32,32 @@ const App: React.FC = (): JSX.Element => {
   // Register service worker for Firebase messaging
   useEffect(() => {
     const registerServiceWorker = async (): Promise<void> => {
-      if (!('serviceWorker' in navigator) || 
-          (!window.isSecureContext && process.env.NODE_ENV !== 'development')) {
-        console.debug('Service Worker registration skipped - requires HTTPS or development environment');
-        return;
-      }
-
       try {
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-          scope: '/',
-          updateViaCache: process.env.NODE_ENV === 'development' ? 'none' : 'imports'
-        });
-        console.debug('Service Worker registered with scope:', registration.scope);
+        // Only register if in secure context and messaging is available
+        if ('serviceWorker' in navigator && window.isSecureContext && messaging) {
+          // First unregister any existing service workers to ensure clean state
+          const existingRegs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(existingRegs.map(reg => reg.unregister()));
+
+          // Register new service worker
+          const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+            scope: '/',
+            type: 'module',
+            updateViaCache: process.env.NODE_ENV === 'development' ? 'none' : 'imports'
+          });
+
+          // Get messaging token
+          const currentToken = await messaging.getToken({
+            vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+            serviceWorkerRegistration: registration
+          });
+
+          if (currentToken) {
+            console.debug('FCM registration successful. Token:', currentToken);
+          }
+        }
       } catch (error) {
-        const logMethod = process.env.NODE_ENV === 'production' ? console.error : console.warn;
-        logMethod('Service Worker registration failed:', error instanceof Error ? error.message : 'Unknown error');
+        console.error('Service Worker registration failed:', error);
       }
     };
 
