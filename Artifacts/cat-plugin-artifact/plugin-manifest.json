@@ -1,0 +1,38 @@
+{
+    "name": "MyCurriculumDesigner",
+    "version": "1.0.0",
+    "description": "AI-powered curriculum generation plugin for homeschool education",
+    "author": "Geaux Specialist LLC",
+    "author_url": "https://geaux.app",
+    "plugin_url": "https://github.com/geaux-specialist/curriculum-designer",
+    "tags": "education, curriculum, homeschool, AI",
+    "thumb": "",
+    "dependencies": [
+        "scikit-learn>=0.24.2",
+        "pandas>=1.3.0"
+    ],
+    "settings_schema": {
+        "max_resources_per_lesson": {
+            "type": "integer",
+            "description": "Maximum number of resources per lesson",
+            "default": 5,
+            "minimum": 1,
+            "maximum": 10
+        },
+        "include_assessments": {
+            "type": "boolean",
+            "description": "Include assessment criteria in curriculum",
+            "default": true
+        },
+        "default_duration": {
+            "type": "string",
+            "description": "Default lesson duration",
+            "default": "45 minutes"
+        },
+        "enable_standards_mapping": {
+            "type": "boolean",
+            "description": "Enable mapping to educational standards",
+            "default": true
+        }
+    }
+}

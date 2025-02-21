@@ -1,0 +1,100 @@
+# File: /backend/tests/integration/test_learning_system.py
+# Description: Integration tests for the learning system
+
+import pytest
+from httpx import AsyncClient
+from ...agents.orchestrator import AgentOrchestrator
+from ...middleware.security import SecurityMiddleware
+from ...db.indexes import DatabaseOptimizer
+import asyncio
+from datetime import datetime, timedelta
+
+@pytest.fixture
+async def test_client():
+    from main import app
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        yield client
+
+@pytest.fixture
+async def db_optimizer():
+    optimizer = DatabaseOptimizer("mongodb://localhost:27017")
+    await optimizer.create_indexes()
+    await optimizer.optimize_collections()
+    return optimizer
+
+@pytest.mark.asyncio
+async def test_complete_learning_flow(test_client, db_optimizer):
+    # Test user data
+    test_user = {
+        "email": "test@example.com",
+        "learning_style": {
+            "visual": 0.7,
+            "auditory": 0.2,
+            "kinesthetic": 0.05,
+            "reading_writing": 0.05
+        }
+    }
+    
+    # 1. Test learning style assessment
+    response = await test_client.post(
+        "/api/learning-style/analyze",
+        json=test_user["learning_style"]
+    )
+    assert response.status_code == 200
+    learning_style_result = response.json()
+    assert "style" in learning_style_result
+    assert learning_style_result["style"] == "visual"
+    
+    # 2. Test curriculum generation
+    curriculum_request = {
+        "subject": "Mathematics",
+        "grade_level": 5,
+        "learning_style": learning_style_result["style"]
+    }
+    
+    response = await test_client.post(
+        "/api/curriculum/generate",
+        json=curriculum_request
+    )
+    assert response.status_code == 200
+    curriculum = response.json()
+    assert "data" in curriculum
+    
+    # 3. Test performance tracking
+    performance_data = {
+        "user_id": test_user["email"],
+        "curriculum_id": curriculum["data"]["id"],
+        "score": 85,
+        "completion_time": 45  # minutes
+    }
+    
+    response = await test_client.post(
+        "/api/performance/track",
+        json=performance_data
+    )
+    assert response.status_code == 200
+    
+    # 4. Verify data in MongoDB
+    user_progress = await test_client.get(f"/api/progress/{test_user['email']}")
+    assert user_progress.status_code == 200
+    progress_data = user_progress.json()
+    assert progress_data["average_score"] >= 85
+
+# File: /backend/tests/integration/test_agent_orchestration.py
+# Description: Integration tests for multi-agent system
+
+@pytest.mark.asyncio
+async def test_agent_orchestration():
+    orchestrator = AgentOrchestrator()
+    
+    # Test curriculum creation
+    result = await orchestrator.create_curriculum(
+        subject="Science",
+        grade_level=6,
+        learning_style="visual"
+    )
+    
+    assert result is not None
+    assert "content" in result
+    
+    # Verify agent collaboration
