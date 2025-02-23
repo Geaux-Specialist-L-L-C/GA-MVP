@@ -1,16 +1,31 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import babel from '@rollup/plugin-babel';
 import typescript from '@rollup/plugin-typescript';
 
 export default {
-  input: 'src/index.ts', // Update with your entry file
+  input: 'src/index.tsx',
   output: {
-    file: 'dist/bundle.js',
-    format: 'cjs', // or 'esm' for ES Modules
+    dir: 'dist',
+    format: 'es',
+    sourcemap: true
   },
   plugins: [
-    resolve(),
+    resolve({
+      extensions: ['.js', '.jsx', '.ts', '.tsx']
+    }),
     commonjs(),
-    typescript(),
+    typescript({
+      tsconfig: './tsconfig.json',
+      declaration: true,
+      declarationDir: 'dist/types'
+    }),
+    babel({
+      babelHelpers: 'bundled',
+      exclude: 'node_modules/**',
+      extensions: ['.js', '.jsx', '.ts', '.tsx'],
+      presets: ['@babel/preset-env', '@babel/preset-react', '@babel/preset-typescript']
+    })
   ],
+  external: ['react', 'react-dom']
 };
