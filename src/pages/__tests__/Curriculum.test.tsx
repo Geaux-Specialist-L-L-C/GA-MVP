@@ -21,6 +21,10 @@ jest.mock('../contexts/AuthContext', () => ({
   })
 }));
 
+const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return <>{children}</>;
+};
+
 describe('Curriculum Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
