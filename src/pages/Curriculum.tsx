@@ -46,7 +46,7 @@ const Curriculum: React.FC = () => {
   if (loading || authLoading) {
     return (
       <LoadingContainer>
-        <LoadingSpinner />
+        <LoadingSpinner data-testid="loading-spinner" />
       </LoadingContainer>
     );
   }
