@@ -1,0 +1,3 @@
+[submodule "backend/Geaux-flo"]
+	path = backend/Geaux-flo
+	url = https://github.com/Geaux-Specialist-L-L-C/Geaux-flo.git
