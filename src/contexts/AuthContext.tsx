@@ -6,11 +6,28 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, AuthContextType } from '../types/auth';
 import { auth } from '../firebase/config';
-import { signInWithGoogle } from '../services/authService';
+import { signInWithGoogle } from '../services/auth-service';
+import { 
+  UserCredential, 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut
+} from 'firebase/auth';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export interface AuthContextProps {
+  currentUser: User | null;
+  loading: boolean;
+  authError: string | null;
+  login: (email: string, password: string) => Promise<UserCredential>;
+  loginWithGoogle: () => Promise<void>;
+  signup: (email: string, password: string) => Promise<UserCredential>;
+  logout: () => Promise<void>;
+  setAuthError: (error: string | null) => void;
+}
 
-export const AuthProvider: React.FC = ({ children }) => {
+export const AuthContext = createContext<AuthContextProps | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -23,19 +40,50 @@ export const AuthProvider: React.FC = ({ children }) => {
     return unsubscribe;
   }, []);
 
+  const login = async (email: string, password: string): Promise<UserCredential> => {
+    try {
+      return await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      setAuthError('Failed to sign in');
+      throw error;
+    }
+  };
+
   const loginWithGoogle = async () => {
     try {
       await signInWithGoogle();
     } catch (error) {
       setAuthError('Failed to sign in with Google');
+      throw error;
     }
   };
 
-  const value = {
+  const signup = async (email: string, password: string): Promise<UserCredential> => {
+    try {
+      return await createUserWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      setAuthError('Failed to create account');
+      throw error;
+    }
+  };
+
+  const logout = async (): Promise<void> => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      setAuthError('Failed to log out');
+      throw error;
+    }
+  };
+
+  const value: AuthContextProps = {
     currentUser,
     loading,
     authError,
+    login,
     loginWithGoogle,
+    signup,
+    logout,
     setAuthError,
   };
 
@@ -46,7 +94,7 @@ export const AuthProvider: React.FC = ({ children }) => {
   );
 };
 
-export const useAuth = (): AuthContextType => {
+export const useAuth = (): AuthContextProps => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
