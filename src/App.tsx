@@ -7,8 +7,8 @@ import Layout from './components/layout/Layout';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import PrivateRoute from './components/PrivateRoute';
 import { muiTheme, styledTheme } from './theme/theme';
-import ErrorBoundary from './components/shared/ErrorBoundary';
 import { messaging } from './firebase/config';
+import { getToken } from 'firebase/messaging';
 import Navigation from './components/Navigation';
 import Profile from './pages/Profile';
 const Assessment = React.lazy(() => import('./pages/Assessment'));
@@ -50,13 +50,15 @@ const App: React.FC = (): JSX.Element => {
           });
 
           // Get messaging token
-          const currentToken = await messaging.getToken({
-            vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
-            serviceWorkerRegistration: registration
-          });
+          if (messaging) {
+            const currentToken = await getToken(messaging, {
+              vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+              serviceWorkerRegistration: registration
+            });
 
-          if (currentToken) {
-            console.debug('FCM registration successful. Token:', currentToken);
+            if (currentToken) {
+              console.debug('FCM registration successful. Token:', currentToken);
+            }
           }
         }
       } catch (error) {
@@ -68,42 +70,39 @@ const App: React.FC = (): JSX.Element => {
   }, []);
   
   return (
-    <ErrorBoundary>
+    <StyledThemeProvider theme={styledTheme}>
       <MUIThemeProvider theme={muiTheme}>
-        <StyledThemeProvider theme={styledTheme}>
-          <AppContainer>
-            <Suspense fallback={<LoadingSpinner />}>
-              <Layout>
-                <Navigation />
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/assessment" element={<Assessment />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/features" element={<Features />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/learning-styles" element={<LearningStyles />} />
-                  <Route path="/curriculum" element={<Curriculum />} />
-                  
-                  {/* Protected Routes */}
-                  <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
-                  <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
-                  <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
-                  <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
-                  <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />
-                  <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
-                  <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
-                  <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Layout>
-            </Suspense>
-          </AppContainer>
-        </StyledThemeProvider>
+        <AppContainer>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              <Route element={<Layout />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/assessment" element={<Assessment />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/learning-styles" element={<LearningStyles />} />
+                <Route path="/curriculum" element={<Curriculum />} />
+                
+                {/* Protected Routes */}
+                <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+                <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
+                <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+                <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
+                <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />
+                <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
+                <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
+                <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </Suspense>
+        </AppContainer>
       </MUIThemeProvider>
-    </ErrorBoundary>
+    </StyledThemeProvider>
   );
 };
 

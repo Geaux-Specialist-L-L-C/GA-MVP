@@ -4,7 +4,6 @@
 // Created: [Date]
 
 import React, { createContext, useContext, useState } from 'react';
-import { ThemeProvider } from 'styled-components';
 
 const lightTheme = {
   background: '#ffffff',
@@ -23,16 +22,16 @@ const ThemeContext = createContext({
 
 export const useTheme = () => useContext(ThemeContext);
 
-const Theme: React.FC = ({ children }) => {
+const Theme: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState(lightTheme);
-
+  
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === lightTheme ? darkTheme : lightTheme));
   };
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <ThemeProvider theme={theme}>{children}</ThemeProvider>
+      {children}
     </ThemeContext.Provider>
   );
 };

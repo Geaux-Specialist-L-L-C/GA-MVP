@@ -3,7 +3,8 @@ import { render, RenderOptions, RenderResult } from "@testing-library/react";
 import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { AuthContext, type AuthContextProps } from "../contexts/AuthContext";
+import { AuthContext } from "../contexts/AuthContext";
+import { AuthContextType } from "../types/auth";
 import '@testing-library/jest-dom';
 import { mockMuiTheme, mockStyledTheme } from "./mockThemes";
 
@@ -17,17 +18,22 @@ export const mockLoginWithGoogle = jest.fn();
 
 interface RenderWithProvidersOptions extends Omit<RenderOptions, 'wrapper'> {
   withRouter?: boolean;
-  mockAuthValue?: Partial<AuthContextProps>;
+  mockAuthValue?: Partial<AuthContextType>;
 }
 
 export const renderWithProviders = (
   ui: React.ReactNode,
   { withRouter = true, mockAuthValue = {}, ...options }: RenderWithProvidersOptions = {}
 ): RenderResult => {
-  const defaultAuthValue: AuthContextProps = {
-    user: null,
-    login: mockLoginWithGoogle,
+  const defaultAuthValue: AuthContextType = {
+    currentUser: null,
+    loading: false,
+    authError: null,
+    login: jest.fn(),
+    loginWithGoogle: mockLoginWithGoogle,
+    signup: jest.fn(),
     logout: jest.fn(),
+    setAuthError: jest.fn(),
     ...mockAuthValue
   };
 

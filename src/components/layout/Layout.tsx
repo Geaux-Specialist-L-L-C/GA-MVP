@@ -1,31 +1,22 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import styled from 'styled-components';
-import Navbar from '../Navbar';
+import Header from './Header';
 import Footer from './Footer';
 import { useAuth } from '../../contexts/AuthContext';
-import DashboardLayout from '../templates/DashboardLayout';
 import '../../styles/global.css';
 
 const Layout = () => {
   const { currentUser } = useAuth();
 
   return (
-    <DashboardLayout
-      userData={{
-        name: currentUser?.displayName || '',
-        email: currentUser?.email || '',
-        profilePicture: currentUser?.photoURL || ''
-      }}
-      routeContext={{ currentRoute: window.location.pathname }}
-      onLogout={() => console.log('Logout')}
-    >
-      <Navbar />
+    <LayoutWrapper>
+      <Header />
       <PageContainer>
         <Outlet />
       </PageContainer>
       <Footer />
-    </DashboardLayout>
+    </LayoutWrapper>
   );
 };
 
@@ -33,7 +24,7 @@ const LayoutWrapper = styled.div`
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-top: var(--navbar-height);
+  padding-top: var(--header-height);
 `;
 
 const PageContainer = styled.main`
