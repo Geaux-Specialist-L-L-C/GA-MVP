@@ -2,7 +2,7 @@
 // Description: Unit test for Curriculum page component.
 
 import React from 'react';
-import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from "../../test/testUtils";
 import Curriculum from "../Curriculum";
@@ -20,10 +20,6 @@ jest.mock('../contexts/AuthContext', () => ({
     loading: false
   })
 }));
-
-const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return <>{children}</>;
-};
 
 describe('Curriculum Component', () => {
   beforeEach(() => {
@@ -45,6 +41,9 @@ describe('Curriculum Component', () => {
     // Course cards
     expect(screen.getByText(/mathematics/i)).toBeInTheDocument();
     expect(screen.getByText(/science/i)).toBeInTheDocument();
+
+    // Sign in button
+    expect(screen.getByRole('button', { name: /sign in with google/i })).toBeInTheDocument();
   });
 
   it("changes grade selection when clicking grade buttons", async () => {
@@ -53,8 +52,8 @@ describe('Curriculum Component', () => {
     const elementaryButton = screen.getByRole('button', { name: /elementary school/i });
     await userEvent.click(elementaryButton);
     
-    // You might want to check for specific content changes based on grade selection
-    // This would depend on your implementation details
+    // Verify button state change
+    expect(elementaryButton).toHaveStyle('background: var(--primary-color)');
   });
 
   it("handles Google login flow correctly", async () => {

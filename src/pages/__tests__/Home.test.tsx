@@ -2,14 +2,22 @@
 // Description: Unit test for Home page component.
 
 import { screen, fireEvent, waitFor } from "@testing-library/react";
-import { renderWithProviders, mockLoginWithGoogle } from "../../test/testUtils";
+import { renderWithProviders } from "../../test/testUtils";
 import Home from "../Home";
 
 const mockNavigate = jest.fn();
+const mockLoginWithGoogle = jest.fn();
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
+}));
+
+jest.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    loginWithGoogle: mockLoginWithGoogle,
+    loading: false
+  })
 }));
 
 describe('Home Component', () => {
@@ -18,14 +26,14 @@ describe('Home Component', () => {
   });
 
   test("renders Home component with correct content", () => {
-    renderWithProviders(<Home />, { withRouter: true });
+    renderWithProviders(<Home />);
     expect(screen.getByRole('heading', { name: /welcome to geaux academy/i })).toBeInTheDocument();
     expect(screen.getByText(/empowering personalized learning through ai/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /ready to start your learning journey\?/i })).toBeInTheDocument();
   });
 
   test("handles Google login", async () => {
-    renderWithProviders(<Home />, { withRouter: true });
+    renderWithProviders(<Home />);
     const loginButton = screen.getByRole('button', { name: /sign in with google/i });
     
     fireEvent.click(loginButton);
