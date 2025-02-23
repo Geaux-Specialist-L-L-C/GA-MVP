@@ -1,2 +1,3 @@
-// This file has been consolidated into main.tsx
-// Please see main.tsx for the entry point configuration
+// src/index.tsx
+// This file has been deprecated
+// The application entry point is now in main.tsx
