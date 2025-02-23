@@ -16,8 +16,7 @@
     "serve": "firebase emulators:start",
     "deploy": "firebase deploy",
     "ci": "npm ci --legacy-peer-deps && npm test && npm run build",
-    "test": "if [ \"$NODE_ENV\" != \"development\" ]; then jest; fi",
-
+    "test": "NODE_ENV=development jest",
     "test:watch": "if [ \"$NODE_ENV\" != \"development\" ]; then jest --watch; fi",
     "start:emulators": "node scripts/start-emulators.js",
     "test:coverage": "jest --coverage",
