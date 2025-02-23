@@ -1,0 +1,18 @@
+tasks:
+  - id: "assessment-analysis-task"
+    agent: "assessment-analyzer"
+    description: "Analyze student learning assessment and identify strengths/weaknesses."
+    inputs: ["assessment_id"]
+    outputs: ["analysis_report"]
+
+  - id: "curriculum-generation-task"
+    agent: "curriculum-designer"
+    description: "Create a personalized curriculum based on assessment analysis."
+    inputs: ["analysis_report"]
+    outputs: ["curriculum_plan"]
+
+  - id: "resource-recommendation-task"
+    agent: "content-recommender"
+    description: "Suggest personalized educational resources."
+    inputs: ["curriculum_plan"]
+    outputs: ["learning_resources"]
