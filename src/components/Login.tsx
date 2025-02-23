@@ -7,11 +7,14 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 
 
 const Login: React.FC = () => {
-  const { loginWithGoogle, loading: authLoading, error: authError, clearError } = useAuth();
+  const { loginWithGoogle, login, loading: authLoading, error: authError, clearError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [localError, setLocalError] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (typeof clearError === 'function') {
@@ -41,6 +44,15 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await login(email, password);
+    } catch (err) {
+      setError('Failed to log in');
+    }
+  };
+
   if (loading || authLoading) {
     return (
       <LoadingContainer>
@@ -53,9 +65,9 @@ const Login: React.FC = () => {
     <LoginContainer>
       <LoginBox>
         <Title>Welcome Back</Title>
-        {(localError || authError) && (
+        {(localError || authError || error) && (
           <ErrorMessage>
-            <span>{localError || authError}</span>
+            <span>{localError || authError || error}</span>
             <DismissButton 
               onClick={handleDismissError}
               type="button"
@@ -73,6 +85,17 @@ const Login: React.FC = () => {
           <FcGoogle />
           Sign in with Google
         </GoogleButton>
+        <form onSubmit={handleSubmit}>
+          <FormGroup>
+            <label>Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </FormGroup>
+          <FormGroup>
+            <label>Password</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </FormGroup>
+          <LoginButton type="submit">Login</LoginButton>
+        </form>
         <SignUpPrompt>
           Don't have an account? <StyledLink to="/signup">Sign up</StyledLink>
         </SignUpPrompt>
@@ -133,6 +156,25 @@ const GoogleButton = styled.button`
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+  }
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 1rem;
+`;
+
+const LoginButton = styled.button`
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  
+  &:hover {
+    background-color: var(--primary-color-dark);
   }
 `;
 

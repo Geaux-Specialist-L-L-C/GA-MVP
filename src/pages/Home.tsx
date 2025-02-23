@@ -199,7 +199,9 @@ const Home: React.FC = () => {
   const handleLogin = async (): Promise<void> => {
     try {
       setError("");
-      await login();
+      const email = "user@example.com"; // Replace with actual email
+      const password = "password123"; // Replace with actual password
+      await login(email, password);
       navigate("/dashboard");
     } catch (error) {
       setError(error instanceof Error ? error.message : "An error occurred");

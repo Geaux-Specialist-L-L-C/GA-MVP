@@ -11,7 +11,7 @@ import ErrorBoundary from './components/shared/ErrorBoundary';
 import { messaging } from './firebase/config';
 import Navigation from './components/Navigation';
 import Profile from './pages/Profile';
-import Assessment from './pages/Assessment';
+const Assessment = React.lazy(() => import('./pages/Assessment'));
 
 // Lazy load components with explicit types
 const Home = React.lazy(() => import('./pages/Home'));
