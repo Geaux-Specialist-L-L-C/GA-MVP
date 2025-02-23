@@ -1,6 +1,3 @@
-// File: /src/pages/__tests__/About.test.tsx
-// Description: Unit test for About page component.
-
 import { screen } from "@testing-library/react";
 import '@testing-library/jest-dom';
 import { renderWithProviders } from "../../test/testUtils";

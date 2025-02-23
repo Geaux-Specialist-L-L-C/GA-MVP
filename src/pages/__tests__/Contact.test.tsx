@@ -1,6 +1,3 @@
-// File: /src/pages/__tests__/Contact.test.tsx
-// Description: Unit test for Contact page component.
-
 import { screen } from "@testing-library/react";
 import { renderWithProviders } from "../../test/testUtils";
 import Contact from "../Contact";
