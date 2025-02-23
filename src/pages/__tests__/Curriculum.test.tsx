@@ -3,7 +3,7 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from "../../test/testUtils";
 import Curriculum from "../Curriculum";
-import { MyProvider } from '../../contexts/MyContext';
+import MyProvider from '../../components/MyProvider'; // Fixed Import
 
 interface MockAuthState {
   loginWithGoogle: jest.Mock;
@@ -32,7 +32,7 @@ describe('Curriculum Component', () => {
     });
   });
 
-  // Test Cases
+  // Wrap Curriculum with MyProvider
   const renderComponent = (): React.ReactElement => (
     <MyProvider>
       <Curriculum />
@@ -42,20 +42,16 @@ describe('Curriculum Component', () => {
   it("renders main curriculum content", async () => {
     renderWithProviders(renderComponent());
     
-    // Header content
     expect(screen.getByRole('heading', { name: /curriculum/i })).toBeInTheDocument();
     expect(screen.getByText(/Our curriculum is designed to adapt to your learning style and pace./i)).toBeInTheDocument();
     
-    // Grade selector buttons
     expect(screen.getByRole('button', { name: /elementary school/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /middle school/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /high school/i })).toBeInTheDocument();
     
-    // Course cards
     expect(screen.getByText(/mathematics/i)).toBeInTheDocument();
     expect(screen.getByText(/science/i)).toBeInTheDocument();
 
-    // Sign in button
     expect(screen.getByRole('button', { name: /sign in with google/i })).toBeInTheDocument();
   });
 
@@ -65,7 +61,6 @@ describe('Curriculum Component', () => {
     const elementaryButton = screen.getByRole('button', { name: /elementary school/i });
     await userEvent.click(elementaryButton);
     
-    // Verify button state change
     expect(elementaryButton).toHaveStyle('background: var(--primary-color)');
   });
 
