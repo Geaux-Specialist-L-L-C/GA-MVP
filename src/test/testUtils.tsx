@@ -11,12 +11,6 @@ import { mockMuiTheme, mockStyledTheme } from "./mockThemes";
 // Mock authentication function
 export const mockLoginWithGoogle = jest.fn();
 
-// Define React Router v7 future flags
-const routerFutureFlags = {
-  v7_startTransition: true,
-  v7_relativeSplatPath: true,
-};
-
 // Extend default render options
 interface RenderWithProvidersOptions extends Omit<RenderOptions, "wrapper"> {
   withRouter?: boolean;
@@ -81,3 +75,9 @@ export const renderWithProviders = (
 
   return render(<Providers authOverrides={mockAuthValue}>{ui}</Providers>, options);
 };
+
+// Commenting out the unused variable routerFutureFlags to resolve the TS6133 error
+// const routerFutureFlags = {
+//   someFlag: true,
+//   anotherFlag: false,
+// };
