@@ -16,8 +16,10 @@
     "serve": "firebase emulators:start",
     "deploy": "firebase deploy",
     "ci": "npm ci --legacy-peer-deps && npm test && npm run build",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "test": "if [ \"$NODE_ENV\" != \"development\" ]; then jest; fi",
+
+    "test:watch": "if [ \"$NODE_ENV\" != \"development\" ]; then jest --watch; fi",
+    "start:emulators": "node scripts/start-emulators.js",
     "test:coverage": "jest --coverage",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && husky install || true"
   },
