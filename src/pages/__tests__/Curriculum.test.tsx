@@ -7,6 +7,11 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from "../../test/testUtils";
 import Curriculum from "../Curriculum";
 
+interface MockAuthState {
+  loginWithGoogle: jest.Mock;
+  loading: boolean;
+}
+
 const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
@@ -14,20 +19,28 @@ jest.mock('react-router-dom', () => ({
 }));
 
 const mockLoginWithGoogle = jest.fn();
-jest.mock('../contexts/AuthContext', () => ({
-  useAuth: () => ({
-    loginWithGoogle: mockLoginWithGoogle,
-    loading: false
-  })
+const mockUseAuth = jest.fn<MockAuthState, []>();
+
+jest.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => mockUseAuth()
 }));
 
 describe('Curriculum Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({
+      loginWithGoogle: mockLoginWithGoogle,
+      loading: false
+    });
   });
 
-  it("renders main curriculum content", () => {
-    renderWithProviders(<Curriculum />);
+  // Test Cases
+  const renderComponent = (): React.ReactElement => (
+    <Curriculum />
+  );
+
+  it("renders main curriculum content", async () => {
+    renderWithProviders(renderComponent());
     
     // Header content
     expect(screen.getByRole('heading', { name: /curriculum/i })).toBeInTheDocument();
@@ -47,7 +60,7 @@ describe('Curriculum Component', () => {
   });
 
   it("changes grade selection when clicking grade buttons", async () => {
-    renderWithProviders(<Curriculum />);
+    renderWithProviders(renderComponent());
     
     const elementaryButton = screen.getByRole('button', { name: /elementary school/i });
     await userEvent.click(elementaryButton);
@@ -57,7 +70,7 @@ describe('Curriculum Component', () => {
   });
 
   it("handles Google login flow correctly", async () => {
-    renderWithProviders(<Curriculum />);
+    renderWithProviders(renderComponent());
     
     const loginButton = screen.getByRole('button', { name: /sign in with google/i });
     await userEvent.click(loginButton);
@@ -70,7 +83,7 @@ describe('Curriculum Component', () => {
 
   it("handles login error correctly", async () => {
     mockLoginWithGoogle.mockRejectedValueOnce(new Error("Failed to login"));
-    renderWithProviders(<Curriculum />);
+    renderWithProviders(renderComponent());
     
     const loginButton = screen.getByRole('button', { name: /sign in with google/i });
     await userEvent.click(loginButton);
@@ -81,14 +94,12 @@ describe('Curriculum Component', () => {
   });
 
   it("shows loading spinner when authentication is in progress", () => {
-    jest.mock('../contexts/AuthContext', () => ({
-      useAuth: () => ({
-        loginWithGoogle: mockLoginWithGoogle,
-        loading: true
-      })
-    }));
+    mockUseAuth.mockReturnValueOnce({
+      loginWithGoogle: mockLoginWithGoogle,
+      loading: true
+    });
     
-    renderWithProviders(<Curriculum />);
+    renderWithProviders(renderComponent());
     const loadingSpinner = screen.getByTestId('loading-spinner');
     expect(loadingSpinner).toBeInTheDocument();
   });

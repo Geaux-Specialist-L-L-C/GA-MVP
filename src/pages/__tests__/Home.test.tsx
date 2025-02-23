@@ -1,12 +1,20 @@
 // File: /src/pages/__tests__/Home.test.tsx
 // Description: Unit test for Home page component.
 
-import { screen, fireEvent, waitFor } from "@testing-library/react";
+import React from 'react';
+import { screen, waitFor } from "@testing-library/react";
+import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from "../../test/testUtils";
 import Home from "../Home";
 
+interface MockAuthState {
+  loginWithGoogle: jest.Mock;
+  loading: boolean;
+}
+
 const mockNavigate = jest.fn();
 const mockLoginWithGoogle = jest.fn();
+const mockUseAuth = jest.fn<MockAuthState, []>();
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
@@ -14,33 +22,61 @@ jest.mock('react-router-dom', () => ({
 }));
 
 jest.mock('../../contexts/AuthContext', () => ({
-  useAuth: () => ({
-    loginWithGoogle: mockLoginWithGoogle,
-    loading: false
-  })
+  useAuth: () => mockUseAuth()
 }));
 
 describe('Home Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({
+      loginWithGoogle: mockLoginWithGoogle,
+      loading: false
+    });
   });
 
-  test("renders Home component with correct content", () => {
-    renderWithProviders(<Home />);
+  const renderComponent = (): React.ReactElement => (
+    <Home />
+  );
+
+  it("renders Home component with correct content", () => {
+    renderWithProviders(renderComponent());
     expect(screen.getByRole('heading', { name: /welcome to geaux academy/i })).toBeInTheDocument();
     expect(screen.getByText(/empowering personalized learning through ai/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /ready to start your learning journey\?/i })).toBeInTheDocument();
   });
 
-  test("handles Google login", async () => {
-    renderWithProviders(<Home />);
+  it("handles Google login successfully", async () => {
+    renderWithProviders(renderComponent());
     const loginButton = screen.getByRole('button', { name: /sign in with google/i });
     
-    fireEvent.click(loginButton);
+    await userEvent.click(loginButton);
     
-    expect(mockLoginWithGoogle).toHaveBeenCalled();
+    expect(mockLoginWithGoogle).toHaveBeenCalledTimes(1);
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+    });
+  });
+
+  it("shows loading state during authentication", () => {
+    mockUseAuth.mockReturnValueOnce({
+      loginWithGoogle: mockLoginWithGoogle,
+      loading: true
+    });
+    
+    renderWithProviders(renderComponent());
+    const loadingSpinner = screen.getByTestId('loading-spinner');
+    expect(loadingSpinner).toBeInTheDocument();
+  });
+
+  it("handles login errors appropriately", async () => {
+    mockLoginWithGoogle.mockRejectedValueOnce(new Error("Failed to login"));
+    renderWithProviders(renderComponent());
+    
+    const loginButton = screen.getByRole('button', { name: /sign in with google/i });
+    await userEvent.click(loginButton);
+    
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to sign in with Google/i)).toBeInTheDocument();
     });
   });
 });
