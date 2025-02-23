@@ -1,3 +1,9 @@
 [submodule "backend/Geaux-flo"]
 	path = backend/Geaux-flo
 	url = https://github.com/Geaux-Specialist-L-L-C/Geaux-flo.git
+[submodule "backend/geaux-crewai"]
+	path = backend/geaux-crewai
+	url = https://github.com/Geaux-Specialist-L-L-C/geaux-crewai.git
+[submodule "backend/geauxcat"]
+	path = backend/geauxcat
+	url = https://github.com/Geaux-Specialist-L-L-C/geauxcat.git
