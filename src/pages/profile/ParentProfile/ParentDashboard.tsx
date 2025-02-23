@@ -1,10 +1,16 @@
+// File: /src/pages/profile/ParentProfile/ParentDashboard.tsx
+// Description: Parent dashboard for managing student profiles and viewing progress.
+// Author: GitHub Copilot
+// Created: 2023-10-10
+
 import React, { useState, useEffect } from 'react';
 import StudentProgressTracker from './components/StudentProgressTracker';
 import NotificationCenter from './dashboard/components/NotificationCenter';
 import LearningStyleInsights from '../components/LearningStyleInsights';
 import CurriculumApproval from './dashboard/components/CurriculumApproval';
+import CurriculumRecommendations from '@/components/curriculum/CurriculumRecommendations';
 import styled from 'styled-components';
-import { useAuth } from "../../../contexts/AuthContext";
+import { useAuth } from '../../../contexts/AuthContext';
 import { getParentProfile } from '../../../services/profileService';
 import { Parent, Student } from '../../../types/auth';
 import { useNavigate } from 'react-router-dom';
@@ -30,23 +36,7 @@ const ParentDashboard: React.FC = () => {
         try {
           const profile = await getParentProfile(user.uid);
           if (profile) {
-            setParentProfile({
-              ...profile,
-              name: profile.displayName,
-              id: profile.id || user.uid,
-              students: profile.students.map((student: string) => ({
-                id: student,
-                name: '',
-                age: 0,
-                grade: '',
-                parentId: profile.id || user.uid,
-                hasTakenAssessment: false,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-              })) || [],
-              createdAt: profile.createdAt || new Date().toISOString(),
-              updatedAt: profile.updatedAt || new Date().toISOString()
-            });
+            setParentProfile(profile);
           }
         } catch (error) {
           console.error("Error fetching profile:", error);
@@ -92,8 +82,6 @@ const ParentDashboard: React.FC = () => {
         <>
           <StudentManagement>
             <h2>Student Profiles</h2>
-            <AddStudentButton>➕ Add Student</AddStudentButton>
-            
             <StudentList>
               {parentProfile?.students?.map((student) => (
                 <StudentCard key={student.id} onClick={() => handleProfileSwitch(student.id)}>
@@ -115,9 +103,9 @@ const ParentDashboard: React.FC = () => {
             </TabList>
 
             <TabContent>
-              {activeTab === 'overview' && <OverviewTab />}
+              {activeTab === 'overview' && <StudentProgressTracker />}
               {activeTab === 'progress' && <StudentProgressTracker />}
-              {activeTab === 'curriculum' && <CurriculumApproval />}
+              {activeTab === 'curriculum' && selectedStudent && <CurriculumRecommendations assessmentId={selectedStudent} />}
               {activeTab === 'insights' && <LearningStyleInsights />}
             </TabContent>
           </TabContainer>
@@ -131,7 +119,7 @@ const ParentDashboard: React.FC = () => {
   );
 };
 
-// Styled components
+// Styled Components
 const DashboardContainer = styled.div`
   padding: 2rem;
   max-width: 1200px;
@@ -162,20 +150,6 @@ const StudentManagement = styled.div`
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 `;
 
-const AddStudentButton = styled.button`
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background: var(--primary-dark);
-  }
-`;
-
 const StudentList = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -201,11 +175,7 @@ const TabList = styled.div`
   margin-bottom: 1rem;
 `;
 
-interface TabProps {
-  active: boolean;
-}
-
-const Tab = styled.button<TabProps>`
+const Tab = styled.button<{ active: boolean }>`
   padding: 0.5rem 1rem;
   border: none;
   background: ${props => props.active ? 'var(--primary-color)' : 'transparent'};
@@ -230,6 +200,21 @@ const NotificationSection = styled.div`
   margin-top: 2rem;
 `;
 
+const ViewProfileButton = styled.button`
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: var(--primary-dark);
+  }
+`;
+
 const GoogleButton = styled.button`
   display: flex;
   align-items: center;
@@ -243,25 +228,6 @@ const GoogleButton = styled.button`
 
   &:hover {
     background: #f8f8f8;
-  }
-`;
-
-const OverviewTab = styled.div`
-  // Add specific styles for the overview tab content
-`;
-
-const ViewProfileButton = styled.button`
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: var(--primary-dark);
   }
 `;
 

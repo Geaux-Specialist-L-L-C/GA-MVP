@@ -9,7 +9,6 @@ interface NewStudent {
   name: string;
   grade: string;
   parentId: string;
-  hasTakenAssessment: boolean;
 }
 
 const CreateStudent: React.FC = () => {
@@ -35,138 +34,55 @@ const CreateStudent: React.FC = () => {
         name: studentName, 
         grade, 
         parentId: currentUser.uid,
-        hasTakenAssessment: false
       };
-
-      await addStudentProfile(currentUser.uid, newStudent);
-      setStudentName('');
-      setGrade('');
-      navigate('/dashboard');
+      await addStudentProfile(newStudent);
+      navigate('/parent-dashboard');
     } catch (err) {
-      setError('Failed to create student profile. Please try again.');
-      console.error('Error creating student:', err);
+      setError('Failed to create student profile.');
+      console.error('Error creating student profile:', err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <FormContainer>
-      <h2>Add a New Student</h2>
-      {error && <ErrorMessage>{error}</ErrorMessage>}
-      
-      <Form onSubmit={handleSubmit}>
-        <FormGroup>
-          <Label>
-            Student Name:
-            <Input
-              type="text"
-              value={studentName}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStudentName(e.target.value)}
-              placeholder="Enter student's name"
-              required
-            />
-          </Label>
-        </FormGroup>
-
-        <FormGroup>
-          <Label>
-            Grade Level:
-            <Select 
-              value={grade} 
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGrade(e.target.value)}
-              required
-            >
-              <option value="">Select Grade</option>
-              <option value="K">Kindergarten</option>
-              {Array.from({ length: 12 }, (_, i) => (
-                <option key={i + 1} value={String(i + 1)}>
-                  Grade {i + 1}
-                </option>
-              ))}
-            </Select>
-          </Label>
-        </FormGroup>
-
-        <SubmitButton type="submit" disabled={loading}>
-          {loading ? 'Creating Profile...' : 'Save Profile'}
-        </SubmitButton>
-      </Form>
-    </FormContainer>
+    <Container>
+      <h2>Create Student Profile</h2>
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="studentName">Student Name</label>
+        <input
+          type="text"
+          id="studentName"
+          value={studentName}
+          onChange={(e) => setStudentName(e.target.value)}
+          required
+        />
+        <label htmlFor="grade">Grade</label>
+        <input
+          type="text"
+          id="grade"
+          value={grade}
+          onChange={(e) => setGrade(e.target.value)}
+          required
+        />
+        {error && <ErrorText>{error}</ErrorText>}
+        <button type="submit" disabled={loading}>
+          {loading ? 'Creating...' : 'Create Profile'}
+        </button>
+      </form>
+    </Container>
   );
 };
 
-const FormContainer = styled.div`
-  max-width: 500px;
-  margin: 2rem auto;
+const Container = styled.div`
   padding: 2rem;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
-  h2 {
-    margin-bottom: 1.5rem;
-    color: var(--primary-color);
-  }
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 `;
 
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-`;
-
-const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const Label = styled.label`
-  font-weight: 500;
-  color: #333;
-`;
-
-const Input = styled.input`
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-`;
-
-const Select = styled.select`
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  background: white;
-`;
-
-const SubmitButton = styled.button`
-  background: var(--primary-color);
-  color: white;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-
-  &:hover:not(:disabled) {
-    background: var(--primary-dark);
-  }
-`;
-
-const ErrorMessage = styled.div`
-  color: #dc2626;
-  background: #fee2e2;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
+const ErrorText = styled.p`
+  color: red;
 `;
 
 export default CreateStudent;

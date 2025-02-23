@@ -46,7 +46,14 @@ export interface Parent {
   email: string;
   displayName: string;
   phone?: string;
-  students: string[];
+  students: Student[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ParentProfile extends Omit<Parent, 'students'> {
+  name: string;
+  students: Student[];
   createdAt: string;
   updatedAt: string;
 }
