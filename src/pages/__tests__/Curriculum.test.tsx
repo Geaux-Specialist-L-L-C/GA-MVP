@@ -1,11 +1,9 @@
-// File: /src/pages/__tests__/Curriculum.test.tsx
-// Description: Unit test for Curriculum page component.
-
 import React from 'react';
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from "../../test/testUtils";
 import Curriculum from "../Curriculum";
+import { MyProvider } from '../../contexts/MyContext';
 
 interface MockAuthState {
   loginWithGoogle: jest.Mock;
@@ -36,7 +34,9 @@ describe('Curriculum Component', () => {
 
   // Test Cases
   const renderComponent = (): React.ReactElement => (
-    <Curriculum />
+    <MyProvider>
+      <Curriculum />
+    </MyProvider>
   );
 
   it("renders main curriculum content", async () => {
