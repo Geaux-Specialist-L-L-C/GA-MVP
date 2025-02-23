@@ -4,7 +4,7 @@
 // Created: [Date]
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, AuthContextType } from '../types/auth';
+import { User } from '../types/auth';  // Removed unused AuthContextType import
 import { auth } from '../firebase/config';
 import { signInWithGoogle } from '../services/auth-service';
 import { 
