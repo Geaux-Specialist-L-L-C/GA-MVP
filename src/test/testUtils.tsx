@@ -25,14 +25,9 @@ export const renderWithProviders = (
   { withRouter = true, mockAuthValue = {}, ...options }: RenderWithProvidersOptions = {}
 ): RenderResult => {
   const defaultAuthValue: AuthContextProps = {
-    currentUser: null,
-    isAuthReady: true,
-    loading: false,
-    error: null,
+    user: null,
     login: mockLoginWithGoogle,
-    loginWithGoogle: mockLoginWithGoogle,
     logout: jest.fn(),
-    clearError: jest.fn(),
     ...mockAuthValue
   };
 
