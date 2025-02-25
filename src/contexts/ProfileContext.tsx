@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { mongoService } from '../services/mongoService';
+import { useAuth } from './AuthContext';
 
 interface Profile {
   id?: string;
@@ -29,10 +31,25 @@ interface ProfileProviderProps {
 }
 
 export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) => {
+  const { currentUser } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
 
-  const updateProfile = (newProfile: Profile) => {
-    setProfile(newProfile);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (currentUser) {
+        const userProfile = await mongoService.getUserProfile(currentUser.uid);
+        setProfile(userProfile);
+      }
+    };
+
+    fetchProfile();
+  }, [currentUser]);
+
+  const updateProfile = async (newProfile: Profile) => {
+    if (currentUser) {
+      const updatedProfile = await mongoService.updateUserProfile(currentUser.uid, newProfile);
+      setProfile(updatedProfile);
+    }
   };
 
   return (
