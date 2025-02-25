@@ -7,28 +7,28 @@
 // Service-Worker-Allowed: /
 
 // Load Firebase essentials first
-importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js');
-importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging.js');
+importScripts('https://www.gstatic.com/firebasejs/11.3.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/11.3.1/firebase-messaging-compat.js');
 
-// Initialize Firebase in Service Worker using configuration placeholders
 firebase.initializeApp({
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_AUTH_DOMAIN',
-  projectId: 'YOUR_PROJECT_ID',
-  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-  appId: 'YOUR_APP_ID'
+  apiKey: "AIzaSyB0V4iL1aQ_xtWeO_iWL1fuhu4_SLfqZeo",
+  authDomain: "geaux-academy.firebaseapp.com",
+  projectId: "geaux-academy",
+  storageBucket: "geaux-academy.firebasestorage.app",
+  messagingSenderId: "145629211979",
+  appId: "1:145629211979:web:1f9c854ecb392916adccce"
 });
 
 const messaging = firebase.messaging();
 
-// Handle background messages
 messaging.onBackgroundMessage((payload) => {
+  console.log('Received background message:', payload);
+  
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: '/images/notification-icon.png',
+    icon: '/firebase-logo.png',
     badge: '/images/badge-icon.png',
-    tag: 'geaux-academy-notification',
     data: payload.data
   };
 
