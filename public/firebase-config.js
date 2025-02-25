@@ -1,10 +1,11 @@
+// This file is loaded by firebase-messaging-sw.js
 self.FIREBASE_CONFIG = {
-  apiKey: "__VITE_FIREBASE_API_KEY__",
-  authDomain: "__VITE_FIREBASE_AUTH_DOMAIN__",
-  projectId: "__VITE_FIREBASE_PROJECT_ID__",
-  messagingSenderId: "__VITE_FIREBASE_MESSAGING_SENDER_ID__",
-  appId: "__VITE_FIREBASE_APP_ID__",
-  vapidKey: "__VITE_FIREBASE_VAPID_KEY__"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID
 };
 self.SSL_CONFIG = {
   "key": "-----BEGIN RSA PRIVATE KEY-----\r\nMIIEpAIBAAKCAQEApWa5H1wMifKEaAgvdLRM6PIxxS2tBVOwwvB4rG72cpdcsZsC\r\ntTkz5tlWhvz2drfep4FT21xjRlhIvzonaEy57F/ja0w6j3f1AnbBHeNEpRPEbN9G\r\nDcAvtlmYepcrmvIN0OTN/ICTtdggmfMn3kyoIgLEyLnaOAc5QmSRhpsUSBTnN5Mg\r\nl1FmM9bI+sbB61+ndFPKtRqi6YKlMVBcBPB3taO0BX2Gfx9ZKPypBdWuJgkLsWNK\r\n98mfXBwfRWXV9l2hXZwxL7VW/lKP/aa88hd+mkkMRXU+Z3VmqUXFZ+mV740IykoP\r\nYyH+suyrcT4Xy8Uth2m9JM3iYvQG0XAbemrgqwIDAQABAoIBADOi+jBcIF4ApG2G\r\nAKrCjzA6TGdudxGuqwRw5nuOuMnVj06zQgkprpZnS6gg2SD/DjflHDTjhuqzLSLm\r\nGN9q9LBizzD0P2QC4y69vFSEWy3eGfiTS9+HHF4lYoEDKM3au413oQcvbO3cZ3Eo\r\nhE3WSLc1fhHcU9AiETI1C2mmiJJn07fTLlEbCGlMqydefrTkRBMcf97pfeun9fta\r\n0w5FUFcLECkmzAQu1WIxEFxz32ipmZ/bVdqIyn2KucLTtT27VFldaiFEL/RmVn5B\r\nunoJMk3ZF/NLf8PypZFCu1LhK6jbE+hTIw51Zk27C9rvBp0Nss9HGZYPsgFjWUgK\r\nobWm9CECgYEA0Qbp5kTqP8gODufuAwj3CtAlFxMIfm7fnvf6J2xp/ct4b0wTbGw6\r\nrvdkf4TRSuKbc5J3OjVBib9A1dZaJBTMJZrKhr4gIlUoTfG0eJ++vLYmbimM1E6h\r\nHiuhK8t0a3x/+keWZFzCeQUJluoz0amdrwBEqkRH4ZE6gTaRJqIMLPUCgYEAypIR\r\n5zy3AlTl8yD9Z86aJe7l8YA4hQJLt/TCeyao0798G3s3fOIPVj+6Q3XactJntbtD\r\nR31uWLL2haxWUR5e26VeQmiYV/AbDpbHd0Y9LRuYz4Cc89aiamAConMccotj+2Y8\r\naMpPC+vUpXG7uliNsh23zmVJfkc49oXZ+swmUx8CgYBkZPKwo4bzDW4bILBDiunE\r\nqsY1t/GLcEs9ehMPHlYmDLUSl7J4j977rFz7llpDomVRdBaJwYxx0Ycdba+rxsVq\r\nhlchsm2Sr94E2cN5cBhXYRFCNfiq+/0MlZ36f+Sxv4FkPz/vglHxeEbr0h8DY3kV\r\n1YYlVVhE8dDswL2klY5NhQKBgQCu23W+0Cb9SUGRJCn5gFqJYfV1CIRBNCEeMpXp\r\n7g4Pchv0MOFN2Gj6v1nOP54IPV0ufu3tePVWdWzdKEz+CqRBHzcFRfoy9ly0tCyL\r\n5cKK/GZkv5U72ksqXaQIjCrDKVVtvetpXTDsjm5pPYqZqTTuyj5OWBofeeVOz23A\r\n0pZGawKBgQCluQuZa4mjpj+5ClxkOI0GH6i+rKtfB3W6TtLKUQJGtuMW+OJl9rIK\r\n/elabIvupBUzM0fLR/t7IQ6kaPBzUC/GzZSLu8kl41c9RlbTfV4u/2+xqeNOaGKK\r\nGAvbhPrZz398vZiYCEMMdVD2UTADgWpj7tmp98Mg9DhAkjwOMQx75Q==\r\n-----END RSA PRIVATE KEY-----\r\n",
