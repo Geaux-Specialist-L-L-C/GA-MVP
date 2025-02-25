@@ -40,7 +40,7 @@ const App: React.FC = (): JSX.Element => {
 
       try {
         const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-          scope: '/__/auth/',
+          scope: '/',
           type: 'module',
           updateViaCache: process.env.NODE_ENV === 'development' ? 'none' : 'imports'
         });

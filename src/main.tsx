@@ -6,6 +6,11 @@ import { ProfileProvider } from './contexts/ProfileContext';
 import App from './App';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import './index.css';
+import { initializeApp } from 'firebase/app';
+import { firebaseConfig } from './config/firebase';
+
+// Initialize Firebase before anything else
+initializeApp(firebaseConfig);
 
 // Configure future flags for React Router v7
 const router = createBrowserRouter([

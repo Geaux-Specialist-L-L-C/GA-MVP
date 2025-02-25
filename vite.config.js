@@ -5,6 +5,24 @@ import react from '@vitejs/plugin-react';
 import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vite';
 
+// Get SSL certificates for local development
+const getHttpsConfig = () => {
+  const certPath = path.join(process.cwd(), 'certificates');
+  
+  // Only use HTTPS in development
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      return {
+        key: fs.readFileSync(path.join(certPath, 'localhost-key.pem')),
+        cert: fs.readFileSync(path.join(certPath, 'localhost.pem'))
+      };
+    } catch (e) {
+      console.warn('No SSL certificates found. Run `npm run generate-certs` to create them.');
+      return false;
+    }
+  }
+  return false;
+};
 
 export default defineConfig({
   plugins: [
@@ -54,12 +72,10 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3001,
+    port: 5173,
     strictPort: true,
-    https: {
-      key: fs.readFileSync('.cert/key.pem'),
-      cert: fs.readFileSync('.cert/cert.pem')
-    },
+    https: getHttpsConfig(),
+    host: 'localhost',
     cors: true,
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',

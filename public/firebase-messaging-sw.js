@@ -7,22 +7,21 @@
 // Service-Worker-Allowed: /
 
 // Load Firebase essentials first
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
+// Give the service worker access to Firebase Messaging.
+// Note that you can only use Firebase Messaging here.
+importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
 // Firebase configuration for service worker
-const firebaseConfig = {
-  apiKey: "AIzaSyBfhBZbRRVsARX5u0biqVHQA6vudYw2F8U",
-  authDomain: "gacentral-53615.firebaseapp.com",
-  projectId: "gacentral-53615",
-  storageBucket: "gacentral-53615.firebasestorage.app",
-  messagingSenderId: "467988177048",
-  appId: "1:467988177048:web:5dd07a8fe519ec030a30ed"
-};
-
-// Initialize Firebase for service worker
-firebase.initializeApp(firebaseConfig);
+// Initialize the Firebase app in the service worker
+firebase.initializeApp({
+  apiKey: 'VITE_FIREBASE_API_KEY',
+  authDomain: 'VITE_FIREBASE_AUTH_DOMAIN',
+  projectId: 'VITE_FIREBASE_PROJECT_ID',
+  storageBucket: 'VITE_FIREBASE_STORAGE_BUCKET',
+  messagingSenderId: 'VITE_FIREBASE_MESSAGING_SENDER_ID',
+  appId: 'VITE_FIREBASE_APP_ID'
+});
 
 const messaging = firebase.messaging();
 
