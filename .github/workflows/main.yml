@@ -159,3 +159,11 @@ jobs:
         project_id: ${{ secrets.SUPABASE_PROJECT_ID }}
         access_token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         dist_dir: dist/
+
+    - name: Deploy to Firebase Hosting
+      uses: FirebaseExtended/action-hosting-deploy@v0
+      with:
+        repoToken: ${{ secrets.GITHUB_TOKEN }}
+        firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GEAUX_ACADEMY }}
+        channelId: live
+        projectId: geaux-academy
