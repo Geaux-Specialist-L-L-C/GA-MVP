@@ -1,0 +1,729 @@
+from typing import Dict, List, Optional, Union
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+import json
+import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta
+import uuid
+
+@dataclass
+class LMSContent:
+    """Base class for LMS content structures"""
+    id: str
+    title: str
+    type: str
+    description: str
+    points: Optional[float] = None
+    due_date: Optional[datetime] = None
+    
+@dataclass
+class LMSAssignment(LMSContent):
+    submission_type: str
+    grade_category: Optional[str] = None
+    rubric: Optional[Dict] = None
+    
+@dataclass
+class LMSResource(LMSContent):
+    file_type: str
+    url: Optional[str] = None
+    
+@dataclass
+class LMSQuiz(LMSContent):
+    questions: List[Dict]
+    time_limit: Optional[int] = None
+    attempts_allowed: int = 1
+
+class LMSRenderer(ABC):
+    """Abstract base class for LMS-specific renderers"""
+    
+    @abstractmethod
+    def render_unit(self, unit_plan: Dict, settings: Dict) -> Dict:
+        """Render complete unit for LMS"""
+        pass
+        
+    @abstractmethod
+    def render_assignment(self, assignment: LMSAssignment) -> Dict:
+        """Render assignment for LMS"""
+        pass
+        
+    @abstractmethod
+    def render_resource(self, resource: LMSResource) -> Dict:
+        """Render resource for LMS"""
+        pass
+        
+    @abstractmethod
+    def render_quiz(self, quiz: LMSQuiz) -> Dict:
+        """Render quiz for LMS"""
+        pass
+
+class MoodleRenderer(LMSRenderer):
+    """Renderer for Moodle format"""
+    
+    def render_unit(self, unit_plan: Dict, settings: Dict) -> Dict:
+        """Convert unit plan to Moodle course format"""
+        sections = []
+        
+        # Overview section
+        sections.append({
+            'name': 'Overview',
+            'section_number': 0,
+            'summary': self._generate_overview_html(unit_plan),
+            'activities': [
+                {
+                    'type': 'page',
+                    'name': 'Unit Introduction',
+                    'content': self._generate_objectives_html(unit_plan['objectives'])
+                }
+            ]
+        })
+        
+        # Activities section
+        activity_section = {
+            'name': 'Learning Activities',
+            'section_number': 1,
+            'activities': []
+        }
+        
+        for idx, activity in enumerate(unit_plan['activities']):
+            activity_content = LMSAssignment(
+                id=f"act_{idx}",
+                title=activity['title'],
+                type='assignment',
+                description=activity['description'],
+                submission_type='online',
+                points=100
+            )
+            activity_section['activities'].append(
+                self.render_assignment(activity_content)
+            )
+            
+        sections.append(activity_section)
+        
+        # Assessments section
+        if settings.get('includeAssessments', True):
+            assessment_section = {
+                'name': 'Assessments',
+                'section_number': 2,
+                'activities': []
+            }
+            
+            for idx, assessment in enumerate(unit_plan['assessments']):
+                assessment_content = LMSAssignment(
+                    id=f"assess_{idx}",
+                    title=assessment['title'],
+                    type='assignment',
+                    description=assessment['description'],
+                    submission_type='online',
+                    points=100,
+                    rubric=assessment.get('rubric')
+                )
+                assessment_section['activities'].append(
+                    self.render_assignment(assessment_content)
+                )
+                
+            sections.append(assessment_section)
+            
+        return {
+            'course': {
+                'fullname': unit_plan['title'],
+                'shortname': f"UNIT_{unit_plan['grade_level']}",
+                'format': 'topics',
+                'sections': sections
+            }
+        }
+        
+    def render_assignment(self, assignment: LMSAssignment) -> Dict:
+        """Render assignment for Moodle"""
+        return {
+            'mod': 'assign',
+            'name': assignment.title,
+            'intro': assignment.description,
+            'grade': assignment.points,
+            'submission_types': [assignment.submission_type],
+            'rubric': self._convert_rubric_to_moodle(assignment.rubric) if assignment.rubric else None
+        }
+        
+    def render_resource(self, resource: LMSResource) -> Dict:
+        """Render resource for Moodle"""
+        return {
+            'mod': 'resource',
+            'name': resource.title,
+            'intro': resource.description,
+            'file_type': resource.file_type,
+            'file_url': resource.url
+        }
+        
+    def render_quiz(self, quiz: LMSQuiz) -> Dict:
+        """Render quiz for Moodle"""
+        return {
+            'mod': 'quiz',
+            'name': quiz.title,
+            'intro': quiz.description,
+            'grade': quiz.points,
+            'time_limit': quiz.time_limit,
+            'attempts_allowed': quiz.attempts_allowed,
+            'questions': self._convert_questions_to_moodle(quiz.questions)
+        }
+        
+    def _convert_rubric_to_moodle(self, rubric: Dict) -> Dict:
+        """Convert rubric to Moodle format"""
+        criteria = []
+        for criterion, levels in rubric.items():
+            criteria.append({
+                'description': criterion,
+                'levels': [
+                    {'score': idx + 1, 'description': level}
+                    for idx, level in enumerate(levels)
+                ]
+            })
+        return {'criteria': criteria}
+        
+    def _convert_questions_to_moodle(self, questions: List[Dict]) -> List[Dict]:
+        """Convert questions to Moodle format"""
+        return [
+            {
+                'type': question.get('type', 'multichoice'),
+                'name': question['text'],
+                'question_text': question['text'],
+                'answers': [
+                    {'text': ans['text'], 'grade': ans['correct']}
+                    for ans in question['answers']
+                ]
+            }
+            for question in questions
+        ]
+
+class SchoologyRenderer(LMSRenderer):
+    """Renderer for Schoology format"""
+    
+    def render_unit(self, unit_plan: Dict, settings: Dict) -> Dict:
+        """Convert unit plan to Schoology format"""
+        materials = []
+        
+        # Add overview folder
+        materials.append({
+            'type': 'folder',
+            'title': 'Unit Overview',
+            'items': [
+                {
+                    'type': 'page',
+                    'title': 'Introduction',
+                    'description': self._generate_overview_html(unit_plan)
+                },
+                {
+                    'type': 'page',
+                    'title': 'Learning Objectives',
+                    'description': self._generate_objectives_html(unit_plan['objectives'])
+                }
+            ]
+        })
+        
+        # Add activities
+        activities_folder = {
+            'type': 'folder',
+            'title': 'Learning Activities',
+            'items': []
+        }
+        
+        for idx, activity in enumerate(unit_plan['activities']):
+            activity_content = LMSAssignment(
+                id=f"act_{idx}",
+                title=activity['title'],
+                type='assignment',
+                description=activity['description'],
+                submission_type='online',
+                points=100
+            )
+            activities_folder['items'].append(
+                self.render_assignment(activity_content)
+            )
+            
+        materials.append(activities_folder)
+        
+        # Add assessments if included
+        if settings.get('includeAssessments', True):
+            assessments_folder = {
+                'type': 'folder',
+                'title': 'Assessments',
+                'items': []
+            }
+            
+            for idx, assessment in enumerate(unit_plan['assessments']):
+                assessment_content = LMSAssignment(
+                    id=f"assess_{idx}",
+                    title=assessment['title'],
+                    type='assessment',
+                    description=assessment['description'],
+                    submission_type='online',
+                    points=100,
+                    rubric=assessment.get('rubric')
+                )
+                assessments_folder['items'].append(
+                    self.render_assignment(assessment_content)
+                )
+                
+            materials.append(assessments_folder)
+            
+        return {
+            'course': {
+                'title': unit_plan['title'],
+                'grade_level': unit_plan['grade_level'],
+                'materials': materials
+            }
+        }
+        
+    def render_assignment(self, assignment: LMSAssignment) -> Dict:
+        """Render assignment for Schoology"""
+        return {
+            'type': 'assignment',
+            'title': assignment.title,
+            'description': assignment.description,
+            'max_points': assignment.points,
+            'due': assignment.due_date.isoformat() if assignment.due_date else None,
+            'grading': {
+                'type': 'rubric' if assignment.rubric else 'points',
+                'rubric': self._convert_rubric_to_schoology(assignment.rubric) if assignment.rubric else None
+            }
+        }
+        
+    def render_resource(self, resource: LMSResource) -> Dict:
+        """Render resource for Schoology"""
+        return {
+            'type': 'resource',
+            'title': resource.title,
+            'description': resource.description,
+            'file': {
+                'type': resource.file_type,
+                'url': resource.url
+            }
+        }
+        
+    def render_quiz(self, quiz: LMSQuiz) -> Dict:
+        """Render quiz for Schoology"""
+        return {
+            'type': 'test',
+            'title': quiz.title,
+            'description': quiz.description,
+            'max_points': quiz.points,
+            'time_limit': quiz.time_limit,
+            'attempts': quiz.attempts_allowed,
+            'questions': self._convert_questions_to_schoology(quiz.questions)
+        }
+        
+    def _convert_rubric_to_schoology(self, rubric: Dict) -> Dict:
+        """Convert rubric to Schoology format"""
+        return {
+            'criteria': [
+                {
+                    'title': criterion,
+                    'points': len(levels),
+                    'levels': [
+                        {'description': level, 'points': idx + 1}
+                        for idx, level in enumerate(levels)
+                    ]
+                }
+                for criterion, levels in rubric.items()
+            ]
+        }
+        
+    def _convert_questions_to_blackboard(self, questions: List[Dict]) -> List[Dict]:
+        """Convert questions to Blackboard format"""
+        return [
+            {
+                'type': question.get('type', 'multiple_choice'),
+                'title': question['text'],
+                'points': question.get('points', 1),
+                'answers': [
+                    {
+                        'text': ans['text'],
+                        'correct': ans['correct'],
+                        'feedback': ans.get('feedback', '')
+                    }
+                    for ans in question['answers']
+                ]
+            }
+            for question in questions
+        ]
+
+class LMSExportManager:
+    """Manages LMS exports across different platforms"""
+    
+    def __init__(self):
+        self.renderers = {
+            'moodle': MoodleRenderer(),
+            'schoology': SchoologyRenderer(),
+            'blackboard': BlackboardRenderer()
+        }
+        
+    def export_unit(
+        self, 
+        unit_plan: Dict, 
+        platform: str,
+        settings: Dict,
+        export_format: str = 'json'
+    ) -> Union[Dict, str]:
+        """
+        Export unit plan to specified LMS platform
+        
+        Args:
+            unit_plan: Unit plan data
+            platform: Target LMS platform
+            settings: Export settings
+            export_format: Output format ('json' or 'xml')
+            
+        Returns:
+            Union[Dict, str]: Exported content in specified format
+        """
+        if platform not in self.renderers:
+            raise ValueError(f"Unsupported LMS platform: {platform}")
+            
+        # Render content using appropriate renderer
+        renderer = self.renderers[platform]
+        content = renderer.render_unit(unit_plan, settings)
+        
+        # Convert to requested format
+        if export_format == 'xml':
+            return self._convert_to_xml(content, platform)
+        return content
+        
+    def validate_unit(self, unit_plan: Dict, platform: str) -> List[str]:
+        """
+        Validate unit plan for LMS platform requirements
+        
+        Args:
+            unit_plan: Unit plan data
+            platform: Target LMS platform
+            
+        Returns:
+            List[str]: List of validation issues
+        """
+        issues = []
+        
+        # Common validations
+        if not unit_plan.get('title'):
+            issues.append("Unit plan must have a title")
+            
+        if not unit_plan.get('objectives'):
+            issues.append("Unit plan must have learning objectives")
+            
+        # Platform-specific validations
+        if platform == 'moodle':
+            if not unit_plan.get('grade_level'):
+                issues.append("Moodle requires grade level specification")
+                
+        elif platform == 'schoology':
+            if not all(a.get('title') for a in unit_plan.get('activities', [])):
+                issues.append("Schoology requires titles for all activities")
+                
+        elif platform == 'blackboard':
+            if not unit_plan.get('assessments') and unit_plan.get('includeAssessments'):
+                issues.append("Assessment section enabled but no assessments provided")
+                
+        return issues
+        
+    def _convert_to_xml(self, content: Dict, platform: str) -> str:
+        """Convert dictionary content to platform-specific XML"""
+        if platform == 'moodle':
+            return self._generate_moodle_xml(content)
+        elif platform == 'blackboard':
+            return self._generate_blackboard_xml(content)
+        else:
+            return self._generate_generic_xml(content)
+            
+    def _generate_moodle_xml(self, content: Dict) -> str:
+        """Generate Moodle-specific XML backup format"""
+        root = ET.Element('MOODLE_BACKUP')
+        course = ET.SubElement(root, 'COURSE')
+        
+        # Course info
+        ET.SubElement(course, 'FULLNAME').text = content['course']['fullname']
+        ET.SubElement(course, 'SHORTNAME').text = content['course']['shortname']
+        
+        # Sections
+        sections = ET.SubElement(course, 'SECTIONS')
+        for section in content['course']['sections']:
+            section_elem = ET.SubElement(sections, 'SECTION')
+            ET.SubElement(section_elem, 'NAME').text = section['name']
+            ET.SubElement(section_elem, 'NUMBER').text = str(section['section_number'])
+            
+            # Activities
+            activities = ET.SubElement(section_elem, 'ACTIVITIES')
+            for activity in section['activities']:
+                activity_elem = ET.SubElement(activities, 'ACTIVITY')
+                ET.SubElement(activity_elem, 'MODTYPE').text = activity['mod']
+                ET.SubElement(activity_elem, 'NAME').text = activity['name']
+                ET.SubElement(activity_elem, 'INTRO').text = activity['intro']
+                
+        return ET.tostring(root, encoding='unicode', method='xml')
+        
+    def _generate_blackboard_xml(self, content: Dict) -> str:
+        """Generate Blackboard-specific XML format"""
+        root = ET.Element('course')
+        root.set('identifier', content['course']['id'])
+        
+        # Course info
+        title = ET.SubElement(root, 'title')
+        title.text = content['course']['title']
+        
+        # Content areas
+        for area in content['course']['content_areas']:
+            content_area = ET.SubElement(root, 'content_area')
+            ET.SubElement(content_area, 'title').text = area['title']
+            
+            # Items
+            items = ET.SubElement(content_area, 'items')
+            for item in area['items']:
+                item_elem = ET.SubElement(items, 'item')
+                ET.SubElement(item_elem, 'title').text = item['title']
+                ET.SubElement(item_elem, 'type').text = item['type']
+                
+                if 'content' in item:
+                    ET.SubElement(item_elem, 'content').text = item['content']
+                    
+                if item['type'] == 'assignment':
+                    self._add_assignment_xml(item_elem, item)
+                    
+        return ET.tostring(root, encoding='unicode', method='xml')
+        
+    def _add_assignment_xml(self, parent: ET.Element, assignment: Dict):
+        """Add assignment details to XML element"""
+        ET.SubElement(parent, 'instructions').text = assignment['instructions']
+        ET.SubElement(parent, 'points_possible').text = str(assignment['points_possible'])
+        
+        if assignment.get('grading', {}).get('rubric'):
+            rubric = ET.SubElement(parent, 'rubric')
+            for row in assignment['grading']['rubric']['rows']:
+                row_elem = ET.SubElement(rubric, 'row')
+                ET.SubElement(row_elem, 'description').text = row['description']
+                
+                cells = ET.SubElement(row_elem, 'cells')
+                for cell in row['cells']:
+                    cell_elem = ET.SubElement(cells, 'cell')
+                    ET.SubElement(cell_elem, 'description').text = cell['description']
+                    ET.SubElement(cell_elem, 'points').text = str(cell['points'])
+                    
+    def _generate_generic_xml(self, content: Dict) -> str:
+        """Generate generic XML format for other platforms"""
+        def dict_to_xml(d: Dict, parent: ET.Element):
+            for key, value in d.items():
+                child = ET.SubElement(parent, key)
+                if isinstance(value, dict):
+                    dict_to_xml(value, child)
+                elif isinstance(value, list):
+                    for item in value:
+                        if isinstance(item, dict):
+                            dict_to_xml(item, ET.SubElement(child, 'item'))
+                        else:
+                            ET.SubElement(child, 'item').text = str(item)
+                else:
+                    child.text = str(value)
+                    
+        root = ET.Element('export')
+        dict_to_xml(content, root)
+        return ET.tostring(root, encoding='unicode', method='xml')
+
+# Example usage
+if __name__ == "__main__":
+    # Initialize export manager
+    export_manager = LMSExportManager()
+    
+    # Sample unit plan
+    unit_plan = {
+        'title': 'Data Analysis Across Disciplines',
+        'grade_level': '7',
+        'objectives': [
+            {
+                'subject': 'Math',
+                'description': 'Apply statistical methods',
+                'assessment_criteria': ['Accuracy', 'Method Selection']
+            }
+        ],
+        'activities': [
+            {
+                'title': 'Data Collection Lab',
+                'description': 'Students collect and analyze data',
+                'duration': '2 hours'
+            }
+        ]
+    }
+    
+    # Export settings
+    settings = {
+        'includeAssessments': True,
+        'includeRubrics': True
+    }
+    
+    # Export to different platforms
+    for platform in ['moodle', 'schoology', 'blackboard']:
+        # Validate unit plan
+        issues = export_manager.validate_unit(unit_plan, platform)
+        if issues:
+            print(f"\nValidation issues for {platform}:")
+            for issue in issues:
+                print(f"- {issue}")
+        
+        # Export content
+        try:
+            json_content = export_manager.export_unit(
+                unit_plan, 
+                platform, 
+                settings,
+                'json'
+            )
+            xml_content = export_manager.export_unit(
+                unit_plan,
+                platform,
+                settings,
+                'xml'
+            )
+            
+            print(f"\nSuccessfully exported to {platform}")
+            
+        except Exception as e:
+            print(f"\nError exporting to {platform}: {e}")
+, 'points': idx + 1}
+                        for idx, level in enumerate(levels)
+                    ]
+                }
+                for criterion, levels in rubric.items()
+            ]
+        }
+        
+    def _convert_questions_to_schoology(self, questions: List[Dict]) -> List[Dict]:
+        """Convert questions to Schoology format"""
+        return [
+            {
+                'type': question.get('type', 'multiple_choice'),
+                'title': question['text'],
+                'options': [
+                    {
+                        'text': ans['text'],
+                        'correct': ans['correct'],
+                        'feedback': ans.get('feedback', '')
+                    }
+                    for ans in question['answers']
+                ]
+            }
+            for question in questions
+        ]
+
+class BlackboardRenderer(LMSRenderer):
+    """Renderer for Blackboard format"""
+    
+    def render_unit(self, unit_plan: Dict, settings: Dict) -> Dict:
+        """Convert unit plan to Blackboard format"""
+        content_areas = []
+        
+        # Create content areas
+        content_areas.extend([
+            {
+                'title': 'Unit Information',
+                'type': 'content_area',
+                'items': [
+                    {
+                        'title': 'Overview',
+                        'type': 'item',
+                        'content': self._generate_overview_html(unit_plan)
+                    },
+                    {
+                        'title': 'Learning Objectives',
+                        'type': 'item',
+                        'content': self._generate_objectives_html(unit_plan['objectives'])
+                    }
+                ]
+            },
+            {
+                'title': 'Learning Activities',
+                'type': 'content_area',
+                'items': [
+                    self.render_assignment(LMSAssignment(
+                        id=f"act_{idx}",
+                        title=activity['title'],
+                        type='assignment',
+                        description=activity['description'],
+                        submission_type='online',
+                        points=100
+                    ))
+                    for idx, activity in enumerate(unit_plan['activities'])
+                ]
+            }
+        ])
+        
+        if settings.get('includeAssessments', True):
+            content_areas.append({
+                'title': 'Assessments',
+                'type': 'content_area',
+                'items': [
+                    self.render_assignment(LMSAssignment(
+                        id=f"assess_{idx}",
+                        title=assessment['title'],
+                        type='assessment',
+                        description=assessment['description'],
+                        submission_type='online',
+                        points=100,
+                        rubric=assessment.get('rubric')
+                    ))
+                    for idx, assessment in enumerate(unit_plan['assessments'])
+                ]
+            })
+            
+        return {
+            'course': {
+                'title': unit_plan['title'],
+                'id': str(uuid.uuid4()),
+                'content_areas': content_areas
+            }
+        }
+        
+    def render_assignment(self, assignment: LMSAssignment) -> Dict:
+        """Render assignment for Blackboard"""
+        return {
+            'title': assignment.title,
+            'type': 'assignment',
+            'instructions': assignment.description,
+            'points_possible': assignment.points,
+            'grading': {
+                'type': 'rubric' if assignment.rubric else 'points',
+                'rubric': self._convert_rubric_to_blackboard(assignment.rubric) if assignment.rubric else None
+            },
+            'submission': {
+                'type': assignment.submission_type
+            }
+        }
+        
+    def render_resource(self, resource: LMSResource) -> Dict:
+        """Render resource for Blackboard"""
+        return {
+            'title': resource.title,
+            'type': 'file',
+            'content': {
+                'type': resource.file_type,
+                'url': resource.url
+            }
+        }
+        
+    def render_quiz(self, quiz: LMSQuiz) -> Dict:
+        """Render quiz for Blackboard"""
+        return {
+            'title': quiz.title,
+            'type': 'test',
+            'instructions': quiz.description,
+            'points_possible': quiz.points,
+            'timer': {
+                'time_limit': quiz.time_limit,
+                'auto_submit': True
+            },
+            'attempts': quiz.attempts_allowed,
+            'questions': self._convert_questions_to_blackboard(quiz.questions)
+        }
+        
+    def _convert_rubric_to_blackboard(self, rubric: Dict) -> Dict:
+        """Convert rubric to Blackboard format"""
+        return {
+            'type': 'rubric',
+            'rows': [
+                {
+                    'description': criterion,
+                    'points': len(levels),
+                    'cells': [
+                        {'description': level

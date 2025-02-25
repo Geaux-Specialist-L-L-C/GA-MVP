@@ -1,0 +1,494 @@
+# File: /backend/monitoring/model_versioning.py
+# Description: Model versioning and A/B testing system
+
+from typing import Dict, List, Optional, Tuple
+from datetime import datetime, timedelta
+import asyncio
+from dataclasses import dataclass
+import json
+import hashlib
+import numpy as np
+from pymongo import MongoClient, ASCENDING, DESCENDING
+import joblib
+import logging
+from fastapi import BackgroundTasks
+
+@dataclass
+class ModelVersion:
+    version_id: str
+    model_type: str
+    created_at: datetime
+    metrics: Dict
+    parameters: Dict
+    features: List[str]
+    hash: str
+    status: str
+    deployed_by: str
+    artifact_path: str
+
+@dataclass
+class ABTestResult:
+    test_id: str
+    start_time: datetime
+    end_time: datetime
+    control_version: str
+    test_version: str
+    metrics: Dict
+    winner: Optional[str]
+    confidence: float
+    sample_size: int
+
+class ModelVersionControl:
+    def __init__(self, db: MongoClient):
+        self.db = db
+        self.logger = logging.getLogger(__name__)
+        
+        # Initialize model registry collections
+        self._init_collections()
+
+    def _init_collections(self):
+        """Initialize required collections with indexes"""
+        # Model versions collection
+        self.db.model_versions.create_index([
+            ("version_id", ASCENDING)
+        ], unique=True)
+        
+        self.db.model_versions.create_index([
+            ("created_at", DESCENDING)
+        ])
+        
+        # A/B test results collection
+        self.db.ab_tests.create_index([
+            ("test_id", ASCENDING)
+        ], unique=True)
+        
+        # Model metrics collection
+        self.db.model_metrics.create_index([
+            ("version_id", ASCENDING),
+            ("timestamp", DESCENDING)
+        ])
+
+    async def register_model(
+        self,
+        model,
+        model_type: str,
+        parameters: Dict,
+        features: List[str],
+        metrics: Dict,
+        deployed_by: str
+    ) -> ModelVersion:
+        """Register a new model version"""
+        try:
+            # Generate version ID and hash
+            timestamp = datetime.utcnow()
+            version_id = f"{model_type}_{timestamp.strftime('%Y%m%d_%H%M%S')}"
+            model_hash = self._generate_model_hash(model, parameters)
+            
+            # Save model artifact
+            artifact_path = f"models/{version_id}.joblib"
+            joblib.dump(model, artifact_path)
+            
+            # Create version record
+            version = ModelVersion(
+                version_id=version_id,
+                model_type=model_type,
+                created_at=timestamp,
+                metrics=metrics,
+                parameters=parameters,
+                features=features,
+                hash=model_hash,
+                status="registered",
+                deployed_by=deployed_by,
+                artifact_path=artifact_path
+            )
+            
+            # Store in database
+            await self.db.model_versions.insert_one(version.__dict__)
+            
+            self.logger.info(f"Registered new model version: {version_id}")
+            return version
+            
+        except Exception as e:
+            self.logger.error(f"Error registering model: {e}")
+            raise
+
+    async def deploy_model(
+        self,
+        version_id: str,
+        background_tasks: BackgroundTasks
+    ):
+        """Deploy a model version"""
+        try:
+            # Get model version
+            version = await self.db.model_versions.find_one(
+                {"version_id": version_id}
+            )
+            
+            if not version:
+                raise ValueError(f"Model version {version_id} not found")
+            
+            # Update status
+            await self.db.model_versions.update_one(
+                {"version_id": version_id},
+                {
+                    "$set": {
+                        "status": "deploying",
+                        "deployment_started_at": datetime.utcnow()
+                    }
+                }
+            )
+            
+            # Schedule deployment in background
+            background_tasks.add_task(
+                self._deploy_model_version,
+                version
+            )
+            
+            return {"status": "deployment_scheduled"}
+            
+        except Exception as e:
+            self.logger.error(f"Error deploying model: {e}")
+            raise
+
+    async def _deploy_model_version(self, version: Dict):
+        """Handle model deployment process"""
+        try:
+            # Load model
+            model = joblib.load(version["artifact_path"])
+            
+            # Perform validation checks
+            validation_result = await self._validate_model(
+                model,
+                version
+            )
+            
+            if not validation_result["valid"]:
+                await self._handle_deployment_failure(
+                    version["version_id"],
+                    validation_result["errors"]
+                )
+                return
+            
+            # Update production endpoints
+            await self._update_production_endpoints(
+                version["version_id"],
+                model
+            )
+            
+            # Update status
+            await self.db.model_versions.update_one(
+                {"version_id": version["version_id"]},
+                {
+                    "$set": {
+                        "status": "deployed",
+                        "deployment_completed_at": datetime.utcnow()
+                    }
+                }
+            )
+            
+            self.logger.info(f"Successfully deployed model version: {version['version_id']}")
+            
+        except Exception as e:
+            self.logger.error(f"Error in deployment process: {e}")
+            await self._handle_deployment_failure(
+                version["version_id"],
+                [str(e)]
+            )
+
+    async def rollback_model(
+        self,
+        version_id: str,
+        reason: str
+    ):
+        """Rollback to a previous model version"""
+        try:
+            # Get current production version
+            current_version = await self.db.model_versions.find_one(
+                {"status": "deployed"}
+            )
+            
+            if not current_version:
+                raise ValueError("No deployed model found")
+            
+            # Get rollback version
+            rollback_version = await self.db.model_versions.find_one(
+                {"version_id": version_id}
+            )
+            
+            if not rollback_version:
+                raise ValueError(f"Rollback version {version_id} not found")
+            
+            # Load rollback model
+            model = joblib.load(rollback_version["artifact_path"])
+            
+            # Update production endpoints
+            await self._update_production_endpoints(
+                rollback_version["version_id"],
+                model
+            )
+            
+            # Update statuses
+            await self.db.model_versions.update_one(
+                {"version_id": current_version["version_id"]},
+                {"$set": {"status": "rolled_back"}}
+            )
+            
+            await self.db.model_versions.update_one(
+                {"version_id": rollback_version["version_id"]},
+                {
+                    "$set": {
+                        "status": "deployed",
+                        "rollback_from": current_version["version_id"],
+                        "rollback_reason": reason,
+                        "rollback_at": datetime.utcnow()
+                    }
+                }
+            )
+            
+            self.logger.info(
+                f"Rolled back from {current_version['version_id']} to {version_id}"
+            )
+            
+            return {"status": "rollback_completed"}
+            
+        except Exception as e:
+            self.logger.error(f"Error in rollback process: {e}")
+            raise
+
+    async def start_ab_test(
+        self,
+        control_version: str,
+        test_version: str,
+        duration_days: int = 7,
+        traffic_split: float = 0.5
+    ) -> str:
+        """Start an A/B test between two model versions"""
+        try:
+            # Validate versions
+            control = await self.db.model_versions.find_one(
+                {"version_id": control_version}
+            )
+            test = await self.db.model_versions.find_one(
+                {"version_id": test_version}
+            )
+            
+            if not control or not test:
+                raise ValueError("Invalid model versions")
+            
+            # Generate test ID
+            test_id = f"ab_test_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+            
+            # Create test record
+            test_config = {
+                "test_id": test_id,
+                "control_version": control_version,
+                "test_version": test_version,
+                "start_time": datetime.utcnow(),
+                "end_time": datetime.utcnow() + timedelta(days=duration_days),
+                "traffic_split": traffic_split,
+                "status": "running",
+                "metrics": {
+                    "control": {},
+                    "test": {}
+                }
+            }
+            
+            await self.db.ab_tests.insert_one(test_config)
+            
+            # Update version statuses
+            await self.db.model_versions.update_many(
+                {"version_id": {"$in": [control_version, test_version]}},
+                {"$set": {"status": "in_ab_test"}}
+            )
+            
+            self.logger.info(f"Started A/B test: {test_id}")
+            return test_id
+            
+        except Exception as e:
+            self.logger.error(f"Error starting A/B test: {e}")
+            raise
+
+    async def record_ab_test_prediction(
+        self,
+        test_id: str,
+        version_id: str,
+        prediction: float,
+        actual: float
+    ):
+        """Record a prediction result for an A/B test"""
+        try:
+            # Calculate prediction error
+            error = abs(prediction - actual)
+            
+            # Update metrics
+            version_key = "control" if version_id.endswith("control") else "test"
+            
+            await self.db.ab_tests.update_one(
+                {"test_id": test_id},
+                {
+                    "$push": {
+                        f"metrics.{version_key}.predictions": {
+                            "prediction": prediction,
+                            "actual": actual,
+                            "error": error,
+                            "timestamp": datetime.utcnow()
+                        }
+                    }
+                }
+            )
+            
+        except Exception as e:
+            self.logger.error(f"Error recording A/B test prediction: {e}")
+            raise
+
+    async def evaluate_ab_test(self, test_id: str) -> ABTestResult:
+        """Evaluate results of an A/B test"""
+        try:
+            # Get test data
+            test = await self.db.ab_tests.find_one({"test_id": test_id})
+            
+            if not test:
+                raise ValueError(f"A/B test {test_id} not found")
+            
+            # Calculate metrics for both versions
+            control_metrics = self._calculate_version_metrics(
+                test["metrics"]["control"]
+            )
+            test_metrics = self._calculate_version_metrics(
+                test["metrics"]["test"]
+            )
+            
+            # Perform statistical analysis
+            winner, confidence = self._analyze_test_results(
+                control_metrics,
+                test_metrics
+            )
+            
+            # Create result
+            result = ABTestResult(
+                test_id=test_id,
+                start_time=test["start_time"],
+                end_time=test["end_time"],
+                control_version=test["control_version"],
+                test_version=test["test_version"],
+                metrics={
+                    "control": control_metrics,
+                    "test": test_metrics
+                },
+                winner=winner,
+                confidence=confidence,
+                sample_size=len(test["metrics"]["control"]["predictions"])
+            )
+            
+            # Update test status
+            await self.db.ab_tests.update_one(
+                {"test_id": test_id},
+                {
+                    "$set": {
+                        "status": "completed",
+                        "result": result.__dict__
+                    }
+                }
+            )
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error evaluating A/B test: {e}")
+            raise
+
+    def _generate_model_hash(self, model, parameters: Dict) -> str:
+        """Generate a unique hash for a model version"""
+        model_bytes = joblib.dumps(model)
+        params_str = json.dumps(parameters, sort_keys=True)
+        combined = model_bytes + params_str.encode()
+        return hashlib.sha256(combined).hexdigest()
+
+    def _calculate_version_metrics(self, data: Dict) -> Dict:
+        """Calculate metrics for a model version"""
+        predictions = data.get("predictions", [])
+        if not predictions:
+            return {}
+            
+        errors = [p["error"] for p in predictions]
+        
+        return {
+            "rmse": np.sqrt(np.mean(np.square(errors))),
+            "mae": np.mean(np.abs(errors)),
+            "mape": np.mean(np.abs(errors)) * 100,
+            "sample_size": len(predictions)
+        }
+
+    def _analyze_test_results(
+        self,
+        control_metrics: Dict,
+        test_metrics: Dict
+    ) -> Tuple[Optional[str], float]:
+        """Analyze A/B test results using statistical tests"""
+        if not control_metrics or not test_metrics:
+            return None, 0.0
+            
+        # Perform t-test
+        t_stat, p_value = stats.ttest_ind(
+            control_metrics["errors"],
+            test_metrics["errors"]
+        )
+        
+        # Determine winner
+        if p_value < 0.05:  # 95% confidence level
+            if control_metrics["rmse"] < test_metrics["rmse"]:
+                return "control", 1 - p_value
+            else:
+                return "test", 1 - p_value
+        
+        return None, 1 - p_value
+
+    async def _validate_model(self, model, version: Dict) -> Dict:
+        """Validate model before deployment"""
+        errors = []
+        
+        try:
+            # Validate feature compatibility
+            current_features = set(version["features"])
+            required_features = set(self._get_required_features())
+            
+            if not current_features.issuperset(required_features):
+                missing = required_features - current_features
+                errors.append(f"Missing required features: {missing}")
+            
+            # Validate performance requirements
+            if version["metrics"]["rmse"] > 0.5:  # Example threshold
+                errors.append("RMSE exceeds maximum threshold")
+            
+            # Validate model size
+            model_size = len(joblib.dumps(model))
+            if model_size > 100_000_000:  # 100MB
+                errors.append("Model size exceeds limit")
+            
+            return {
+                "valid": len(errors) == 0,
+                "errors": errors
+            }
+            
+        except Exception as e:
+            return {
+                "valid": False,
+                "errors": [str(e)]
+            }
+
+    def _get_required_features(self) -> Set[str]:
+        """Get set of required features"""
+        # This should be configured based on your application
+        return {
+            "timestamp",
+            "value",
+            "metric_type",
+            "agent_type"
+        }
+
+    async def _update_production_endpoints(
+        self,
+        version_id: str,
+        model
+    ):
+        

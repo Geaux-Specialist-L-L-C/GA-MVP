@@ -26,6 +26,84 @@ const theme = createTheme({
 export default theme;
 ```
 
+## vite.config.js
+
+```
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
+import fs from 'fs';
+import path from 'path';
+
+// https://vitejs.dev/config/
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  return {
+    plugins: [react()],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src')
+      }
+    },
+    build: {
+      sourcemap: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'firebase-app': ['firebase/app'],
+            'firebase-auth': ['firebase/auth'],
+            'firebase-firestore': ['firebase/firestore'],
+            'firebase-storage': ['firebase/storage'],
+            'firebase-messaging': ['firebase/messaging'],
+            'firebase-analytics': ['firebase/analytics']
+          }
+        }
+      }
+    },
+    server: {
+      port: 3001,
+      strictPort: true,
+      https: {
+        key: fs.readFileSync('.cert/key.pem'),
+        cert: fs.readFileSync('.cert/cert.pem')
+      },
+      cors: true,
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+        'Cross-Origin-Embedder-Policy': 'credentialless',
+        'Content-Security-Policy': `
+          default-src 'self';
+          script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseio.com https://*.firebase.com https://*.googleapis.com https://*.gstatic.com https://www.googletagmanager.com;
+          connect-src 'self' https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com wss://firestore.googleapis.com;
+          frame-src 'self' https://*.firebaseapp.com https://*.firebase.com https://accounts.google.com https://*.googleapis.com;
+          img-src 'self' data: https: blob:;
+          style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+          font-src 'self' https://fonts.gstatic.com;
+          worker-src 'self' blob: 'unsafe-inline';
+        `.replace(/\s+/g, ' ')
+      }
+    },
+    define: {
+      __VITE_FIREBASE_API_KEY__: `"${env.VITE_FIREBASE_API_KEY}"`,
+      __VITE_FIREBASE_AUTH_DOMAIN__: `"${env.VITE_FIREBASE_AUTH_DOMAIN}"`,
+      __VITE_FIREBASE_PROJECT_ID__: `"${env.VITE_FIREBASE_PROJECT_ID}"`,
+      __VITE_FIREBASE_STORAGE_BUCKET__: `"${env.VITE_FIREBASE_STORAGE_BUCKET}"`,
+      __VITE_FIREBASE_MESSAGING_SENDER_ID__: `"${env.VITE_FIREBASE_MESSAGING_SENDER_ID}"`,
+      __VITE_FIREBASE_APP_ID__: `"${env.VITE_FIREBASE_APP_ID}"`,
+      __VITE_FIREBASE_MEASUREMENT_ID__: `"${env.VITE_FIREBASE_MEASUREMENT_ID}"`,
+      __VITE_FIREBASE_DATABASE_URL__: `"${env.VITE_FIREBASE_DATABASE_URL}"`,
+      'process.env.ROUTER_FUTURE_FLAGS': JSON.stringify({
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      })
+    },
+    optimizeDeps: {
+      include: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage', 'firebase/messaging', 'firebase/analytics']
+    }
+  };
+});
+
+```
+
 ## repository_content.md
 
 ```
@@ -526,16 +604,17 @@ By following these instructions, GitHub Copilot will generate code that aligns w
   "scripts": {
     "start": "vite",
     "dev": "node scripts/generate-certs.js && vite",
-    "build": "vite build",
-    "lint": "eslint .",
+    "build": "rollup -c",
+    "lint": "",
     "preview": "vite preview",
     "serve": "firebase emulators:start",
     "deploy": "firebase deploy",
-    "ci": "npm ci --legacy-peer-deps && npm run lint && npm test && npm run build",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "ci": "npm ci --legacy-peer-deps && npm test && npm run build",
+    "test": "NODE_ENV=development jest",
+    "test:watch": "if [ \"$NODE_ENV\" != \"development\" ]; then jest --watch; fi",
+    "start:emulators": "node scripts/start-emulators.js",
     "test:coverage": "jest --coverage",
-    "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && husky install || true"
+    "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && lefthook install || true"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -579,10 +658,14 @@ By following these instructions, GitHub Copilot will generate code that aligns w
     "vue-chartjs": "^5.3.2"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.26.9",
-    "@babel/preset-react": "^7.26.3",
-    "@eslint/js": "^8.45.0",
-    "@firebase/app-types": "^0.9.0",
+    "@babel/core": "^7.x",
+    "@babel/preset-env": "^7.x",
+    "@babel/preset-react": "^7.x",
+    "@babel/preset-typescript": "^7.x",
+    "@rollup/plugin-babel": "^6.x",
+    "@rollup/plugin-commonjs": "^25.x",
+    "@rollup/plugin-node-resolve": "^15.x",
+    "@rollup/plugin-typescript": "^11.x",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^14.3.1",
     "@testing-library/user-event": "^14.6.1",
@@ -590,39 +673,23 @@ By following these instructions, GitHub Copilot will generate code that aligns w
     "@types/node": "^22.13.1",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
-    "@typescript-eslint/eslint-plugin": "^5.62.0",
-    "@typescript-eslint/parser": "^5.62.0",
-    "@typescript-eslint/typescript-estree": "^6.0.0",
     "@vitejs/plugin-react": "^1.3.2",
     "@vitest/coverage-v8": "^1.6.1",
     "babel-jest": "^29.7.0",
-    "eslint": "^8.0.0",
-    "eslint-import-resolver-typescript": "^3.7.0",
-    "eslint-plugin-import": "^2.31.0",
-    "eslint-plugin-react": "^7.37.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.16",
-    "eslint-plugin-vue": "^9.32.0",
     "firebase-functions-test": "^3.1.0",
     "genkit-cli": "^1.0.0",
     "glob": "^10.3.10",
     "globals": "^15.14.0",
-    "husky": "^9.1.7",
-    "identity-obj-proxy": "^3.0.0",
-    "jest": "^29.0.0",
-    "jest-environment-jsdom": "^29.7.0",
-    "jsdom": "^22.1.0",
-    "lru-cache": "^10.2.0",
     "prettier-eslint": "^15.0.0",
     "rimraf": "^5.0.5",
     "selfsigned": "^2.4.1",
     "ts-jest": "^29.0.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.1.6",
-    "typescript-eslint": "^8.24.0",
+    "typescript": "^5.x",
     "vite": "^6.1.0",
     "vitest": "^1.6.1",
-    "vue-loader": "^17.4.2"
+    "vue-loader": "^17.4.2",
+    "lefthook": "1.11.0"
   },
   "overrides": {
     "glob": "^10.3.10",
@@ -3389,6 +3456,33 @@ generateCertificate().then(success => {
 });
 ```
 
+## scripts/start-emulators.js
+
+```
+const { exec } = require("child_process");
+
+if (process.env.NODE_ENV !== "development") {
+  console.log("Starting Firebase emulators...");
+  exec("firebase emulators:start --only auth,firestore,functions &");
+} else {
+  console.log("Skipping Firebase emulators in development mode.");
+}
+```
+
+## scripts/react_codebase_summary.md
+
+```
+# React Codebase Export Summary
+
+Generated on: 2025-02-23 12:28:25
+
+Total files processed: 0
+Total parts generated: 0
+
+## Generated Files:
+
+```
+
 ## functions/tsconfig.dev.json
 
 ```
@@ -4684,5 +4778,1033 @@ export default NewFeature;
 
 ```
 
+```
+
+## .github/task.md
+
+```
+# Geaux Academy Development Roadmap
+
+## [Milestone 1: Core Platform Development](pplx://action/followup)
+### 1.[1 Dynamic Learning Pathways](pplx://action/followup)
+- Develop algorithm for real-time curriculum difficulty adjustment
+- Implement performance metrics tracking (accuracy, engagement, completion time)
+- Create adaptive content delivery system
+- **Integrate CrewAI for curriculum research**
+- **Implement K-12 educational curriculum scraping of state-approved grade-appropriate assignments**
+- **Develop teacher personas and curriculum content generation based on the identified learning style of each student**
+- **Implement learning style assessment and storage/ingestion of all files using Cheshire AI framework**
+
+### 1.[2 AI-Powered Recommendation Engine](pplx://action/followup)
+- Integrate Amazon SageMaker for ML models
+- Develop resource suggestion algorithm based on learning analytics
+- Create content tagging system for 50+ resource types
+
+## [Milestone 2: Collaborative Ecosystem](pplx://action/followup)
+### 2.[1 Peer Interaction System](pplx://action/followup)
+- Build WebRTC-powered virtual classroom
+- Implement collaborative whiteboard feature
+- Develop group project management tools
+
+### 2.[2 Parent Dashboard](pplx://action/followup)
+- Create real-time progress visualization system
+- Implement human-in-the-loop verification protocol
+- Develop parent-teacher communication module
+
+## [Milestone 3: AI Optimization](pplx://action/followup)
+### 3.[1 Model Fine-Tuning](pplx://action/followup)
+- Collect state curriculum datasets from 20+ states
+- Develop domain-specific training pipelines
+- Implement model validation framework
+
+### 3.[2 Multi-Model Orchestration](pplx://action/followup)
+- Build dynamic model scoring system
+- Create cost-aware API routing layer
+- Implement response caching system
+
+## [Milestone 4: Scalability Infrastructure](pplx://action/followup)
+### 4.[1 Multi-Tenancy Architecture](pplx://action/followup)
+- Develop institution-specific namespace system
+- Implement role-based access controls
+- Create admin dashboard template
+
+### 4.[2 Cloud Optimization](pplx://action/followup)
+- Configure Kubernetes cluster for auto-scaling
+- Implement database sharding strategy
+- Develop serverless function suite
+
+## [Milestone 5: Quality Assurance](pplx://action/followup)
+### 5.[1 Automated Testing](pplx://action/followup)
+- Create 500+ unit tests for core features
+- Develop load testing scenarios for 10k concurrent users
+- Implement security penetration testing protocol
+
+### 5.[2 Beta Program](pplx://action/followup)
+- Recruit 200+ beta testers across 5 grade levels
+- Develop feedback collection system
+- Create bug triage workflow
+
+## [Milestone 6: Deployment & Monitoring](pplx://action/followup)
+### 6.[1 CI/CD Pipeline](pplx://action/followup)
+- Set up GitHub Actions workflows
+- Implement blue-green deployment strategy
+- Configure automated rollback system
+
+### 6.[2 Observability Stack](pplx://action/followup)
+- Deploy Prometheus/Grafana monitoring
+- Set up ELK logging infrastructure
+- Create alerting rules for 50+ KPIs
+
+## [Milestone 7: Accessibility & Localization](pplx://action/followup)
+### 7.[1 WCAG Compliance](pplx://action/followup)
+- Implement screen reader support
+- Develop keyboard navigation system
+- Create high contrast theme options
+
+### 7.[2 Multilingual Support](pplx://action/followup)
+- Translate UI to 5 core languages
+- Integrate real-time translation API
+- Develop locale-specific content filters
+
+## [Milestone 8: Growth & Marketing](pplx://action/followup)
+### 8.[1 Institutional Onboarding](pplx://action/followup)
+- Create school administrator toolkit
+- Develop bulk user import system
+- Build custom analytics dashboards
+
+### 8.[2 Community Engagement](pplx://action/followup)
+- Launch ambassador program
+- Develop content creator toolkit
+- Implement social learning features
+
+```
+
+## .github/.eslintrc.js
+
+```
+module.exports = {
+    env: {
+        browser: true,
+        es2021: true,
+        node: true
+    },
+    extends: [
+        "eslint:recommended",
+        "plugin:react/recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:react-hooks/recommended"
+    ],
+    parser: "@typescript-eslint/parser",
+    parserOptions: {
+        ecmaFeatures: {
+            jsx: true
+        },
+        ecmaVersion: "latest",
+        sourceType: "module"
+    },
+    plugins: [
+        "react",
+        "@typescript-eslint",
+        "react-hooks"
+    ],
+    rules: {
+        "constructor-super": "error",
+        "@typescript-eslint/no-explicit-any": "warn",
+        "@typescript-eslint/no-unused-vars": "error",
+        "react-hooks/rules-of-hooks": "error",
+        "react-hooks/exhaustive-deps": "warn",
+        "react/react-in-jsx-scope": "off"
+    },
+                                                                                    settings: {
+        react: {
+            version: "detect"
+        }
+    }
+};
+```
+
+## .github/copilot-instructions.md
+
+```
+Here's the optimized **`.github/copilot-instructions.md`** file for **GitHub Copilot** to follow when assisting with code generation in the **Geaux Academy** project.
+
+---
+
+```markdown
+# **GitHub Copilot Instructions for Geaux Academy**
+
+This document provides **guidelines and best practices** for using **GitHub Copilot** within the **Geaux Academy** repository.  
+All Copilot-generated code must adhere to these **standards and conventions** to maintain **code quality, security, and consistency** across the project.
+
+---
+
+## **� Project Overview**
+Geaux Academy is a **React, TypeScript, Firebase, and FastAPI-based interactive learning platform**.  
+The platform adheres to the following **best practices**:
+
+✅ **Strict TypeScript enforcement** (`.tsx` for React components, explicit types for props & state).  
+✅ **Modular and reusable code architecture** for maintainability.  
+✅ **Absolute imports (`@/components/...`)** to maintain a clean project structure.  
+✅ **Security best practices**, including **JWT authentication & Firestore RBAC**.  
+✅ **Comprehensive testing**, including **unit tests (`.test.tsx`, `.test.py`) & integration tests**.  
+✅ **CI/CD automation via GitHub Actions** (linting, tests, security scans, & deployments).  
+
+---
+
+## **� File Header Template**
+All files must begin with the following **header comment**:
+
+```tsx
+// File: /relative/path/filename.ext
+// Description: [Brief description of the file's purpose]
+// Author: [Your Name]
+// Created: [Date]
+```
+
+---
+
+## **� Copilot Usage Guidelines**
+
+### **� React Component Development**
+- **Use functional components (`.tsx`)**.
+- **Ensure TypeScript typings** (`Props`, `State`, `Event Handlers`).
+- **Use Styled Components or Tailwind CSS for styling** (avoid inline styles).
+- **Follow the project’s component structure** (keep reusable components in `/src/components/`).
+
+✅ **Example - Good Component**:
+```tsx
+// File: /src/components/ProfileCard.tsx
+// Description: Displays a user's profile information with avatar and bio.
+
+import React from "react";
+
+interface ProfileCardProps {
+  name: string;
+  bio: string;
+  avatarUrl: string;
+}
+
+const ProfileCard: React.FC<ProfileCardProps> = ({ name, bio, avatarUrl }) => {
+  return (
+    <div className="p-4 shadow-md rounded-lg">
+      <img src={avatarUrl} alt={`${name}'s Avatar`} className="w-16 h-16 rounded-full" />
+      <h2 className="text-lg font-bold">{name}</h2>
+      <p className="text-sm">{bio}</p>
+    </div>
+  );
+};
+
+export default ProfileCard;
+```
+
+� **Bad Example:**
+❌ **No TypeScript types**  
+❌ **Uses inline styles instead of Tailwind CSS or Styled Components**  
+```tsx
+function ProfileCard({ name, bio, avatarUrl }) {
+  return (
+    <div style={{ padding: "10px", border: "1px solid #ddd" }}>
+      <img src={avatarUrl} alt={name} style={{ width: "50px", height: "50px" }} />
+      <h2>{name}</h2>
+      <p>{bio}</p>
+    </div>
+  );
+}
+```
+
+---
+
+### **� Backend & API Development (FastAPI)**
+- **Follow RESTful API principles**.
+- **Use `Pydantic` models for request validation**.
+- **Enforce authentication (JWT) & role-based access control (RBAC)**.
+- **Implement error handling with appropriate HTTP status codes**.
+
+✅ **Example - FastAPI Endpoint**:
+```python
+# File: /backend/routes/users.py
+# Description: User authentication and profile retrieval API.
+
+from fastapi import APIRouter, Depends, HTTPException
+from models.user import User
+from schemas.user import UserSchema
+from auth.jwt_handler import get_current_user
+
+router = APIRouter()
+
+@router.get("/users/me", response_model=UserSchema)
+async def get_user_profile(current_user: User = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return current_user
+```
+
+� **Bad Example:**  
+❌ **No authentication**  
+❌ **No response model (makes API unpredictable)**  
+```python
+@router.get("/user")
+def get_user():
+    return {"user": "John Doe"}
+```
+
+---
+
+### **� Unit Testing Guidelines**
+- **Create test files** with a `.test.tsx` or `.test.py` suffix.
+- **Test both valid and invalid inputs**.
+- **Mock API calls using `Mock Service Worker (MSW)`**.
+
+✅ **Example - React Unit Test**:
+```tsx
+// File: /src/components/__tests__/ProfileCard.test.tsx
+
+import { render, screen } from "@testing-library/react";
+import ProfileCard from "../ProfileCard";
+
+test("renders ProfileCard with correct props", () => {
+  render(<ProfileCard name="John Doe" bio="Developer" avatarUrl="/avatar.jpg" />);
+  
+  expect(screen.getByText("John Doe")).toBeInTheDocument();
+  expect(screen.getByText("Developer")).toBeInTheDocument();
+});
+```
+
+✅ **Example - FastAPI Unit Test**:
+```python
+# File: /backend/tests/test_users.py
+
+from fastapi.testclient import TestClient
+from main import app
+
+client = TestClient(app)
+
+def test_get_user_profile():
+    response = client.get("/users/me")
+    assert response.status_code == 401  # Expect unauthorized without authentication
+```
+
+---
+
+## **� File Structure Consistency**
+- **Frontend:**
+    ```
+    /src
+        ├── components/
+        ├── pages/
+        ├── hooks/
+        ├── utils/
+        ├── styles/
+    ```
+- **Backend:**
+    ```
+    /backend
+        ├── routes/
+        ├── models/
+        ├── schemas/
+        ├── auth/
+    ```
+
+---
+
+## **� Copilot Request Format**
+When submitting a **Copilot request**, include:
+
+1️⃣ **A clear description** of the feature or function you need.  
+2️⃣ **The intended file path** where the code should be placed.  
+3️⃣ **Context on how it integrates with existing code**.  
+
+✅ **Example Prompt**:
+```plaintext
+"Create a new React component at /src/components/ProfileCard.tsx that displays a user's profile.
+Include proper TypeScript types for props and a unit test for this component."
+```
+
+� **Bad Prompt**:
+```plaintext
+"Make a profile component."
+```
+_(Too vague; lacks context on file path, TypeScript, testing, or expected functionality.)_
+
+---
+
+## **✅ Summary: What Copilot Should Always Follow**
+✔ **Strict TypeScript best practices**  
+✔ **Use absolute imports (`@/src/...`)**  
+✔ **Ensure API security (JWT, RBAC, Firestore rules)**  
+✔ **Follow Rollup + Prettier formatting**  
+✔ **Write unit tests (`.test.tsx` or `.test.py`) for all new code**  
+✔ **Use Tailwind CSS or Styled Components for styling**  
+
+� **By following these instructions, GitHub Copilot will generate code that aligns with Geaux Academy's development standards!**
+```
+
+---
+
+### **� Updates & Enhancements**
+✅ **Refined structure for clarity and consistency**  
+✅ **Improved React, TypeScript, and FastAPI best practices**  
+✅ **Updated security & authentication guidelines** (JWT, Firestore RBAC)  
+✅ **Expanded testing guidelines** (Mock API requests, unit tests)  
+✅ **Added structured file placement rules** (where Copilot should insert code)  
+
+� **Now, GitHub Copilot will generate clean, secure, and scalable code that aligns perfectly with Geaux Academy's development workflow!** �
+
+## Development Roadmap Completion Status
+
+From your React Application Structure and Content - Part 1, I've reviewed the Development Guide, Development Plan, and README.md to check which roadmap tasks are complete and what remains.
+
+✅ Phase 1: Foundation (Week 1-2)
+Task	Status
+Project setup and configuration	✅ Completed
+Basic authentication flow	✅ Completed (Firebase Auth)
+Core UI components	⏳ In Progress
+- Navigation	❌ Not Started
+- Layout system	❌ Not Started
+- Theme implementation	✅ Completed (Styled Components)
+Basic Firebase integration	⏳ In Progress
+Test environment setup	❌ Not Started
+
+✅ Phase 2: Core Features (Week 3-4)
+Task	Status
+Learning Style Assessment	⏳ In Progress
+- Chat interface implementation	✅ Completed (Chat Component)
+- OpenAI integration	✅ Completed (API Key Setup)
+- Response analysis system	❌ Not Started
+- Results storage and retrieval	✅ Completed (Firestore Integration)
+User Profile System	⏳ In Progress
+- Profile creation/editing	✅ Completed
+- Learning style data integration	⏳ Partially Done
+- Progress tracking	❌ Not Started
+
+⏳ Phase 3: Learning Experience (Week 5-6)
+Task	Status
+Content Management	⏳ In Progress
+- Learning material organization	❌ Not Started
+- Content adaptation based on VARK	❌ Not Started
+- Resource recommendation engine	❌ Not Started
+Progress Tracking	❌ Not Started
+- Analytics dashboard	❌ Not Started
+- Performance metrics	❌ Not Started
+- Learning path visualization	❌ Not Started
+
+❌ Phase 4: Enhancement (Week 7-8)
+Task	Status
+Advanced Features	❌ Not Started
+- Real-time collaboration	❌ Not Started
+- Interactive exercises	❌ Not Started
+- Peer learning features	❌ Not Started
+Performance Optimization	❌ Not Started
+- Caching implementation	❌ Not Started
+- Load time optimization	❌ Not Started
+- API efficiency improvements	❌ Not Started
+
+📌 Summary of Completion
+
+✅ Completed (40%)
+
+    Authentication System (Firebase)
+    Theme Implementation (Styled Components)
+    Chat Interface for Learning Assessment
+    OpenAI API Integration
+    Profile Creation & Editing
+    Results Storage in Firestore
+
+⏳ In Progress (30%)
+
+    Basic Firebase Integration
+    Navigation & Layout System
+    Learning Style Data Integration
+    Core UI Components
+    Content Management System
+
+❌ Not Started (30%)
+
+    Progress Tracking & Analytics
+    Learning Path Visualization
+    Advanced Features (Collaboration, Exercises, Peer Learning)
+    Performance Optimization (Caching, Load Time, API Efficiency)
+
+🚀 Next Steps & Prioritization
+1️⃣ Complete Phase 1
+
+    Navigation System (Sidebar, Top Bar)
+    Layout System (Parent Dashboard, Student Dashboard)
+    Basic Firebase Integration (Firestore, Storage)
+    Unit Test Setup (Jest, React Testing Library)
+
+2️⃣ Advance Phase 2
+
+    Learning Style Analysis (CrewAI & NLP Integration)
+    Progress Tracking & Reports
+    Curriculum Adaptation Based on VARK Learning Style
+
+3️⃣ Introduce Phase 3
+
+    Content Recommendation Engine
+    Analytics & Performance Dashboard
+    Interactive Learning Paths Visualization
+
+## Note on TypeScript and JSX Syntax Errors
+
+All TypeScript and JSX syntax errors have been fixed in the affected files, and all JSX elements now have corresponding closing tags.
+
+```
+
+## .github/ISSUE_TEMPLATE/ui-setup.md
+
+```
+---
+name: UI setup
+about: Design and implement the user interface
+title: 'UI setup'
+labels: ''
+assignees: ''
+
+---
+
+## Description
+
+Design and implement the user interface.
+
+## Tasks
+
+- [ ] Create wireframes and mockups
+- [ ] Implement the UI components
+- [ ] Ensure responsiveness and accessibility
+- [ ] Test the UI thoroughly
+
+```
+
+## .github/ISSUE_TEMPLATE/api-setup.md
+
+```
+---
+name: API setup
+about: Develop the API endpoints
+title: 'API setup'
+labels: ''
+assignees: ''
+
+---
+
+## Description
+
+Develop the API endpoints.
+
+## Tasks
+
+- [x] Design the API endpoints
+- [x] Implement the API endpoints
+- [x] Test the API endpoints
+
+```
+
+## .github/ISSUE_TEMPLATE/database-setup.md
+
+```
+---
+name: Database setup
+about: Set up the database schema and models
+title: 'Database setup'
+labels: ''
+assignees: ''
+
+---
+
+## Description
+
+Set up the database schema and models.
+
+## Tasks
+
+- [ ] Design the database schema
+- [ ] Create the database models
+- [ ] Implement database migrations
+- [ ] Test the database setup
+
+```
+
+## .github/ISSUE_TEMPLATE/custom.md
+
+```
+
+```
+
+## .github/ISSUE_TEMPLATE/feature_request.md
+
+```
+
+```
+
+## .github/ISSUE_TEMPLATE/setup-authentication.md
+
+```
+---
+name: Setup Authentication
+about: Implement Firebase authentication with Google login
+title: 'Setup Authentication'
+labels: ''
+assignees: ''
+
+---
+
+## Description
+
+Implement Firebase authentication with Google login.
+
+## Tasks
+
+- [ ] Set up Firebase project
+- [ ] Configure Firebase Authentication
+- [ ] Implement Google login in the application
+- [ ] Test the authentication flow
+
+```
+
+## .github/ISSUE_TEMPLATE/bug_report.md
+
+```
+
+```
+
+## src/index.tsx
+
+```
+// src/index.tsx
+// This file has been deprecated
+// The application entry point is now in main.tsx
+
+```
+
+## src/index.css
+
+```
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #333;
+  background-color: #fff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Primary Colors */
+  --primary-color: #D4AF37;      /* Rich Gold */
+  --secondary-color: #2C3E50;    /* Dark Blue-Gray */
+  --accent-color: #E67E22;       /* Warm Orange */
+  
+  /* Background Colors */
+  --background-color: #ffffff;    /* White */
+  --background-alt: #F8F9FA;     /* Light Gray */
+  --header-bg: #2C3E50;          /* Dark Blue-Gray */
+  
+  /* Text Colors */
+  --text-primary: #2C3E50;       /* Dark Blue-Gray */
+  --text-secondary: #595959;     /* Medium Gray */
+  --text-light: #ffffff;         /* White */
+  
+  /* Button Colors */
+  --btn-primary-bg: #D4AF37;     /* Gold */
+  --btn-primary-text: #FFFFFF;   /* White */
+  --btn-secondary-bg: #2C3E50;   /* Dark Blue-Gray */
+  --btn-secondary-text: #FFFFFF; /* White */
+  --btn-hover-bg: #C19B26;       /* Darker Gold */
+  
+  /* Interactive Elements */
+  --hover-color: #B8860B;        /* Darker Gold */
+  --active-color: #DAA520;       /* Lighter Gold */
+  --link-color: #D4AF37;         /* Gold */
+  
+  /* Success/Error States */
+  --success-color: #2ECC71;      /* Green */
+  --warning-color: #F1C40F;      /* Yellow */
+  --error-color: #E74C3C;        /* Red */
+  
+  --max-width: 1200px;
+  --header-height: 64px;
+  --text-color: #333;
+  --light-bg: #f5f5f5;
+  --container-padding: 2rem;
+  
+  /* Transitions */
+  --transition-speed: 0.3s;
+  --transition-timing: ease;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  
+  /* New Variable */
+  --sidebar-width: 250px;
+
+  /* Navbar Variables */
+  --navbar-height: 64px;
+  --navbar-bg: white;
+  --navbar-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-color: var(--background-color);
+  color: var(--text-primary);  /* Fix incorrect variable name from --text-light-color */
+  padding-top: var(--header-height); /* Set consistent padding for header */
+  background: var(--background-color);
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+/* Header Specific Styles */
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--header-bg);
+  height: var(--header-height);
+  z-index: 1000;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Container Layout */
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--container-padding);
+}
+
+/* Main Content Styles */
+.main-content {
+  padding-top: var(--header-height);
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+}
+
+```
+
+## src/App.css
+
+```
+/* Reset box-sizing */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+/* Add vendor prefixes for animations */
+@-webkit-keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.app {
+  min-height: 100vh;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--header-height, 64px); /* Add padding for fixed header */
+}
+
+main {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.main-content {
+  flex: 1;
+  width: 100%;
+  max-width: var(--max-width, 1200px);
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  min-height: calc(100vh - var(--header-height) - var(--footer-height, 0px));
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem;
+    margin-left: 0;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  #root {
+    padding: 1rem;
+  }
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+```
+
+## src/App.tsx
+
+```
+import React, { useEffect, Suspense } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import styled from 'styled-components';
+import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
+import { ThemeProvider as StyledThemeProvider } from 'styled-components';
+import Layout from './components/layout/Layout';
+import LoadingSpinner from './components/common/LoadingSpinner';
+import PrivateRoute from './components/PrivateRoute';
+import { muiTheme, styledTheme } from './theme/theme';
+import { messaging } from './firebase/config';
+import { getToken } from 'firebase/messaging';
+import Navigation from './components/Navigation';
+import Profile from './pages/Profile';
+const Assessment = React.lazy(() => import('./pages/Assessment'));
+
+// Lazy load components with explicit types
+const Home = React.lazy(() => import('./pages/Home'));
+const About = React.lazy(() => import('./pages/About'));
+const Contact = React.lazy(() => import('./pages/Contact'));
+const Features = React.lazy(() => import('./pages/Features'));
+const Login = React.lazy(() => import('./pages/Login'));
+const SignUp = React.lazy(() => import('./components/auth/SignUp'));
+const LearningStyles = React.lazy(() => import('./pages/LearningStyles'));
+const Curriculum = React.lazy(() => import('./pages/Curriculum'));
+const ParentDashboard = React.lazy(() => import('./pages/profile/ParentProfile/ParentDashboard'));
+const StudentDashboard = React.lazy(() => import('./pages/profile/StudentProfile/StudentDashboard'));
+const StudentProfile = React.lazy(() => import('./pages/profile/StudentProfile/StudentProfile'));
+const LearningPlan = React.lazy(() => import('./pages/LearningPlan'));
+const TakeAssessment = React.lazy(() => import('./pages/TakeAssessment'));
+const LearningStyleChat = React.lazy(() => import('./components/chat/LearningStyleChat'));
+const TestChat = React.lazy(() => import('./components/chat/TestChat'));
+const NotFound = React.lazy(() => import('./pages/NotFound'));
+
+const App: React.FC = (): JSX.Element => {
+  // Register service worker for Firebase messaging
+  useEffect(() => {
+    const registerServiceWorker = async (): Promise<void> => {
+      try {
+        // Only register if in secure context and messaging is available
+        if ('serviceWorker' in navigator && window.isSecureContext && messaging) {
+          // First unregister any existing service workers to ensure clean state
+          const existingRegs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(existingRegs.map(reg => reg.unregister()));
+
+          // Register new service worker
+          const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+            scope: '/',
+            type: 'module',
+            updateViaCache: process.env.NODE_ENV === 'development' ? 'none' : 'imports'
+          });
+
+          // Get messaging token
+          if (messaging) {
+            const currentToken = await getToken(messaging, {
+              vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+              serviceWorkerRegistration: registration
+            });
+
+            if (currentToken) {
+              console.debug('FCM registration successful. Token:', currentToken);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Service Worker registration failed:', error);
+      }
+    };
+
+    void registerServiceWorker();
+  }, []);
+  
+  return (
+    <StyledThemeProvider theme={styledTheme}>
+      <MUIThemeProvider theme={muiTheme}>
+        <AppContainer>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              <Route element={<Layout />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/assessment" element={<Assessment />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/learning-styles" element={<LearningStyles />} />
+                <Route path="/curriculum" element={<Curriculum />} />
+                
+                {/* Protected Routes */}
+                <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+                <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
+                <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+                <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
+                <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />
+                <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
+                <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
+                <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </Suspense>
+        </AppContainer>
+      </MUIThemeProvider>
+    </StyledThemeProvider>
+  );
+};
+
+const AppContainer = styled.div`
+  min-height: 100vh;
+  background-color: ${({ theme }) => theme.palette.background.default};
+`;
+
+export default App;
+
+```
+
+## src/env.d.ts
+
+```
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_FIREBASE_API_KEY: string;
+  readonly VITE_FIREBASE_AUTH_DOMAIN: string;
+  readonly VITE_FIREBASE_DATABASE_URL: string;
+  readonly VITE_FIREBASE_PROJECT_ID: string;
+  readonly VITE_FIREBASE_STORAGE_BUCKET: string;
+  readonly VITE_FIREBASE_MESSAGING_SENDER_ID: string;
+  readonly VITE_FIREBASE_APP_ID: string;
+  readonly VITE_FIREBASE_MEASUREMENT_ID: string;
+  readonly VITE_MAX_AUTH_RETRIES: string;
+  readonly VITE_USE_SECURE_COOKIES: string;
+  readonly VITE_AUTH_PERSISTENCE: string;
+  readonly VITE_AUTH_POPUP_FALLBACK: string;
+  readonly VITE_SERVICE_WORKER_TIMEOUT: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
 ```
 
