@@ -6,7 +6,8 @@
 import { getToken, getMessaging } from 'firebase/messaging';
 import { app } from './config';
 
-const VAPID_KEY = 'YOUR_VAPID_KEY_HERE'; // TODO: Replace with actual VAPID key
+// Get VAPID key from environment variables
+const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
 export interface ServiceWorkerRegistrationResult {
   success: boolean;
@@ -30,10 +31,17 @@ export async function registerMessagingWorker(): Promise<ServiceWorkerRegistrati
   }
 
   try {
+    // Unregister any existing service workers first
+    const existingRegistrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(existingRegistrations.map(reg => reg.unregister()));
+
     const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
       scope: '/',
-      type: 'module'
+      type: 'module',
+      updateViaCache: 'none'
     });
+
+    await registration.update();
 
     const messaging = getMessaging(app);
     const token = await getToken(messaging, {
@@ -53,6 +61,7 @@ export async function registerMessagingWorker(): Promise<ServiceWorkerRegistrati
       token
     };
   } catch (error) {
+    console.error('Service worker registration failed:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to register service worker'

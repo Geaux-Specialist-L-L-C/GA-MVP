@@ -5,21 +5,28 @@
 
 /// <reference lib="webworker" />
 
-import { initializeApp } from 'firebase/app';
-import { getMessaging, onBackgroundMessage, MessagePayload } from 'firebase/messaging/sw';
-import { firebaseConfig } from './config';
-
 declare const self: ServiceWorkerGlobalScope;
 
+// Firebase configuration will be injected by the build process
+declare const FIREBASE_CONFIG: {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  messagingSenderId: string;
+  appId: string;
+};
+
+import { initializeApp } from 'firebase/app';
+import { getMessaging, onBackgroundMessage, MessagePayload } from 'firebase/messaging/sw';
+
 // Initialize Firebase in the service worker
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(FIREBASE_CONFIG);
 const messaging = getMessaging(app);
 
 // Handle background messages
 onBackgroundMessage(messaging, (payload: MessagePayload) => {
   console.log('[Firebase Messaging SW] Received background message:', payload);
 
-  // Customize notification here
   const notificationTitle = payload.notification?.title || 'New Message';
   const notificationOptions: NotificationOptions = {
     body: payload.notification?.body,
@@ -38,19 +45,16 @@ onBackgroundMessage(messaging, (payload: MessagePayload) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
-  // Add custom click handling here
   const clickAction = event.notification.data?.clickAction || '/';
   
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((windowClients) => {
-        // If a window client is already open, focus it
         for (const client of windowClients) {
           if (client.url === clickAction && 'focus' in client) {
             return client.focus();
           }
         }
-        // Otherwise open a new window
         if (self.clients.openWindow) {
           return self.clients.openWindow(clickAction);
         }
@@ -58,13 +62,27 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
+// Handle service worker installation
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
 // Handle service worker activation
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
-      // Take control of all pages immediately
       self.clients.claim(),
-      // Optional: Clean up old caches here if needed
+      // Clean up any old caches if needed
+      caches.keys().then(keys => 
+        Promise.all(
+          keys.map(key => {
+            if (key.startsWith('firebase-messaging-')) {
+              return caches.delete(key);
+            }
+            return Promise.resolve();
+          })
+        )
+      )
     ])
   );
 });
