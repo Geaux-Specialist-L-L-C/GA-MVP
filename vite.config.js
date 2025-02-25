@@ -32,8 +32,8 @@ export default defineConfig(({ mode }) => {
       port: 3001,
       strictPort: true,
       https: {
-        key: fs.readFileSync('.cert/key.pem'),
-        cert: fs.readFileSync('.cert/cert.pem')
+        key: fs.readFileSync('./cert/localhost.key'),
+        cert: fs.readFileSync('./cert/localhost.crt')
       },
       cors: true,
       headers: {
