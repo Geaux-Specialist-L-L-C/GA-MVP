@@ -1,16 +1,12 @@
 import { UserCredential } from 'firebase/auth';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
 // Common types for auth context and components
-export interface User {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  photoURL: string | null;
-  metadata?: {
-    lastSignInTime?: string;
-    creationTime?: string;
-  };
+export interface User extends SupabaseUser {
+  uid: string;  // Ensure uid is available for Firebase compatibility
 }
+
+export type { Session } from '@supabase/supabase-js';
 
 export interface AuthError {
   code?: string;
