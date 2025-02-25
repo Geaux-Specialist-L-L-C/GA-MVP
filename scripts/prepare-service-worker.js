@@ -1,8 +1,3 @@
-// File: /scripts/prepare-service-worker.js
-// Description: Script to build and prepare the Firebase messaging service worker for production
-// Author: GitHub Copilot
-// Created: 2024-02-17
-
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -47,7 +42,8 @@ self.FIREBASE_CONFIG = {
   authDomain: '${process.env.VITE_FIREBASE_AUTH_DOMAIN}',
   projectId: '${process.env.VITE_FIREBASE_PROJECT_ID}',
   messagingSenderId: '${process.env.VITE_FIREBASE_MESSAGING_SENDER_ID}',
-  appId: '${process.env.VITE_FIREBASE_APP_ID}'
+  appId: '${process.env.VITE_FIREBASE_APP_ID}',
+  vapidKey: '${process.env.VITE_FIREBASE_VAPID_KEY}'
 };
 `;
 

@@ -1,8 +1,3 @@
-// File: /src/firebase/config.ts
-// Description: Firebase configuration and initialization for Geaux Academy
-// Author: GitHub Copilot
-// Created: 2023-10-24
-
 import { initializeApp, FirebaseApp, getApps } from 'firebase/app';
 import { 
   getAuth, 
@@ -39,7 +34,8 @@ const requiredEnvVars = [
   'VITE_FIREBASE_PROJECT_ID',
   'VITE_FIREBASE_STORAGE_BUCKET',
   'VITE_FIREBASE_MESSAGING_SENDER_ID',
-  'VITE_FIREBASE_APP_ID'
+  'VITE_FIREBASE_APP_ID',
+  'VITE_FIREBASE_VAPID_KEY'
 ] as const;
 
 for (const envVar of requiredEnvVars) {
@@ -57,7 +53,8 @@ const firebaseConfig = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
 };
 
 // Service instances
