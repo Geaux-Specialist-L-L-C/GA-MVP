@@ -1,4 +1,3 @@
-// frontend/src/services/mongoService.ts
 import axios from 'axios';
 import { firebaseService } from './firebaseService';
 
