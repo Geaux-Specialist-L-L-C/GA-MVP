@@ -4,7 +4,7 @@
 // Created: [Date]
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from '../types/auth';  // Removed unused AuthContextType import
+import { User } from '../types/auth';
 import { auth } from '../firebase/config';
 import { signInWithGoogle } from '../services/auth-service';
 import { 
@@ -29,10 +29,8 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const authService = new AuthService();
+  const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -51,16 +49,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (): Promise<void> => {
     try {
       await signInWithGoogle();
     } catch (error) {
       setAuthError('Failed to sign in with Google');
       throw error;
     }
-  }, []);
+  };
 
-  const login = async () => {
+  const signup = async (email: string, password: string): Promise<UserCredential> => {
     try {
       return await createUserWithEmailAndPassword(auth, email, password);
     } catch (error) {

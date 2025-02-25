@@ -12,10 +12,6 @@ import App from './App';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import './index.css';
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <BrowserRouter>
 // Firebase configuration with environment variables
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -34,12 +30,10 @@ const sslConfig = {
   cert: import.meta.env.VITE_SSL_CERT
 };
 
-// Configure future flags for React Router v7
-const router = createBrowserRouter([
-  {
-    path: "/*",
-    element: (
-      <ErrorBoundary>
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+  <React.StrictMode>
+    <ErrorBoundary>
+      <BrowserRouter>
         <AuthProvider>
           <ProfileProvider>
             <App />
