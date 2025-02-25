@@ -25,12 +25,14 @@ export interface AuthContextProps {
   setAuthError: (error: string | null) => void;
 }
 
-export const AuthContext = createContext<AuthContextProps | undefined>(undefined);
+const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const authService = new AuthService();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -56,9 +58,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthError('Failed to sign in with Google');
       throw error;
     }
-  };
+  }, []);
 
-  const signup = async (email: string, password: string): Promise<UserCredential> => {
+  const login = async () => {
     try {
       return await createUserWithEmailAndPassword(auth, email, password);
     } catch (error) {

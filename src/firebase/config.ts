@@ -57,6 +57,12 @@ const firebaseConfig = {
   vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
 };
 
+// SSL configuration
+const sslConfig = {
+  key: import.meta.env.VITE_SSL_KEY,
+  cert: import.meta.env.VITE_SSL_CERT
+};
+
 // Service instances
 let app: FirebaseApp;
 let auth: Auth;
@@ -151,6 +157,7 @@ export {
   messaging,
   storage,
   firebaseConfig,
+  sslConfig,
   initializeFirebaseServices,
   provider,
   type FirebaseApp,
