@@ -1,8 +1,3 @@
-// File: /src/firebase/config.ts
-// Description: Firebase configuration with secure initialization and proper TypeScript types
-// Author: GitHub Copilot
-// Created: 2024-02-17
-
 import { initializeApp, FirebaseApp, getApps } from 'firebase/app';
 import { 
   getAuth, 
@@ -57,6 +52,12 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
   databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL
+};
+
+// SSL configuration
+const sslConfig = {
+  key: import.meta.env.VITE_SSL_KEY,
+  cert: import.meta.env.VITE_SSL_CERT
 };
 
 // Service instances
@@ -152,6 +153,7 @@ export {
   messaging,
   storage,
   firebaseConfig,
+  sslConfig,
   initializeFirebaseServices,
   type FirebaseApp,
   type Auth,

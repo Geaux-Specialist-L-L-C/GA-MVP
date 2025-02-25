@@ -1,5 +1,3 @@
-
-// This script injects Firebase configuration into the service worker
 self.FIREBASE_CONFIG = {
   "apiKey": "AIzaSyB0V4iL1aQ_xtWeO_iWL1fuhu4_SLfqZeo",
   "authDomain": "geaux-academy.firebaseapp.com",
