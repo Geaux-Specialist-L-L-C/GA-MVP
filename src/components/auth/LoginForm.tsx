@@ -55,6 +55,8 @@ const Input = styled.input`
 const LoginForm: React.FC = (): JSX.Element => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
 
   const handleLogin = async (): Promise<void> => {
     try {
@@ -74,8 +76,8 @@ const LoginForm: React.FC = (): JSX.Element => {
         label="Email"
         inputs={[{
           placeholder: 'Enter your email',
-          value: '',
-          onChange: () => {},
+          value: email,
+          onChange: (e) => setEmail(e.target.value),
           error: false
         }]}
       />
@@ -83,8 +85,8 @@ const LoginForm: React.FC = (): JSX.Element => {
         label="Password"
         inputs={[{
           placeholder: 'Enter your password',
-          value: '',
-          onChange: () => {},
+          value: password,
+          onChange: (e) => setPassword(e.target.value),
           error: false
         }]}
       />

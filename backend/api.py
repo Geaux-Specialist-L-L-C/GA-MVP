@@ -1,7 +1,7 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.security import HTTPBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import List, Dict
 import openai
@@ -37,8 +37,7 @@ app.add_middleware(
     TrustedHostMiddleware, 
     allowed_hosts=[
         "localhost",
-        "cheshire.geaux.app",
-        "*"  # Remove this in production
+        "cheshire.geaux.app"
     ]
 )
 
@@ -66,8 +65,8 @@ class ChatMessage(BaseModel):
     messages: List[Dict[str, str]]
 
 @app.post("/chat")
-async def get_chat_response(chat: ChatMessage):
-    try:
+async def get_chat_response(chat: ChatMessage, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try {
         if not openai.api_key:
             raise HTTPException(
                 status_code=500,
