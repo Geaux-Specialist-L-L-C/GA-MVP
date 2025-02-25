@@ -51,6 +51,8 @@
     "google-auth-library": "^9.15.1",
     "google-gax": "^4.4.1",
     "langchain": "^0.3.13",
+    "mongodb": "^6.13.1",
+    "mongoose": "^8.10.2",
     "prettier": "^3.4.2",
     "react": "^18.0.0",
     "react-chartjs-2": "^5.3.0",
