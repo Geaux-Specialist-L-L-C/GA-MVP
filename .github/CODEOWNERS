@@ -1,0 +1,16 @@
+# This file specifies the code owners for different parts of the project
+
+# Default code owners for the entire repository
+*       @default-owner
+
+# Specific code owners for frontend components
+/src/components/ @frontend-owner
+
+# Specific code owners for backend components
+/backend/ @backend-owner
+
+# Specific code owners for documentation
+/docs/ @docs-owner
+
+# Specific code owners for GitHub Actions workflows
+/.github/workflows/ @ci-cd-owner
