@@ -1,0 +1,31 @@
+labels:
+  - name: bug
+    color: F00
+    description: An issue with the system
+  - name: enhancement
+    color: 0E8A16
+    description: New feature or request
+  - name: documentation
+    color: 0075CA
+    description: Improvements or additions to documentation
+  - name: question
+    color: C2E0C6
+    description: Further information is requested
+  - name: wontfix
+    color: 000000
+    description: This will not be worked on
+  - name: duplicate
+    color: CCCCCC
+    description: This issue or pull request already exists
+  - name: invalid
+    color: E4E669
+    description: This doesn't seem right
+  - name: help wanted
+    color: 128A0C
+    description: Extra attention is needed
+  - name: good first issue
+    color: 7057FF
+    description: Good for newcomers
+  - name: needs investigation
+    color: FBCA04
+    description: Further investigation is required

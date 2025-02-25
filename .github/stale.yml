@@ -1,0 +1,42 @@
+# Configuration for the stale bot to automatically close stale issues and pull requests
+
+# Number of days of inactivity before an issue becomes stale
+daysUntilStale: 30
+
+# Number of days to wait to close a stale issue
+daysUntilClose: 7
+
+# Exempt certain labels from being marked as stale
+exemptLabels:
+  - "pinned"
+  - "security"
+
+# Only issues with these labels will be marked as stale
+onlyLabels:
+  - "bug"
+  - "enhancement"
+
+# Exempt certain milestones from being marked as stale
+exemptMilestones:
+  - "v1.0"
+
+# Exempt certain projects from being marked as stale
+exemptProjects:
+  - "Roadmap"
+
+# Exempt certain assignees from being marked as stale
+exemptAssignees:
+  - "project-lead"
+
+# Message to post when marking an issue as stale
+staleMessage: "This issue has been automatically marked as stale due to inactivity. If this issue is still relevant, please comment or remove the stale label."
+
+# Message to post when closing a stale issue
+closeMessage: "This issue has been automatically closed due to inactivity. If you still need help, please open a new issue."
+
+# Limit the number of actions per run
+limitPerRun: 30
+
+# Run the stale bot on a schedule
+schedule:
+  - cron: "0 0 * * *"
