@@ -34,29 +34,43 @@ const NotFound = React.lazy(() => import('./pages/NotFound'));
 const App: React.FC = (): JSX.Element => {
   const registerServiceWorker = async () => {
     try {
-      // Only register SW in production or with HTTPS
-      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+      if (!('serviceWorker' in navigator)) {
+        console.warn('Service Worker not supported');
+        return;
+      }
+
+      // Check if we're in a secure context (HTTPS or localhost)
+      const isLocalhost = Boolean(
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '[::1]' ||
+        window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/)
+      );
+
+      if (!isLocalhost && window.location.protocol !== 'https:') {
         console.warn('Service Worker registration skipped: HTTPS required');
         return;
       }
 
       const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
         scope: '/',
-        type: 'module'
+        type: 'module' 
       });
 
-      // Get the messaging instance
-      const messaging = getMessaging();
-      
-      // Get the token
-      const token = await getToken(messaging, {
-        vapidKey: 'YOUR_VAPID_KEY',
-        serviceWorkerRegistration: registration
-      });
-
-      console.log('Service Worker registered. FCM Token:', token);
+      // Get messaging instance and token only if registration is successful
+      if (registration.active || registration.installing || registration.waiting) {
+        const token = await getToken(messaging, {
+          vapidKey: process.env.REACT_APP_VAPID_KEY,
+          serviceWorkerRegistration: registration
+        });
+        
+        if (token) {
+          console.log('FCM registration successful');
+        } else {
+          throw new Error('Failed to get FCM token');
+        }
+      }
     } catch (error) {
-      console.error('Service Worker registration failed:', error);
+      console.error('Service Worker/FCM registration failed:', error);
     }
   };
 
