@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, Suspense, useMemo, useCallback } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
 import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
@@ -69,36 +69,41 @@ const App: React.FC = (): JSX.Element => {
     void registerServiceWorker();
   }, []);
   
+  // Memoize routes to optimize performance
+  const routes = useMemo(() => (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/assessment" element={<Assessment />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/learning-styles" element={<LearningStyles />} />
+        <Route path="/curriculum" element={<Curriculum />} />
+        
+        {/* Protected Routes */}
+        <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+        <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
+        <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+        <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
+        <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />
+        <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
+        <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
+        <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
+  ), []);
+
   return (
     <StyledThemeProvider theme={styledTheme}>
       <MUIThemeProvider theme={muiTheme}>
         <AppContainer>
           <Suspense fallback={<LoadingSpinner />}>
-            <Routes>
-              <Route element={<Layout />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/assessment" element={<Assessment />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/features" element={<Features />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/learning-styles" element={<LearningStyles />} />
-                <Route path="/curriculum" element={<Curriculum />} />
-                
-                {/* Protected Routes */}
-                <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
-                <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
-                <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
-                <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
-                <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />
-                <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
-                <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
-                <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
+            {routes}
           </Suspense>
         </AppContainer>
       </MUIThemeProvider>

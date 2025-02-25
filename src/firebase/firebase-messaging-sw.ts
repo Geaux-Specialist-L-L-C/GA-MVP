@@ -1,10 +1,3 @@
-// File: /src/firebase/firebase-messaging-sw.ts
-// Description: Firebase service worker configuration for handling background messages and notifications
-// Author: GitHub Copilot
-// Created: 2024-02-17
-
-/// <reference lib="webworker" />
-
 declare const self: ServiceWorkerGlobalScope;
 
 // Firebase configuration will be injected by the build process
@@ -14,6 +7,7 @@ declare const FIREBASE_CONFIG: {
   projectId: string;
   messagingSenderId: string;
   appId: string;
+  vapidKey: string;
 };
 
 import { initializeApp } from 'firebase/app';
