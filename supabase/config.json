@@ -1,0 +1,22 @@
+{
+  "project_id": "your-project-id",
+  "db": {
+    "host": "db.your-project-id.supabase.co",
+    "port": 5432,
+    "schema": "public"
+  },
+  "auth": {
+    "enabled": true,
+    "site_url": "http://localhost:5173",
+    "additional_redirect_urls": [
+      "https://yivklahcdksdpifmapoh.supabase.co"
+    ],
+    "jwt_expiry": 3600,
+    "enable_refresh_token": true
+  },
+  "functions": {
+    "serve": {
+      "port": 54321
+    }
+  }
+}

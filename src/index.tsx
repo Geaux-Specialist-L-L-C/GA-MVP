@@ -1,8 +1,3 @@
-// File: /src/index.tsx
-// Description: Entry point for the React application, setting up providers and routing.
-// Author: GitHub Copilot
-// Created: [Date]
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';

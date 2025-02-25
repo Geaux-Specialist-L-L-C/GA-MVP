@@ -1,8 +1,3 @@
-// File: /home/wicked/geauxai/GA-MVP/src/main.tsx
-// Description: Main entry point for the React application
-// Author: GitHub Copilot
-// Created: 2024-02-12
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';

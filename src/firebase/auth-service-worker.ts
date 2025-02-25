@@ -1,8 +1,3 @@
-// File: /src/firebase/auth-service-worker.ts
-// Description: Service worker initialization with enhanced security
-// Author: GitHub Copilot
-// Created: 2024-02-12
-
 import { enableIndexedDbPersistence, type FirestoreSettings } from 'firebase/firestore';
 import { firestore } from './config';
 

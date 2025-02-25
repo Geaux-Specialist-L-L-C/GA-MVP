@@ -29,7 +29,7 @@ const SignUp: React.FC = () => {
       await CheshireService.createCheshireUser(uid, email);
     } catch (error) {
       console.error('Error creating Cheshire account:', error);
-      throw error;
+      throw new Error('Failed to create Cheshire account');
     }
   };
 

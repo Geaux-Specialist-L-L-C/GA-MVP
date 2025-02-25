@@ -1,95 +1,87 @@
-// File: /src/contexts/AuthContext.tsx
-// Description: Context for authentication using Firebase
-// Author: GitHub Copilot
-// Created: 2024-02-12
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User, Session, AuthError, AuthChangeEvent } from '@supabase/supabase-js';
+import { supabase } from '../supabaseClient';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from 'firebase/auth';
-import { AuthService } from '../firebase/auth-service';
-
-export interface AuthContextProps {
-  currentUser: User | null;
-  isAuthReady: boolean;
-  loading: boolean;
+interface AuthContextProps {
+  user: User | null;
+  session: Session | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
   error: string | null;
-  login: () => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  logout: () => Promise<void>;
-  clearError: () => void;
+  loading: boolean;
 }
 
-export const AuthContext = createContext<AuthContextProps | undefined>(undefined);
+const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const authService = new AuthService();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = authService.auth.onAuthStateChanged((firebaseUser: User | null) => {
-      setCurrentUser(firebaseUser);
-      setIsAuthReady(true);
-    });
+    try {
+      // Get initial session
+      supabase.auth.getSession().then(({ data: { session }, error }) => {
+        if (error) {
+          setError('Failed to get session: ' + error.message);
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+        setLoading(false);
+      });
 
-    return () => unsubscribe();
+      // Listen for auth changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event: AuthChangeEvent, session: Session | null) => {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setError(null);
+        }
+      );
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    } catch (err) {
+      setError('Authentication service initialization failed');
+      setLoading(false);
+    }
   }, []);
 
-  const loginWithGoogle = async () => {
+  const signIn = async (email: string, password: string): Promise<void> => {
     try {
-      setLoading(true);
-      await authService.signInWithGoogle();
       setError(null);
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
     } catch (err) {
-      setError((err as Error).message);
+      const authError = err as AuthError;
+      setError(authError.message || 'Failed to sign in');
       throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  const login = async () => {
+  const signOut = async (): Promise<void> => {
     try {
-      setLoading(true);
-      await authService.signInWithGoogle();
       setError(null);
+      setLoading(true);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
     } catch (err) {
-      setError((err as Error).message);
+      const authError = err as AuthError;
+      setError(authError.message || 'Failed to sign out');
       throw err;
     } finally {
       setLoading(false);
     }
-  };
-
-  const logout = async () => {
-    try {
-      setLoading(true);
-      await authService.signOut();
-      setError(null);
-    } catch (err) {
-      setError((err as Error).message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const clearError = () => setError(null);
-
-  const value: AuthContextProps = {
-    currentUser,
-    isAuthReady,
-    loading,
-    error,
-    login,
-    loginWithGoogle,
-    logout,
-    clearError
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, session, signIn, signOut, error, loading }}>
       {children}
     </AuthContext.Provider>
   );
