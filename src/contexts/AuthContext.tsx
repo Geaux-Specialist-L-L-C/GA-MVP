@@ -1,8 +1,3 @@
-// File: /src/contexts/AuthContext.tsx
-// Description: Auth context using Supabase with proper error handling
-// Author: [Your Name]
-// Created: [Date]
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session, AuthError, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
