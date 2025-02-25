@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense, useMemo, useCallback } from 'react';
+import React, { useEffect, Suspense, useMemo } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
 import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
@@ -32,41 +32,36 @@ const TestChat = React.lazy(() => import('./components/chat/TestChat'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
 const App: React.FC = (): JSX.Element => {
-  // Register service worker for Firebase messaging
-  useEffect(() => {
-    const registerServiceWorker = async (): Promise<void> => {
-      try {
-        // Only register if in secure context and messaging is available
-        if ('serviceWorker' in navigator && window.isSecureContext && messaging) {
-          // First unregister any existing service workers to ensure clean state
-          const existingRegs = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(existingRegs.map(reg => reg.unregister()));
-
-          // Register new service worker
-          const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-            scope: '/',
-            type: 'module',
-            updateViaCache: process.env.NODE_ENV === 'development' ? 'none' : 'imports'
-          });
-
-          // Get messaging token
-          if (messaging) {
-            const currentToken = await getToken(messaging, {
-              vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
-              serviceWorkerRegistration: registration
-            });
-
-            if (currentToken) {
-              console.debug('FCM registration successful. Token:', currentToken);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Service Worker registration failed:', error);
+  const registerServiceWorker = async () => {
+    try {
+      // Only register SW in production or with HTTPS
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        console.warn('Service Worker registration skipped: HTTPS required');
+        return;
       }
-    };
 
-    void registerServiceWorker();
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+        scope: '/',
+        type: 'module'
+      });
+
+      // Get the messaging instance
+      const messaging = getMessaging();
+      
+      // Get the token
+      const token = await getToken(messaging, {
+        vapidKey: 'YOUR_VAPID_KEY',
+        serviceWorkerRegistration: registration
+      });
+
+      console.log('Service Worker registered. FCM Token:', token);
+    } catch (error) {
+      console.error('Service Worker registration failed:', error);
+    }
+  };
+
+  useEffect(() => {
+    registerServiceWorker();
   }, []);
   
   // Memoize routes to optimize performance
