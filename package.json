@@ -99,6 +99,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "jsdom": "^22.1.0",
     "lru-cache": "^10.2.0",
+    "mkcert": "^3.2.0",
     "prettier-eslint": "^15.0.0",
     "rimraf": "^5.0.5",
     "selfsigned": "^2.4.1",

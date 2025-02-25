@@ -3,16 +3,25 @@
 // Author: GitHub Copilot
 // Created: 2023-10-10
 
-const mkcert = require('mkcert');
-const fs = require('fs');
-const path = require('path');
+import mkcert from 'mkcert';
+import { mkdir, writeFile } from 'fs/promises';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 async function generateCerts() {
-  const certDir = path.join(process.cwd(), 'certificates');
+  const certDir = join(process.cwd(), 'certificates');
 
   // Create certificates directory if it doesn't exist
-  if (!fs.existsSync(certDir)) {
-    fs.mkdirSync(certDir, { recursive: true });
+  try {
+    await mkdir(certDir, { recursive: true });
+  } catch (err) {
+    if (err.code !== 'EEXIST') {
+      throw err;
+    }
   }
 
   // Create CA
@@ -33,10 +42,15 @@ async function generateCerts() {
   });
 
   // Save the certificates
-  fs.writeFileSync(path.join(certDir, 'localhost.pem'), cert.cert);
-  fs.writeFileSync(path.join(certDir, 'localhost-key.pem'), cert.key);
+  await Promise.all([
+    writeFile(join(certDir, 'localhost.pem'), cert.cert),
+    writeFile(join(certDir, 'localhost-key.pem'), cert.key)
+  ]);
 
   console.log('SSL certificates generated successfully in the certificates directory.');
 }
 
-generateCerts().catch(console.error);
+generateCerts().catch(err => {
+  console.error('Failed to generate certificates:', err);
+  process.exit(1);
+});
