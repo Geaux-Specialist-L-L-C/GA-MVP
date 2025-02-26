@@ -1,8 +1,8 @@
-# ...existing code...
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-# Remove redundant CORS middleware configuration
-# app.add_middleware(
+from .db.connection import MongoDB
+from .routes import users, courses, assessments
+from .config.settings import get_settings
 #     CORSMiddleware,
 #     allow_origins=["http://localhost:5173"],
 #     allow_credentials=True,
