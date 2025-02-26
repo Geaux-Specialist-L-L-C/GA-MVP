@@ -33,7 +33,7 @@
     "@genkit-ai/googleai": "0.9.12",
     "@langchain/openai": "^0.4.2",
     "@mui/icons-material": "^6.4.4",
-    "@mui/material": "^6.4.3",
+    "@mui/material": "^6.4.5",
     "@mui/styles": "^6.4.3",
     "@reduxjs/toolkit": "^2.5.0",
     "@supabase/supabase-js": "^2.49.1",
