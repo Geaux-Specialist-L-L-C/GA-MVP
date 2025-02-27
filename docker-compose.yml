@@ -1,0 +1,81 @@
+# File: /docker-compose.yml
+# Description: Docker Compose configuration for Geaux Academy development environment
+# Author: GitHub Copilot
+# Created: 2023-11-13
+
+version: '3.9'
+
+services:
+  # Frontend React application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_WS_URL=ws://localhost:8000
+    depends_on:
+      - backend
+
+  # FastAPI backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/geaux_academy
+      - MONGODB_URI=mongodb://mongodb:27017/geaux_academy
+      - CHESHIRE_CAT_URL=http://cheshire-cat:1865
+    depends_on:
+      - postgres
+      - mongodb
+      - cheshire-cat
+
+  # PostgreSQL database (Supabase)
+  postgres:
+    image: supabase/postgres:14.1.0
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=geaux_academy
+
+  # MongoDB for document storage
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+
+  # Cheshire Cat AI
+  cheshire-cat:
+    image: ghcr.io/cheshire-cat-ai/core:latest
+    container_name: cheshire-cat
+    restart: always
+    ports:
+      - "1865:1865"
+    volumes:
+      - ./cat_data:/app/core/cat_data
+    environment:
+      - ADMIN_USER=admin
+      - ADMIN_PWD=geaux_academy_admin
+      - CAT_WORKING_DIR=/app/core/cat_data
+
+volumes:
+  postgres-data:
+  mongodb-data:
