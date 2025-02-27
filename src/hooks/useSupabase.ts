@@ -1,8 +1,3 @@
-// File: /src/hooks/useSupabase.ts
-// Description: React hook for accessing Supabase functionality
-// Author: evopimp
-// Created: 2025-02-26
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
