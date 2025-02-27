@@ -53,6 +53,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_DB=geaux_academy
+      - POSTGRES_INITDB_ARGS=--schema=public
 
   # MongoDB for document storage
   mongodb:
