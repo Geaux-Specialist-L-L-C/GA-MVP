@@ -1,46 +1,24 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import { ProfileProvider } from './contexts/ProfileContext';
-import App from './App';
-import ErrorBoundary from './components/shared/ErrorBoundary';
-import './index.css';
+// File: /src/index.tsx
+// Description: Main application entry point
+// Author: evopimp
+// Created: 2025-03-03 06:02:22
 
-// Listen for auth service worker status events
-window.addEventListener('firebase-auth-worker-status', (event: Event) => {
-  const { success, isSecure, error } = (event as CustomEvent).detail;
-  if (!success) {
-    console.warn(
-      'Auth service worker initialization status:', 
-      { success, isSecure, error }
-    );
-  }
-});
-
-// Listen for auth errors from service worker
-window.addEventListener('firebase-auth-error', (event: Event) => {
-  const { error, fallbackToRedirect } = (event as CustomEvent).detail;
-  console.error('Firebase auth error:', error);
-  if (fallbackToRedirect) {
-    console.info('Falling back to redirect method for authentication');
-  }
-});
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter as Router } from "react-router-dom";
+import ThemeProvider from "@/styles/ThemeProvider";
+import App from "./App";
 
 const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
+  document.getElementById("root") as HTMLElement
 );
 
 root.render(
   <React.StrictMode>
-    <ErrorBoundary>
-      <BrowserRouter>
-        <AuthProvider>
-          <ProfileProvider>
-            <App />
-          </ProfileProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </ErrorBoundary>
+    <ThemeProvider>
+      <Router>
+        <App />
+      </Router>
+    </ThemeProvider>
   </React.StrictMode>
 );

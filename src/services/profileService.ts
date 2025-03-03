@@ -1,228 +1,112 @@
-import { firestore } from '../firebase/config';
-import { doc, getDoc, setDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
-import { Parent, Student, LearningStyle } from "../types/profiles";
+// File: /src/services/profileService.ts
+// Description: Service for managing user profiles
+// Author: evopimp
+// Created: 2025-03-03 08:31:52
 
-// Cache for storing profiles
-const profileCache = new Map();
+import { db } from "@/firebase/config";
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { UserProfile, UserPreferences } from "@/types/user";
 
-// Helper to check online status
-const isOnline = () => navigator.onLine;
-
-// Helper to handle offline errors
-const handleOfflineError = (operation: string) => {
-  const error = new Error(`Cannot ${operation} while offline`);
-  error.name = 'OfflineError';
-  return error;
+/**
+ * Get a user's profile by ID
+ */
+export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
+  try {
+    const userDoc = await getDoc(doc(db, "users", userId));
+    
+    if (!userDoc.exists()) {
+      return null;
+    }
+    
+    const userData = userDoc.data();
+    return {
+      id: userDoc.id,
+      ...userData,
+      joinDate: userData.joinDate?.toDate() || new Date(),
+      lastActive: userData.lastActive?.toDate() || new Date(),
+    } as UserProfile;
+  } catch (error) {
+    console.error("Error retrieving user profile:", error);
+    throw new Error("Failed to retrieve user profile");
+  }
 };
 
-// ✅ Create Parent Profile
-export const createParentProfile = async (parentData: Partial<Parent>): Promise<string> => {
+/**
+ * Update a user's profile information
+ */
+export const updateUserProfile = async (userId: string, profileData: Partial<UserProfile>): Promise<void> => {
   try {
-    if (!parentData.uid) throw new Error('User ID is required');
+    const userRef = doc(db, "users", userId);
     
-    const parentRef = doc(firestore, 'parents', parentData.uid);
-    await setDoc(parentRef, {
-      ...parentData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      students: []
+    await updateDoc(userRef, {
+      ...profileData,
+      updatedAt: serverTimestamp()
     });
-    
-    console.log('✅ Parent profile created successfully:', parentData.uid);
-    return parentData.uid;
   } catch (error) {
-    console.error('❌ Error creating parent profile:', error);
-    throw error;
+    console.error("Error updating user profile:", error);
+    throw new Error("Failed to update user profile");
   }
 };
 
-// ✅ Fetch Parent Profile
-export const getParentProfile = async (userId: string): Promise<Parent | null> => {
+/**
+ * Update a user's preferences
+ */
+export const updateUserPreferences = async (userId: string, preferences: Partial<UserPreferences>): Promise<void> => {
   try {
-    console.log('🔍 Fetching parent profile for:', userId);
-
-    // Check cache first
-    if (profileCache.has(`parent_${userId}`)) {
-      return profileCache.get(`parent_${userId}`);
-    }
-
-    const docRef = doc(firestore, 'parents', userId);
-    const docSnap = await getDoc(docRef);
+    const userRef = doc(db, "users", userId);
     
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      const parentProfile: Parent = {
-        uid: data.uid || userId,
-        email: data.email || '',
-        displayName: data.displayName || '',
-        students: data.students || [],
-        createdAt: data.createdAt || new Date().toISOString(),
-        updatedAt: data.updatedAt || new Date().toISOString()
-      };
-      console.log('✅ Parent profile found:', parentProfile);
-      // Cache the result
-      profileCache.set(`parent_${userId}`, parentProfile);
-      return parentProfile;
+    // Get current user data
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      throw new Error("User not found");
     }
     
-    console.log('ℹ️ No parent profile found, creating one...');
-    // If no profile exists, create one
-    await createParentProfile({ uid: userId });
-    return getParentProfile(userId); // Retry fetch after creation
+    const userData = userDoc.data();
+    const currentPreferences = userData.preferences || {};
     
-  } catch (error) {
-    if (!isOnline()) {
-      console.warn('Offline: Using cached data if available');
-      return profileCache.get(`parent_${userId}`) || null;
-    }
-    console.error('❌ Error fetching parent profile:', error);
-    throw error;
-  }
-};
-
-// ✅ Fetch Student Profile
-export const getStudentProfile = async (studentId: string): Promise<Student> => {
-  try {
-    // Check cache first
-    if (profileCache.has(`student_${studentId}`)) {
-      return profileCache.get(`student_${studentId}`);
-    }
-
-    const studentRef = doc(firestore, "students", studentId);
-    const studentDoc = await getDoc(studentRef);
-
-    if (!studentDoc.exists()) {
-      throw new Error("Student profile not found");
-    }
-
-    const studentData = studentDoc.data() as Student;
-    // Cache the result
-    profileCache.set(`student_${studentId}`, studentData);
-    return studentData;
-  } catch (error) {
-    if (!isOnline()) {
-      console.warn('Offline: Using cached data if available');
-      return profileCache.get(`student_${studentId}`) || null;
-    }
-    throw error;
-  }
-};
-
-// ✅ Add Student Profile
-export const addStudentProfile = async (parentId: string, studentData: {
-  name: string;
-  grade: string;
-  parentId: string;
-  hasTakenAssessment: boolean;
-}) => {
-  try {
-    console.log('📝 Adding student profile for parent:', parentId);
-    
-    // Add the student to the students collection
-    const studentRef = await addDoc(collection(firestore, 'students'), {
-      ...studentData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    // Update preferences
+    await updateDoc(userRef, {
+      preferences: {
+        ...currentPreferences,
+        ...preferences,
+      },
+      updatedAt: serverTimestamp()
     });
-
-    // Update the parent's students array
-    const parentRef = doc(firestore, 'parents', parentId);
-    const parentDoc = await getDoc(parentRef);
-
-    if (parentDoc.exists()) {
-      const currentStudents = parentDoc.data().students || [];
-      await updateDoc(parentRef, {
-        students: [...currentStudents, studentRef.id],
-        updatedAt: new Date().toISOString()
-      });
-    }
-
-    console.log('✅ Student profile added successfully:', studentRef.id);
-    return studentRef.id;
   } catch (error) {
-    console.error('❌ Error adding student profile:', error);
-    throw error;
+    console.error("Error updating user preferences:", error);
+    throw new Error("Failed to update user preferences");
   }
 };
 
-// ✅ Update Student's Assessment Status
-export const updateStudentAssessmentStatus = async (studentId: string, status: string) => {
-  if (!isOnline()) {
-    throw handleOfflineError('update assessment status');
-  }
-
-  const studentRef = doc(firestore, "students", studentId);
+/**
+ * Create a new user profile (called after registration)
+ */
+export const createUserProfile = async (
+  userId: string, 
+  userData: { name: string; email: string }
+): Promise<void> => {
   try {
-    await updateDoc(studentRef, {
-      hasTakenAssessment: status === 'completed',
-      assessmentStatus: status,
-      updatedAt: new Date().toISOString(),
-    });
-
-    // Update cache
-    const cachedData = profileCache.get(`student_${studentId}`);
-    if (cachedData) {
-      profileCache.set(`student_${studentId}`, {
-        ...cachedData,
-        hasTakenAssessment: status === 'completed',
-        assessmentStatus: status,
-        updatedAt: new Date().toISOString()
-      });
-    }
-    console.log(`Assessment status updated to: ${status}`);
+    const userRef = doc(db, "users", userId);
+    
+    const defaultProfile: Partial<UserProfile> = {
+      name: userData.name,
+      email: userData.email,
+      role: "student",
+      preferences: {
+        emailNotifications: true,
+        contentRecommendations: true,
+        studyReminders: true,
+        publicProfile: false,
+        colorMode: "light"
+      },
+      joinDate: serverTimestamp() as any,
+      lastActive: serverTimestamp() as any,
+    };
+    
+    await setDoc(userRef, defaultProfile);
   } catch (error) {
-    console.error("Error updating assessment status:", error);
-    throw new Error("Failed to update assessment status");
+    console.error("Error creating user profile:", error);
+    throw new Error("Failed to create user profile");
   }
 };
-
-// ✅ Save Learning Style
-export const saveLearningStyle = async (studentId: string, learningStyle: LearningStyle): Promise<void> => {
-  if (!isOnline()) {
-    throw handleOfflineError('save learning style');
-  }
-
-  try {
-    console.log('📝 Saving learning style for student:', studentId);
-    const studentRef = doc(firestore, 'students', studentId);
-    
-    await updateDoc(studentRef, {
-      learningStyle,
-      updatedAt: new Date().toISOString()
-    });
-
-    // Update cache
-    const cachedData = profileCache.get(`student_${studentId}`);
-    if (cachedData) {
-      profileCache.set(`student_${studentId}`, {
-        ...cachedData,
-        learningStyle,
-        updatedAt: new Date().toISOString()
-      });
-    }
-    
-    console.log('✅ Learning style saved successfully');
-  } catch (error) {
-    console.error('❌ Error saving learning style:', error);
-    throw error;
-  }
-};
-
-// Listen for online/offline events to manage cache
-window.addEventListener('online', () => {
-  console.info('Back online. Syncing data...');
-  // Could add sync logic here if needed
-});
-
-window.addEventListener('offline', () => {
-  console.warn('Gone offline. Using cached data...');
-});
-
-export class ProfileService {
-  async getUserProfile(userId: string): Promise<any> {
-    // ...existing API call logic...
-    // Example:
-    const response = await fetch(`/api/profiles/${userId}`);
-    return response.json();
-  }
-}
