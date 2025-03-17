@@ -15,11 +15,23 @@ class SupabaseService:
     def __init__(self):
         supabase_url = os.getenv("SUPABASE_URL")
         supabase_key = os.getenv("SUPABASE_SERVICE_KEY")
+        supabase_ssl = os.getenv("SUPABASE_SSL", "false").lower() == "true"
         
         if not supabase_url or not supabase_key:
             raise ValueError("Supabase URL and key must be provided in environment variables")
         
-        self.client: Client = create_client(supabase_url, supabase_key)
+        options = {
+            "schema": "public",
+            "headers": {},
+            "autoRefreshToken": True,
+            "persistSession": True,
+            "detectSessionInUrl": True,
+        }
+        
+        if supabase_ssl:
+            options["ssl"] = {"rejectUnauthorized": True}
+        
+        self.client: Client = create_client(supabase_url, supabase_key, options)
     
     async def get_user(self, user_id: str) -> Dict[str, Any]:
         """Retrieve user data by user ID."""

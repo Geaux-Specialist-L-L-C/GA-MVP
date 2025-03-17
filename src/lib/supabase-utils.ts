@@ -1,8 +1,3 @@
-// File: /src/lib/supabase-utils.ts
-// Description: Helper functions for using Supabase in Geaux Academy
-// Author: evopimp
-// Created: 2025-02-26
-
 import { supabase } from './supabase';
 import { User, Course, UserProgress } from '@/types';
 
