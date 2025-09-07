@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-import { auth } from '../firebase/config';
+import { auth } from '@/config/firebase';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'https://learn.geaux.app',

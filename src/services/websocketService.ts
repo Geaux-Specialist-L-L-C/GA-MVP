@@ -43,7 +43,12 @@ class WebSocketService {
   private pendingMessages: string[] = [];
   private isConnecting = false;
 
-  constructor(private readonly baseUrl: string) {}
+  constructor(private readonly baseUrl: string) {
+    // Force ws:// for local development
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      this.baseUrl = 'ws://localhost:5173';
+    }
+  }
 
   private async getAuthToken(): Promise<string | null> {
     try {
@@ -237,7 +242,7 @@ class WebSocketService {
 }
 
 export const websocketService = new WebSocketService(
-  process.env.REACT_APP_WS_BASE_URL || 'ws://localhost:8000'
+  process.env.REACT_APP_WS_BASE_URL || 'ws://localhost:5173'
 );
 
 export default websocketService;

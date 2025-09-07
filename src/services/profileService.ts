@@ -1,5 +1,5 @@
-import { firestore } from '../firebase/config';
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
+import { firestore } from '../config/firebase';
 import { Parent, Student, LearningStyle } from "../types/profiles";
 
 // Cache for storing profiles

@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { auth } from '../firebase/config';
+import { auth } from '../config/firebase';
 
 // Use environment variable if set, otherwise fall back to the production URL
 const CHESHIRE_API_URL = import.meta.env.VITE_CHESHIRE_API_URL || 'https://cheshire.geaux.app';
@@ -176,7 +176,7 @@ export class CheshireService {
       };
     } catch (error) {
       console.error('Error sending chat message:', error);
-      throw this.getErrorMessage(error);
+      throw this.getErrorMessage(error as CheshireError);
     }
   }
 
@@ -196,7 +196,7 @@ export class CheshireService {
       await cheshireAxios.post('/users/', payload, { headers });
     } catch (error) {
       console.error('Error creating Cheshire user:', error);
-      throw this.getErrorMessage(error);
+      throw this.getErrorMessage(error as CheshireError);
     }
   }
 

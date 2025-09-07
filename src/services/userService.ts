@@ -4,7 +4,6 @@
 
 import User, { IUser } from '../models/User';
 import { getData, getDocuments, setData, updateData, deleteData } from './mongodbService';
-import { auth } from '../firebase/config'; // Keep Firebase Auth
 
 // Get user by Firebase Auth UID
 export const getUserById = async (uid: string): Promise<IUser | null> => {

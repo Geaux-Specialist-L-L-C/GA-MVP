@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { firestore } from "../firebase/config";
-import { getDoc, doc, updateDoc } from "firebase/firestore";
+import React, { useEffect, useState } from 'react';
+import { getDoc, doc, updateDoc } from 'firebase/firestore';
+import { firestore } from '../config/firebase';
 import { useAuth } from "../contexts/AuthContext";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { FcGoogle } from "react-icons/fc";

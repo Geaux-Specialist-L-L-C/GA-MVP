@@ -14,7 +14,7 @@ import ConnectionStatus from '../../common/ConnectionStatus';
 import CurriculumViewer from './CurriculumViewer';
 
 export const CurriculumGenerator: React.FC = () => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [subject, setSubject] = useState('');
   const [gradeLevel, setGradeLevel] = useState('elementary');
   const [learningStyle, setLearningStyle] = useState('');
@@ -28,9 +28,9 @@ export const CurriculumGenerator: React.FC = () => {
   // Load user's learning style on mount
   useEffect(() => {
     const loadLearningStyle = async () => {
-      if (user?.uid) {
+      if (currentUser?.uid) {
         try {
-          const styleData = await mongoService.getLearningStyle(user.uid);
+          const styleData = await mongoService.getLearningStyle(currentUser.uid);
           if (styleData?.style) {
             setLearningStyle(styleData.style);
           }
@@ -41,7 +41,7 @@ export const CurriculumGenerator: React.FC = () => {
     };
     
     loadLearningStyle();
-  }, [user?.uid]);
+  }, [currentUser?.uid]);
 
   // Update error state to include WebSocket errors
   useEffect(() => {
@@ -58,7 +58,7 @@ export const CurriculumGenerator: React.FC = () => {
   }, [result]);
   
   const handleStartGeneration = async () => {
-    if (!user?.uid) {
+    if (!currentUser?.uid) {
       setError('You must be logged in to generate curriculum');
       return;
     }
@@ -95,11 +95,11 @@ export const CurriculumGenerator: React.FC = () => {
   };
   
   const handleTaskComplete = async (result: TaskResult) => {
-    if (!user?.uid || !result?.content) return;
+    if (!currentUser?.uid || !result?.content) return;
     
     try {
       // Save curriculum to MongoDB
-      const savedCurriculum = await mongoService.saveCurriculum(user.uid, result.content);
+      const savedCurriculum = await mongoService.saveCurriculum(currentUser.uid, result.content);
       setSavedCurriculumId(savedCurriculum.id);
     } catch (err) {
       setError('Error saving curriculum');
@@ -108,9 +108,9 @@ export const CurriculumGenerator: React.FC = () => {
   };
 
   const handleRetryConnection = () => {
-    websocketService.connect().catch(error => {
-      setError(error instanceof Error ? error.message : 'Failed to reconnect');
-    });
+  websocketService.connect().catch(error => {
+    setError(error instanceof Error ? error.message : 'Failed to reconnect');
+  });
   };
 
   return (

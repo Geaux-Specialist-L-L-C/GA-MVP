@@ -13,41 +13,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 async function generateCerts() {
-  const certDir = join(process.cwd(), 'certificates');
+  // Use existing certs in project root
+  const certPath = join(process.cwd(), 'localhost.pem');
+  const keyPath = join(process.cwd(), 'localhost-key.pem');
 
-  // Create certificates directory if it doesn't exist
-  try {
-    await mkdir(certDir, { recursive: true });
-  } catch (err) {
-    if (err.code !== 'EEXIST') {
-      throw err;
-    }
-  }
-
-  // Create CA
-  const ca = await mkcert.createCA({
-    organization: 'Geaux Academy Development CA',
-    countryCode: 'US',
-    state: 'LA',
-    locality: 'Local',
-    validityDays: 365
-  });
-
-  // Create certificate
-  const cert = await mkcert.createCert({
-    domains: ['127.0.0.1', 'localhost'],
-    validityDays: 365,
-    caKey: ca.key,
-    caCert: ca.cert
-  });
-
-  // Save the certificates
-  await Promise.all([
-    writeFile(join(certDir, 'localhost.pem'), cert.cert),
-    writeFile(join(certDir, 'localhost-key.pem'), cert.key)
-  ]);
-
-  console.log('SSL certificates generated successfully in the certificates directory.');
+  console.log('Using existing SSL certificate and key:');
+  console.log('Certificate:', certPath);
+  console.log('Key:', keyPath);
 }
 
 generateCerts().catch(err => {

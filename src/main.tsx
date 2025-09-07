@@ -6,11 +6,8 @@ import { ProfileProvider } from './contexts/ProfileContext';
 import App from './App';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import './index.css';
-import { initializeApp } from 'firebase/app';
-import { firebaseConfig } from './config/firebase';
-
-// Initialize Firebase before anything else
-initializeApp(firebaseConfig);
+// Firebase app initialized centrally in config/firebase.ts (tree-shaken singletons)
+import './config/firebase';
 
 // Configure future flags for React Router v7
 const router = createBrowserRouter([
@@ -28,7 +25,6 @@ const router = createBrowserRouter([
   }
 ], {
   future: {
-    v7_startTransition: true,
     v7_relativeSplatPath: true
   }
 });

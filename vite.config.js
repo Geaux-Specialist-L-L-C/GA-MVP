@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { resolve } from 'path';
+import path from "path";
 
 import react from '@vitejs/plugin-react';
 import vue from '@vitejs/plugin-vue';
@@ -74,7 +75,7 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    https: getHttpsConfig(),
+    https: false, // <--- This enables HTTPS if certs exist
     host: 'localhost',
     cors: true,
     headers: {
@@ -83,7 +84,7 @@ export default defineConfig({
       'Content-Security-Policy': `
         default-src 'self';
         script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseio.com https://*.firebase.com https://*.googleapis.com https://*.gstatic.com https://www.googletagmanager.com;
-        connect-src 'self' https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com wss://firestore.googleapis.com;
+  connect-src 'self' http://localhost:5173 ws://localhost:5173 https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com wss://firestore.googleapis.com;
         frame-src 'self' https://*.firebaseapp.com https://*.firebase.com https://accounts.google.com https://*.googleapis.com;
         img-src 'self' data: https: blob:;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
@@ -131,10 +132,10 @@ export default defineConfig({
       }
     },
     hmr: {
-      protocol: 'wss',
+  protocol: 'ws',
       host: 'localhost',
-      port: 3000,
-      clientPort: 3000,
+  port: 5173,
+  clientPort: 5173,
       timeout: 120000
     },
     watch: {

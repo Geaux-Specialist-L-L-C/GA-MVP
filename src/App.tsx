@@ -8,6 +8,7 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 import PrivateRoute from './components/PrivateRoute';
 import { muiTheme, styledTheme } from './theme/theme';
 import ErrorBoundary from './components/shared/ErrorBoundary';
+import RenderDebugOverlay from './components/debug/RenderDebugOverlay';
 
 // Lazy load components with explicit types
 const Home = React.lazy(() => import('./pages/Home'));
@@ -32,26 +33,35 @@ const App: React.FC = (): JSX.Element => {
   // Register service worker for Firebase messaging
   useEffect(() => {
     const registerServiceWorker = async (): Promise<void> => {
-      if (!('serviceWorker' in navigator) || 
-          (!window.isSecureContext && process.env.NODE_ENV !== 'development')) {
-        console.debug('Service Worker registration skipped - requires HTTPS or development environment');
+      const enableMessaging = import.meta.env.VITE_ENABLE_MESSAGING === 'true';
+      if (!enableMessaging) return;
+      if (!('serviceWorker' in navigator)) return;
+      if (!window.isSecureContext && import.meta.env.MODE !== 'development') {
+        console.debug('[sw] Skipped (insecure context outside dev)');
         return;
       }
-
       try {
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+        const qp = new URLSearchParams({
+          apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+          authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+            projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+          storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+          messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+          appId: import.meta.env.VITE_FIREBASE_APP_ID || ''
+        }).toString();
+        const swUrl = `/firebase-messaging-sw.js?${qp}`;
+        const registration = await navigator.serviceWorker.register(swUrl, {
           scope: '/',
           type: 'module',
-          updateViaCache: process.env.NODE_ENV === 'development' ? 'none' : 'imports'
+          updateViaCache: import.meta.env.DEV ? 'none' : 'imports'
         });
-        console.debug('Service Worker registered with scope:', registration.scope);
+        console.debug('[sw] Registered:', registration.scope);
       } catch (error) {
-        const logMethod = process.env.NODE_ENV === 'production' ? console.error : console.warn;
-        logMethod('Service Worker registration failed:', error instanceof Error ? error.message : 'Unknown error');
+        const msg = error instanceof Error ? error.message : 'Unknown error';
+        (import.meta.env.PROD ? console.error : console.warn)('[sw] Registration failed:', msg);
       }
     };
-
-    void registerServiceWorker();
+    registerServiceWorker();
   }, []);
   
   return (
@@ -86,6 +96,7 @@ const App: React.FC = (): JSX.Element => {
                 </Route>
               </Routes>
             </Suspense>
+            <RenderDebugOverlay />
           </AppContainer>
         </StyledThemeProvider>
       </MUIThemeProvider>
