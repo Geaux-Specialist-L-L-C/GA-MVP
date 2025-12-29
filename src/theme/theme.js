@@ -1,4 +1,4 @@
-import { getMuiTheme, getStyledTheme } from './theme';
+import { getMuiTheme, getStyledTheme } from './theme.ts';
 
 export { getMuiTheme, getStyledTheme };
 
