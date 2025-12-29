@@ -1,14 +1,18 @@
 // frontend/src/services/firebaseService.ts
 // Using relative import until TS path mapping for @/config resolves in tooling
 import { auth } from '../config/firebase';
-import { 
-  signInWithPopup, 
+import {
+  signInWithPopup,
+  signInWithRedirect,
   GoogleAuthProvider,
   onAuthStateChanged,
   signOut,
   User
 } from 'firebase/auth';
 const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
 
 export const firebaseService = {
   // Firebase Authentication
@@ -18,6 +22,14 @@ export const firebaseService = {
       return result.user;
     } catch (error) {
       console.error('Error signing in with Google:', error);
+      const firebaseError = error as { code?: string };
+      if (
+        firebaseError.code === 'auth/popup-blocked' ||
+        firebaseError.code === 'auth/internal-error'
+      ) {
+        await signInWithRedirect(auth, googleProvider);
+        return null;
+      }
       throw error;
     }
   },
