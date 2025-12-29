@@ -59,8 +59,11 @@ export const mockStyledTheme: DefaultTheme = {
   colors: {
     border: '#e0e0e0',
     text: '#000000',
+    muted: '#666666',
+    accent: '#E1B354',
     background: {
-      hover: '#f5f5f5'
+      hover: '#f5f5f5',
+      subtle: '#eef2ff'
     },
     error: {
       main: '#d32f2f',
@@ -68,6 +71,19 @@ export const mockStyledTheme: DefaultTheme = {
     }
   },
   borderRadius: {
-    default: '4px'
+    xs: '8px',
+    sm: '12px',
+    md: '16px',
+    lg: '24px',
+    pill: '999px'
+  },
+  shadows: {
+    sm: '0 10px 30px rgba(15, 23, 42, 0.08)',
+    md: '0 24px 60px rgba(15, 23, 42, 0.12)',
+    glow: '0 0 40px rgba(70, 84, 246, 0.25)'
+  },
+  gradients: {
+    hero: 'linear-gradient(135deg, #F5F7FF, #FFFFFF)',
+    card: 'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(248,250,255,0.9))'
   }
 };

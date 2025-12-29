@@ -1,58 +1,72 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import Button from '../common/Button';
+import { useThemeMode } from '../../theme/ThemeModeContext';
 import styles from './layout.module.css';
 
-const Header = () => {
-  const location = useLocation();
+const Header: React.FC = () => {
   const { currentUser } = useAuth();
-  
+  const { mode, toggleMode } = useThemeMode();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const handleToggleMenu = () => setMenuOpen(prev => !prev);
+  const closeMenu = () => setMenuOpen(false);
+
   return (
     <header className={styles.header}>
       <div className={styles.navigation}>
-        <Link to="/">
-          <img src="/images/logo.svg" alt="Geaux Academy Logo" height="50" />
+        <Link to="/" className={styles.logo} onClick={closeMenu}>
+          <span className={styles.logoMark} aria-hidden="true">GA</span>
+          <span>Geaux Academy</span>
         </Link>
-        
-        <nav>
-          <ul className={styles['navigation-list']}>
-            <li>
-              <Link to="/" className={location.pathname === '/' ? styles.active : ''}>
-                Home
-              </Link>
-            </li>
-            <li>
-              <Link to="/about" className={location.pathname === '/about' ? styles.active : ''}>
-                About
-              </Link>
-            </li>
-            <li>
-              <Link to="/features" className={location.pathname === '/features' ? styles.active : ''}>
-                Features
-              </Link>
-            </li>
-            <li>
-              <Link to="/curriculum" className={location.pathname === '/curriculum' ? styles.active : ''}>
-                Curriculum
-              </Link>
-            </li>
-            <li>
-              <Link to="/contact" className={location.pathname === '/contact' ? styles.active : ''}>
-                Contact
-              </Link>
-            </li>
+
+        <nav className={styles.nav} aria-label="Primary">
+          <button
+            type="button"
+            className={styles.menuToggle}
+            onClick={handleToggleMenu}
+            aria-expanded={menuOpen}
+            aria-controls="primary-navigation"
+          >
+            <span className={styles.menuToggleText}>{menuOpen ? 'Close' : 'Menu'}</span>
+            <span className={styles.menuToggleIcon} aria-hidden="true" />
+          </button>
+          <ul
+            id="primary-navigation"
+            className={`${styles['navigation-list']} ${menuOpen ? styles.open : ''}`}
+          >
+            <li><NavLink to="/" onClick={closeMenu}>Home</NavLink></li>
+            <li><NavLink to="/about" onClick={closeMenu}>About</NavLink></li>
+            <li><NavLink to="/features" onClick={closeMenu}>Features</NavLink></li>
+            <li><NavLink to="/curriculum" onClick={closeMenu}>Curriculum</NavLink></li>
+            <li><NavLink to="/learning-styles" onClick={closeMenu}>Learning Styles</NavLink></li>
+            <li><NavLink to="/contact" onClick={closeMenu}>Contact</NavLink></li>
           </ul>
         </nav>
 
-        <div className="auth-buttons">
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={styles.toggleButton}
+            onClick={toggleMode}
+            aria-label={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}
+          >
+            <span className={styles.toggleIcon} aria-hidden="true">
+              {mode === 'light' ? '🌙' : '☀️'}
+            </span>
+            <span>{mode === 'light' ? 'Dark' : 'Light'} mode</span>
+          </button>
+          <Link to="/login" className={styles.primaryButton} onClick={closeMenu}>
+            Take Assessment
+          </Link>
           {!currentUser ? (
-            <>
-              <Button to="/login" className="btn btn-secondary">Login</Button>
-              <Button to="/signup" className="btn btn-primary">Sign Up</Button>
-            </>
+            <Link to="/login" className={styles.secondaryButton} onClick={closeMenu}>
+              Login
+            </Link>
           ) : (
-            <Button to="/dashboard" className="btn btn-primary">Dashboard</Button>
+            <Link to="/dashboard" className={styles.secondaryButton} onClick={closeMenu}>
+              Dashboard
+            </Link>
           )}
         </div>
       </div>

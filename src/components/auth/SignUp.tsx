@@ -75,8 +75,12 @@ const SignUp: React.FC = () => {
 
   return (
     <SignUpContainer>
-      <SignUpCard>
-        <h2>Create an Account</h2>
+      <SignUpCard className="glass-card">
+        <Header>
+          <span className="badge">Create account</span>
+          <h2>Join the Geaux Academy learning lab.</h2>
+          <p>Start with an assessment and build a learning path that fits you.</p>
+        </Header>
         {error && (
           <ErrorMessage>
             <span>{error}</span>
@@ -138,23 +142,27 @@ const SignUpContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  min-height: calc(100vh - 80px);
   padding: 1rem;
-  background-color: var(--background);
+  background-color: var(--background-color);
 `;
 
 const SignUpCard = styled.div`
-  background: white;
+  background: rgba(255, 255, 255, 0.9);
   padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
   width: 100%;
-  max-width: 400px;
+  max-width: 460px;
+`;
 
-  h2 {
-    text-align: center;
-    margin-bottom: 1.5rem;
-    color: var(--primary-color);
+const Header = styled.div`
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+
+  p {
+    color: var(--text-secondary);
   }
 `;
 
@@ -191,8 +199,8 @@ const GoogleButton = styled.button`
   justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
   background: white;
   cursor: pointer;
   transition: background-color 0.2s;
