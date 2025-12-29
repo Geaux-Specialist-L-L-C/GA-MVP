@@ -17,18 +17,32 @@ export const ThemeModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [mode, setMode] = useState<ThemeMode>('light');
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-    if (stored === 'light' || stored === 'dark') {
-      setMode(stored);
+    if (typeof window === 'undefined') {
       return;
+    }
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
+      if (stored === 'light' || stored === 'dark') {
+        setMode(stored);
+        return;
+      }
+    } catch (error) {
+      console.warn('Theme storage unavailable:', error);
     }
     const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
     setMode(prefersDark ? 'dark' : 'light');
   }, []);
 
   useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
     document.documentElement.dataset.theme = mode;
-    window.localStorage.setItem(STORAGE_KEY, mode);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, mode);
+    } catch (error) {
+      console.warn('Theme storage unavailable:', error);
+    }
   }, [mode]);
 
   const value = useMemo(
