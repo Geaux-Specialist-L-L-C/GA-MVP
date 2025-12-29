@@ -19,8 +19,11 @@ declare module 'styled-components' {
     colors: {
       border: string;
       text: string;
+      muted: string;
+      accent: string;
       background: {
         hover: string;
+        subtle: string;
       };
       error: {
         main: string;
@@ -28,7 +31,20 @@ declare module 'styled-components' {
       };
     };
     borderRadius: {
-      default: string;
+      xs: string;
+      sm: string;
+      md: string;
+      lg: string;
+      pill: string;
+    };
+    shadows: {
+      sm: string;
+      md: string;
+      glow: string;
+    };
+    gradients: {
+      hero: string;
+      card: string;
     };
   }
 }
