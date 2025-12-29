@@ -6,6 +6,7 @@ import { ProfileProvider } from './contexts/ProfileContext';
 import App from './App';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import './index.css';
+import './styles/global.css';
 // Firebase app initialized centrally in config/firebase.ts (tree-shaken singletons)
 import './config/firebase';
 

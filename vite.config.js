@@ -76,7 +76,7 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     https: false, // <--- This enables HTTPS if certs exist
-    host: 'localhost',
+    host: true,
     cors: true,
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
@@ -84,7 +84,7 @@ export default defineConfig({
       'Content-Security-Policy': `
         default-src 'self';
         script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseio.com https://*.firebase.com https://*.googleapis.com https://*.gstatic.com https://www.googletagmanager.com;
-  connect-src 'self' http://localhost:5173 ws://localhost:5173 https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com wss://firestore.googleapis.com;
+        connect-src 'self' http://localhost:5173 ws://localhost:5173 http://100.86.7.87:5173 ws://100.86.7.87:5173 https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com wss://firestore.googleapis.com;
         frame-src 'self' https://*.firebaseapp.com https://*.firebase.com https://accounts.google.com https://*.googleapis.com;
         img-src 'self' data: https: blob:;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
@@ -132,10 +132,10 @@ export default defineConfig({
       }
     },
     hmr: {
-  protocol: 'ws',
-      host: 'localhost',
-  port: 5173,
-  clientPort: 5173,
+      protocol: 'ws',
+      host: process.env.VITE_DEV_HOST || '100.86.7.87',
+      port: 5173,
+      clientPort: 5173,
       timeout: 120000
     },
     watch: {
