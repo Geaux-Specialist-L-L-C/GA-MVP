@@ -50,32 +50,45 @@ const Login: React.FC = () => {
 
   return (
     <LoginContainer>
-      <LoginBox>
-        <Title>Welcome Back</Title>
-        {(localError || authError) && (
-          <ErrorMessage>
-            <span>{localError || authError}</span>
-            <DismissButton 
-              onClick={handleDismissError}
-              type="button"
-              aria-label="Dismiss error message"
-            >✕</DismissButton>
-          </ErrorMessage>
-        )}
-        
-        <GoogleButton 
-          onClick={handleGoogleLogin} 
-          disabled={loading}
-          type="button"
-          aria-label="Sign in with Google"
-        >
-          <FcGoogle />
-          Sign in with Google
-        </GoogleButton>
-        <SignUpPrompt>
-          Don't have an account? <StyledLink to="/signup">Sign up</StyledLink>
-        </SignUpPrompt>
-      </LoginBox>
+      <LoginContent className="glass-card">
+        <LoginCopy>
+          <span className="badge">Welcome back</span>
+          <h1>Continue your learning journey.</h1>
+          <p>Access your personalized dashboard, progress insights, and learning plan.</p>
+          <InfoList>
+            <li>Secure, one-tap Google sign in</li>
+            <li>Instant access to your assessment results</li>
+            <li>Personalized learning plan updates</li>
+          </InfoList>
+        </LoginCopy>
+
+        <LoginBox>
+          <Title>Sign in</Title>
+          {(localError || authError) && (
+            <ErrorMessage>
+              <span>{localError || authError}</span>
+              <DismissButton 
+                onClick={handleDismissError}
+                type="button"
+                aria-label="Dismiss error message"
+              >✕</DismissButton>
+            </ErrorMessage>
+          )}
+          
+          <GoogleButton 
+            onClick={handleGoogleLogin} 
+            disabled={loading}
+            type="button"
+            aria-label="Sign in with Google"
+          >
+            <FcGoogle />
+            Sign in with Google
+          </GoogleButton>
+          <SignUpPrompt>
+            Don't have an account? <StyledLink to="/signup">Sign up</StyledLink>
+          </SignUpPrompt>
+        </LoginBox>
+      </LoginContent>
     </LoginContainer>
   );
 };
@@ -91,22 +104,47 @@ const LoginContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - 80px);
   padding: 20px;
+`;
+
+const LoginContent = styled.div`
+  width: 100%;
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 2rem;
+  padding: 2rem;
+`;
+
+const LoginCopy = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  p {
+    color: var(--text-secondary);
+  }
+`;
+
+const InfoList = styled.ul`
+  display: grid;
+  gap: 0.5rem;
+  padding-left: 1.2rem;
+  color: var(--text-secondary);
 `;
 
 const LoginBox = styled.div`
   width: 100%;
-  max-width: 400px;
-  background: white;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 16px;
   padding: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
 `;
 
 const Title = styled.h1`
-  text-align: center;
-  color: #333;
+  text-align: left;
+  color: var(--text-primary);
   margin-bottom: 2rem;
 `;
 
@@ -114,9 +152,9 @@ const GoogleButton = styled.button`
   width: 100%;
   padding: 0.75rem;
   background-color: white;
-  color: #555;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  color: #111827;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -145,10 +183,10 @@ const StyledLink = styled(Link)`
 `;
 
 const ErrorMessage = styled.div`
-  background-color: #fee;
-  color: #c00;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
   padding: 0.75rem;
-  border-radius: 4px;
+  border-radius: 12px;
   margin-bottom: 1rem;
   display: flex;
   justify-content: space-between;
@@ -158,7 +196,7 @@ const ErrorMessage = styled.div`
 const DismissButton = styled.button`
   background: none;
   border: none;
-  color: #c00;
+  color: #ef4444;
   cursor: pointer;
   padding: 0 0.5rem;
   

@@ -42,13 +42,13 @@ const Form = styled.form`
 
 const Input = styled.input`
   padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
   font-size: 1rem;
   &:focus {
     outline: none;
-    border-color: #4a90e2;
-    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(70, 84, 246, 0.2);
   }
 `;
 

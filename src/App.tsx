@@ -1,14 +1,12 @@
 import React, { useEffect, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
-import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
-import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import Layout from './components/layout/Layout';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import PrivateRoute from './components/PrivateRoute';
-import { muiTheme, styledTheme } from './theme/theme';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import RenderDebugOverlay from './components/debug/RenderDebugOverlay';
+import { ThemeModeProvider } from './theme/ThemeModeContext';
 
 // Lazy load components with explicit types
 const Home = React.lazy(() => import('./pages/Home'));
@@ -66,40 +64,38 @@ const App: React.FC = (): JSX.Element => {
   
   return (
     <ErrorBoundary>
-      <MUIThemeProvider theme={muiTheme}>
-        <StyledThemeProvider theme={styledTheme}>
-          <AppContainer>
-            <Suspense fallback={<LoadingSpinner />}>
-              <Routes>
-                <Route element={<Layout />}>
-                  {/* Public Routes */}
-                  <Route path="/" element={<Home />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/features" element={<Features />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/learning-styles" element={<LearningStyles />} />
-                  <Route path="/curriculum" element={<Curriculum />} />
-                  <Route path="/todos" element={<Todos />} />
-                  
-                  {/* Protected Routes */}
-                  <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
-                  <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
-                  <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
-                  <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
-                  <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />
-                  <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
-                  <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
-                  <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
-                  <Route path="*" element={<NotFound />} />
-                </Route>
-              </Routes>
-            </Suspense>
-            <RenderDebugOverlay />
-          </AppContainer>
-        </StyledThemeProvider>
-      </MUIThemeProvider>
+      <ThemeModeProvider>
+        <AppContainer>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              <Route element={<Layout />}>
+                {/* Public Routes */}
+                <Route path="/" element={<Home />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/learning-styles" element={<LearningStyles />} />
+                <Route path="/curriculum" element={<Curriculum />} />
+                <Route path="/todos" element={<Todos />} />
+                
+                {/* Protected Routes */}
+                <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+                <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
+                <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+                <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
+                <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />
+                <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
+                <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
+                <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </Suspense>
+          <RenderDebugOverlay />
+        </AppContainer>
+      </ThemeModeProvider>
     </ErrorBoundary>
   );
 };
