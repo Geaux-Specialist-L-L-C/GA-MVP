@@ -22,14 +22,14 @@ interface Course {
 
 const Curriculum: React.FC = () => {
   const [selectedGrade, setSelectedGrade] = useState<'elementary' | 'middle' | 'high'>('middle');
-  const { login } = useAuth();
+  const { loginWithGoogle } = useAuth();
   const [error, setError] = useState<string>('');
   const navigate = useNavigate();
 
   const handleLogin = async (): Promise<void> => {
     try {
       setError('');
-      await login();
+      await loginWithGoogle();
       navigate('/dashboard');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');

@@ -12,7 +12,7 @@ interface LocationState {
 }
 
 const Login: React.FC = (): JSX.Element => {
-  const { login, error } = useAuth();
+  const { login, loginWithGoogle, error } = useAuth();
   const navigate = useNavigate();
   const location = useLocation() as Location & { state: LocationState };
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -25,7 +25,7 @@ const Login: React.FC = (): JSX.Element => {
   const handleGoogleLogin = async (): Promise<void> => {
     try {
       setLoading(true);
-      await login();
+      await loginWithGoogle();
       navigate('/dashboard');
     } catch (err) {
       console.error("Login error:", err);
@@ -38,7 +38,7 @@ const Login: React.FC = (): JSX.Element => {
     e.preventDefault();
     try {
       setLoading(true);
-      await login();
+      await login(formData.email, formData.password);
       navigate('/dashboard');
     } catch (err) {
       console.error("Login error:", err);
