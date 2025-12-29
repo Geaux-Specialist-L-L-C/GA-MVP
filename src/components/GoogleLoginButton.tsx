@@ -1,4 +1,3 @@
-import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import React from 'react';
 import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
@@ -16,12 +15,8 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   error,
   onDismissError
 }): JSX.Element => {
-  const provider = new GoogleAuthProvider();
-  const auth = getAuth();
-
   const handleClick = async (): Promise<void> => {
     try {
-      await signInWithPopup(auth, provider);
       await handleGoogleLogin();
     } catch (err) {
       console.error('Google login error:', err);

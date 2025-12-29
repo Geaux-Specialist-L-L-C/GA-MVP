@@ -53,17 +53,54 @@ const Input = styled.input`
 `;
 
 const LoginForm: React.FC = (): JSX.Element => {
-  const { login } = useAuth();
+  const { login, loginWithGoogle, loading: authLoading, error: authError, clearError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [localError, setLocalError] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof clearError === 'function') {
+      clearError();
+    }
+  }, [clearError]);
+
+  const handleDismissError = () => {
+    setLocalError('');
+    if (typeof clearError === 'function') {
+      clearError();
+    }
+  };
 
   const handleLogin = async (): Promise<void> => {
     try {
+      setLocalError('');
+      setLoading(true);
       await login(email, password);
-      navigate('/dashboard');
+      const destination = location.state?.from?.pathname || '/dashboard';
+      navigate(destination, { replace: true });
     } catch (err) {
+      setLocalError(err instanceof Error ? err.message : 'Failed to log in');
       console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async (): Promise<void> => {
+    try {
+      setLocalError('');
+      setLoading(true);
+      await loginWithGoogle();
+      const destination = location.state?.from?.pathname || '/dashboard';
+      navigate(destination, { replace: true });
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : 'Failed to sign in');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,10 +127,15 @@ const LoginForm: React.FC = (): JSX.Element => {
           error: false
         }]}
       />
-      <Button type="submit" $variant="primary">
+      <Button type="submit" $variant="primary" disabled={loading || authLoading}>
         Login
       </Button>
-      <GoogleLoginButton />
+      <GoogleLoginButton
+        handleGoogleLogin={handleGoogleLogin}
+        loading={loading || authLoading}
+        error={localError || authError || undefined}
+        onDismissError={handleDismissError}
+      />
     </Form>
   );
 };
