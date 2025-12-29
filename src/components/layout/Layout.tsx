@@ -1,31 +1,18 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import styled from 'styled-components';
-import Navbar from '../Navbar';
+import Header from './Header';
 import Footer from './Footer';
-import { useAuth } from '../../contexts/AuthContext';
-import DashboardLayout from '../templates/DashboardLayout';
-import '../../styles/global.css';
 
-const Layout = () => {
-  const { currentUser } = useAuth();
-
+const Layout: React.FC = () => {
   return (
-    <DashboardLayout
-      userData={{
-        name: currentUser?.displayName || '',
-        email: currentUser?.email || '',
-        profilePicture: currentUser?.photoURL || ''
-      }}
-      routeContext={{ currentRoute: window.location.pathname }}
-      onLogout={() => console.log('Logout')}
-    >
-      <Navbar />
-      <PageContainer>
+    <LayoutWrapper>
+      <Header />
+      <MainContent>
         <Outlet />
-      </PageContainer>
+      </MainContent>
       <Footer />
-    </DashboardLayout>
+    </LayoutWrapper>
   );
 };
 
@@ -33,19 +20,18 @@ const LayoutWrapper = styled.div`
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-top: var(--navbar-height);
+  background: ${({ theme }) => theme.gradients.hero};
 `;
 
-const PageContainer = styled.main`
+const MainContent = styled.main`
   flex: 1;
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: var(--spacing-lg);
   width: 100%;
-  text-align: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 6.5rem 1.5rem 3rem;
 
   @media (max-width: 768px) {
-    padding: var(--spacing-sm);
+    padding: 5.5rem 1rem 2.5rem;
   }
 `;
 

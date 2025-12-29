@@ -20,7 +20,7 @@ const Footer = () => {
           <ul className={styles['footer-links']}>
             <li><Link to="/learning-styles">Learning Styles</Link></li>
             <li><Link to="/learning-plan">Learning Plan</Link></li>
-            <li><Link to="/assessment">Assessment</Link></li>
+            <li><Link to="/login">Assessment</Link></li>
           </ul>
         </div>
 
