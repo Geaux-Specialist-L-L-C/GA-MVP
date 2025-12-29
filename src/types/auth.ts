@@ -1,12 +1,4 @@
-import { UserCredential } from 'firebase/auth';
-import { User as SupabaseUser } from '@supabase/supabase-js';
-
-// Common types for auth context and components
-export interface User extends SupabaseUser {
-  uid: string;  // Ensure uid is available for Firebase compatibility
-}
-
-export type { Session } from '@supabase/supabase-js';
+import { User, UserCredential } from 'firebase/auth';
 
 export interface AuthError {
   code?: string;
@@ -15,13 +7,16 @@ export interface AuthError {
 
 export interface AuthContextType {
   currentUser: User | null;
+  user: User | null;
   loading: boolean;
-  authError: string | null;
+  isLoading: boolean;
+  isAuthReady: boolean;
+  error: string | null;
   login: (email: string, password: string) => Promise<UserCredential>;
   loginWithGoogle: () => Promise<void>;
   signup: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
-  setAuthError: (error: string | null) => void;
+  clearError: () => void;
 }
 
 export interface Student {

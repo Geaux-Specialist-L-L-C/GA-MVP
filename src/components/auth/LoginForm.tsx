@@ -60,7 +60,7 @@ const LoginForm: React.FC = (): JSX.Element => {
 
   const handleLogin = async (): Promise<void> => {
     try {
-      await login();
+      await login(email, password);
       navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);

@@ -26,11 +26,14 @@ export const renderWithProviders = (
 ): RenderResult => {
   const defaultAuthValue: AuthContextProps = {
     currentUser: null,
+    user: null,
     isAuthReady: true,
     loading: false,
+    isLoading: false,
     error: null,
     login: mockLoginWithGoogle,
     loginWithGoogle: mockLoginWithGoogle,
+    signup: jest.fn(),
     logout: jest.fn(),
     clearError: jest.fn(),
     ...mockAuthValue
