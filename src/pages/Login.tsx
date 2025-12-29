@@ -6,7 +6,14 @@ import { FcGoogle } from 'react-icons/fc';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const Login: React.FC = () => {
-  const { loginWithGoogle, loading: authLoading, error: authError, clearError } = useAuth();
+  const {
+    currentUser,
+    isAuthReady,
+    loginWithGoogle,
+    loading: authLoading,
+    error: authError,
+    clearError
+  } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [localError, setLocalError] = useState<string>('');
@@ -17,6 +24,13 @@ const Login: React.FC = () => {
       clearError();
     }
   }, [clearError]);
+
+  useEffect(() => {
+    if (currentUser && isAuthReady) {
+      const destination = location.state?.from?.pathname || '/dashboard';
+      navigate(destination, { replace: true });
+    }
+  }, [currentUser, isAuthReady, location.state?.from?.pathname, navigate]);
 
   const handleDismissError = () => {
     setLocalError('');
