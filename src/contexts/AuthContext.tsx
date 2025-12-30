@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, User, UserCredential } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  getRedirectResult,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  User,
+  UserCredential
+} from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { firebaseService } from '../services/firebaseService';
 import type { AuthContextType } from '../types/auth';
@@ -34,6 +41,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isRedirectResolved, setIsRedirectResolved] = useState(false);
+  const [isAuthStateResolved, setIsAuthStateResolved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,22 +50,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       auth,
       (user) => {
         setCurrentUser(user);
-        setLoading(false);
-        setIsAuthReady(true);
         setError(null);
+        setIsAuthStateResolved(true);
       },
       (authError) => {
         console.error('Auth state change error:', authError);
         setError(authError instanceof Error ? authError.message : 'Failed to determine auth state');
-        setLoading(false);
-        setIsAuthReady(true);
+        setIsAuthStateResolved(true);
       }
     );
 
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const resolveRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user && isMounted) {
+          setCurrentUser(result.user);
+        }
+      } catch (redirectError) {
+        console.error('Redirect result error:', redirectError);
+        if (isMounted) {
+          setError(
+            redirectError instanceof Error
+              ? redirectError.message
+              : 'Failed to complete redirect sign-in'
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsRedirectResolved(true);
+        }
+      }
+    };
+
+    resolveRedirect();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isRedirectResolved && isAuthStateResolved) {
+      setLoading(false);
+      setIsAuthReady(true);
+    }
+  }, [isRedirectResolved, isAuthStateResolved]);
+
   const clearError = () => setError(null);
+
+  const isPopupCancelled = (authError: unknown): boolean => {
+    const firebaseError = authError as { code?: string };
+    return firebaseError.code === 'auth/popup-closed-by-user';
+  };
 
   const runWithAuthState = async <T,>(
     action: () => Promise<T>,
@@ -67,6 +118,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       return await action();
     } catch (authError) {
+      if (isPopupCancelled(authError)) {
+        return null as T;
+      }
       const message =
         authError instanceof Error ? authError.message : fallbackMessage;
       setError(message);
@@ -88,10 +142,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       'Failed to sign up'
     );
 
-  const loginWithGoogle = (): Promise<void> =>
-    runWithAuthState(async () => {
-      await firebaseService.signInWithGoogle();
-    }, 'Failed to sign in with Google');
+  const loginWithGoogle = (): Promise<User | null> =>
+    runWithAuthState(
+      async () => firebaseService.signInWithGoogle(),
+      'Failed to sign in with Google'
+    );
 
   const logout = (): Promise<void> =>
     runWithAuthState(async () => {
