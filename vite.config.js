@@ -83,7 +83,7 @@ export default defineConfig({
       'Cross-Origin-Embedder-Policy': 'credentialless',
       'Content-Security-Policy': `
         default-src 'self';
-        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseio.com https://*.firebase.com https://*.googleapis.com https://*.gstatic.com https://www.googletagmanager.com;
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseio.com https://*.firebase.com https://*.googleapis.com https://apis.google.com https://*.gstatic.com https://www.googletagmanager.com;
         connect-src 'self' http://localhost:5173 ws://localhost:5173 http://100.86.7.87:5173 ws://100.86.7.87:5173 https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com wss://firestore.googleapis.com;
         frame-src 'self' https://*.firebaseapp.com https://*.firebase.com https://accounts.google.com https://*.googleapis.com;
         img-src 'self' data: https: blob:;
