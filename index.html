@@ -14,14 +14,18 @@
       font-src 'self' https://fonts.gstatic.com;
       img-src 'self' data: https: blob:;
       media-src 'self';
-      connect-src 'self' 
-        http://localhost:5173 
-        ws://localhost:5173 
-        http://100.86.7.87:5173 
-        ws://100.86.7.87:5173 
-        https://*.firebaseio.com 
-        https://*.googleapis.com 
-        wss://*.firebaseio.com 
+      connect-src 'self'
+        http://localhost:5173
+        ws://localhost:5173
+        http://127.0.0.1:5173
+        ws://127.0.0.1:5173
+        http://100.86.7.87:5173
+        ws://100.86.7.87:5173
+        wss://evopimp-stylistic-q704.tail78d61.ts.net
+        wss://*.ts.net
+        https://*.firebaseio.com
+        https://*.googleapis.com
+        wss://*.firebaseio.com
         https://*.google.com
         https://firestore.googleapis.com
         https://*.firebaseauth.com
