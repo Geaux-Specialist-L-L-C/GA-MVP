@@ -104,6 +104,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearError = () => setError(null);
 
+  const isPopupCancelled = (authError: unknown): boolean => {
+    const firebaseError = authError as { code?: string };
+    return firebaseError.code === 'auth/popup-closed-by-user';
+  };
+
   const runWithAuthState = async <T,>(
     action: () => Promise<T>,
     fallbackMessage: string
@@ -113,6 +118,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       return await action();
     } catch (authError) {
+      if (isPopupCancelled(authError)) {
+        return null as T;
+      }
       const message =
         authError instanceof Error ? authError.message : fallbackMessage;
       setError(message);

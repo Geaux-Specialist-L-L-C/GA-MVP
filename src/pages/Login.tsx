@@ -45,11 +45,18 @@ const Login: React.FC = () => {
       setLocalError('');
       setLoading(true);
       const loginResult = await loginWithGoogle();
+      if (!loginResult && !currentUser) {
+        return;
+      }
       if (loginResult || currentUser) {
         const destination = location.state?.from?.pathname || '/dashboard';
         navigate(destination, { replace: true });
       }
     } catch (err) {
+      const firebaseError = err as { code?: string };
+      if (firebaseError.code === 'auth/popup-closed-by-user') {
+        return;
+      }
       setLocalError(err instanceof Error ? err.message : 'Failed to sign in');
       console.error('Login error:', err);
     } finally {
