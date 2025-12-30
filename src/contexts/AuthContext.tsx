@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
   getRedirectResult,
@@ -41,86 +41,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthReady, setIsAuthReady] = useState(false);
-  const [isRedirectResolved, setIsRedirectResolved] = useState(false);
-  const [isAuthStateResolved, setIsAuthStateResolved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const redirectHandledRef = useRef(false);
+  const authResolvedRef = useRef(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (user) => {
-        setCurrentUser(user);
-        setError(null);
-        setIsAuthStateResolved(true);
-      },
-      (authError) => {
-        console.error('Auth state change error:', authError);
-        setError(authError instanceof Error ? authError.message : 'Failed to determine auth state');
-        setIsAuthStateResolved(true);
+    console.log('Auth init start');
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log('onAuthStateChanged user=', user);
+      setCurrentUser(user);
+      setError(null);
+      if (!authResolvedRef.current) {
+        authResolvedRef.current = true;
+        setLoading(false);
+        setIsAuthReady(true);
       }
-    );
+    }, (authError) => {
+      console.error('Auth state change error:', authError);
+      setError(authError instanceof Error ? authError.message : 'Failed to determine auth state');
+      if (!authResolvedRef.current) {
+        authResolvedRef.current = true;
+        setLoading(false);
+        setIsAuthReady(true);
+      }
+    });
 
-    const authStateTimeout = window.setTimeout(() => {
-      setIsAuthStateResolved(true);
-    }, 7000);
-
-    return () => {
-      window.clearTimeout(authStateTimeout);
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
+    if (redirectHandledRef.current) {
+      return;
+    }
+    redirectHandledRef.current = true;
 
     const resolveRedirect = async () => {
       try {
-        const result = await Promise.race([
-          getRedirectResult(auth),
-          new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 7000))
-        ]);
-        if (result?.user && isMounted) {
-          setCurrentUser(result.user);
-          const redirectTarget = sessionStorage.getItem('postLoginRedirect');
-          if (redirectTarget) {
-            sessionStorage.removeItem('postLoginRedirect');
-            if (
-              `${window.location.pathname}${window.location.search}${window.location.hash}` !==
-              redirectTarget
-            ) {
-              window.location.replace(redirectTarget);
-            }
-          }
-        }
+        const result = await getRedirectResult(auth);
+        console.log('getRedirectResult result=', result);
       } catch (redirectError) {
-        console.error('Redirect result error:', redirectError);
-        if (isMounted) {
-          setError(
-            redirectError instanceof Error
-              ? redirectError.message
-              : 'Failed to complete redirect sign-in'
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setIsRedirectResolved(true);
-        }
+        console.error('getRedirectResult error:', redirectError);
+        setError(
+          redirectError instanceof Error
+            ? redirectError.message
+            : 'Failed to complete redirect sign-in'
+        );
       }
     };
 
     resolveRedirect();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
-
-  useEffect(() => {
-    if (isRedirectResolved && isAuthStateResolved) {
-      setLoading(false);
-      setIsAuthReady(true);
-    }
-  }, [isRedirectResolved, isAuthStateResolved]);
 
   const clearError = () => setError(null);
 

@@ -2,7 +2,6 @@
 // Using relative import until TS path mapping for @/config resolves in tooling
 import { auth } from '../config/firebase';
 import {
-  signInWithPopup,
   signInWithRedirect,
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -18,34 +17,10 @@ export const firebaseService = {
   // Firebase Authentication
   signInWithGoogle: async () => {
     try {
-      const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-      if (!isLocalhost) {
-        sessionStorage.setItem(
-          'postLoginRedirect',
-          `${window.location.pathname}${window.location.search}${window.location.hash}`
-        );
-        await signInWithRedirect(auth, googleProvider);
-        return null;
-      }
-      const result = await signInWithPopup(auth, googleProvider);
-      return result.user;
+      await signInWithRedirect(auth, googleProvider);
+      return null;
     } catch (error) {
-      const firebaseError = error as { code?: string };
-      if (firebaseError.code === 'auth/popup-closed-by-user') {
-        return null;
-      }
       console.error('Error signing in with Google:', error);
-      if (
-        firebaseError.code === 'auth/popup-blocked' ||
-        firebaseError.code === 'auth/internal-error'
-      ) {
-        sessionStorage.setItem(
-          'postLoginRedirect',
-          `${window.location.pathname}${window.location.search}${window.location.hash}`
-        );
-        await signInWithRedirect(auth, googleProvider);
-        return null;
-      }
       throw error;
     }
   },

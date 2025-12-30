@@ -21,33 +21,31 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }): JSX.Element => {
-  const { currentUser, isAuthReady, loading } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
 
   // Show loading spinner while auth state is being determined
-  if (loading || !isAuthReady) {
+  if (loading) {
     return (
       <LoadingContainer>
         <LoadingSpinner />
+        <span>Loading…</span>
       </LoadingContainer>
     );
   }
 
   // If not authenticated, redirect to login with current location
-  if (!loading && currentUser === null) {
-    // Only redirect if we're not already on the login page
-    if (location.pathname !== '/login') {
-      return (
-        <Navigate 
-          to="/login" 
-          state={{ 
-            from: location,
-            error: "Please sign in to access this page" 
-          }} 
-          replace 
-        />
-      );
-    }
+  if (!user) {
+    return (
+      <Navigate 
+        to="/login" 
+        state={{ 
+          from: location,
+          error: "Please sign in to access this page" 
+        }} 
+        replace 
+      />
+    );
   }
 
   // If authenticated, render the protected route
