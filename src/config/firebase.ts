@@ -4,7 +4,7 @@
 // Created: 2025-09-07
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { browserLocalPersistence, getAuth, setPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Validate required Firebase config (warn only in dev so UI still mounts)
@@ -41,6 +41,9 @@ export const firebaseConfig = {
 // Ensure single app instance
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch((error) => {
+  console.error('[firebase] Failed to set auth persistence:', error);
+});
 export const firestore = getFirestore(app);
 
 // Default export kept for backward compatibility (legacy imports)
