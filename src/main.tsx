@@ -10,6 +10,14 @@ import './styles/global.css';
 // Firebase app initialized centrally in config/firebase.ts (tree-shaken singletons)
 import './config/firebase';
 
+if (import.meta.env.DEV) {
+  const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+  if (cspMeta) {
+    cspMeta.remove();
+    console.info('[CSP] Removed Content-Security-Policy meta tag in DEV for HMR.');
+  }
+}
+
 // Configure future flags for React Router v7
 const future = {
   v7_startTransition: true,
