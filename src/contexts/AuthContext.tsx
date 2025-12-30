@@ -143,10 +143,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
   const loginWithGoogle = (): Promise<User | null> =>
-    runWithAuthState(
-      async () => firebaseService.signInWithGoogle(),
-      'Failed to sign in with Google'
-    );
+    runWithAuthState(async () => {
+      const user = await firebaseService.signInWithGoogle();
+      if (user) {
+        setCurrentUser(user);
+      }
+      return user;
+    }, 'Failed to sign in with Google');
 
   const logout = (): Promise<void> =>
     runWithAuthState(async () => {
