@@ -26,7 +26,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onProfileUpdate }): JSX.Element => {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -59,7 +59,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onProfileUpdate }): JSX.Element =
   const fetchUserData = useCallback(async (): Promise<void> => {
     try {
       if (!currentUser?.uid) {
-        navigate('/login');
+        setLoading(false);
         return;
       }
 
@@ -146,7 +146,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onProfileUpdate }): JSX.Element =
 
   const handleLogout = async (): Promise<void> => {
     try {
-      navigate('/login');
+      await logout();
     } catch (err) {
       setError('Failed to log out');
     }

@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import Layout from './components/layout/Layout';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import PrivateRoute from './components/PrivateRoute';
+import AuthRoute from './components/auth/AuthRoute';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import RenderDebugOverlay from './components/debug/RenderDebugOverlay';
 import { ThemeModeProvider } from './theme/ThemeModeContext';
@@ -74,8 +75,8 @@ const App: React.FC = (): JSX.Element => {
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/features" element={<Features />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<SignUp />} />
+                <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
+                <Route path="/signup" element={<AuthRoute><SignUp /></AuthRoute>} />
                 <Route path="/learning-styles" element={<LearningStyles />} />
                 <Route path="/curriculum" element={<Curriculum />} />
                 <Route path="/todos" element={<Todos />} />

@@ -21,11 +21,14 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }): JSX.Element => {
-  const { user, loading } = useAuth();
+  const { currentUser, isAuthReady } = useAuth();
   const location = useLocation();
 
   // Show loading spinner while auth state is being determined
-  if (loading) {
+  if (!isAuthReady) {
+    if (import.meta.env.DEV) {
+      console.debug('[PrivateRoute] auth ready:', isAuthReady, 'authed:', !!currentUser);
+    }
     return (
       <LoadingContainer>
         <LoadingSpinner />
@@ -35,13 +38,12 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }): JSX.Element =>
   }
 
   // If not authenticated, redirect to login with current location
-  if (!user) {
+  if (!currentUser) {
     return (
       <Navigate 
         to="/login" 
         state={{ 
-          from: location,
-          error: "Please sign in to access this page" 
+          from: location.pathname
         }} 
         replace 
       />
@@ -49,6 +51,10 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }): JSX.Element =>
   }
 
   // If authenticated, render the protected route
+  if (import.meta.env.DEV) {
+    console.debug('[PrivateRoute] auth ready:', isAuthReady, 'authed:', !!currentUser);
+  }
+
   return <>{children}</>;
 };
 

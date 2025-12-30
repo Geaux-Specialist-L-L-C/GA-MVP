@@ -18,12 +18,11 @@ const CreateStudent: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const { currentUser } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!currentUser) {
-      navigate('/login');
+      setError('Please sign in to add a student.');
       return;
     }
 

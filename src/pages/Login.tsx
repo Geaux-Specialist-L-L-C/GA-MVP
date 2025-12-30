@@ -1,90 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { FcGoogle } from 'react-icons/fc';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import LoginForm from '../components/auth/LoginForm';
 
 const Login: React.FC = () => {
-  const {
-    currentUser,
-    isAuthReady,
-    loginWithGoogle,
-    loading: authLoading,
-    error: authError,
-    clearError
-  } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [localError, setLocalError] = useState<string>('');
-  const [loading, setLoading] = useState(false);
-  const isFinishingSignIn = authLoading && !isAuthReady;
-
-  useEffect(() => {
-    if (typeof clearError === 'function') {
-      clearError();
-    }
-  }, [clearError]);
-
-  useEffect(() => {
-    if (!authLoading && currentUser) {
-      const storedRedirect = sessionStorage.getItem('postLoginRedirect');
-      const destination = storedRedirect || location.state?.from?.pathname || '/dashboard';
-      if (storedRedirect) {
-        sessionStorage.removeItem('postLoginRedirect');
-      }
-      console.log('Navigating to', destination);
-      navigate(destination, { replace: true });
-    }
-  }, [authLoading, currentUser, location.state?.from?.pathname, navigate]);
-
-  const handleDismissError = () => {
-    setLocalError('');
-    if (typeof clearError === 'function') {
-      clearError();
-    }
-  };
-
-  const handleGoogleLogin = async (): Promise<void> => {
-    try {
-      setLocalError('');
-      setLoading(true);
-      const redirectTarget = location.state?.from?.pathname || '/dashboard';
-      sessionStorage.setItem('postLoginRedirect', redirectTarget);
-      const loginResult = await loginWithGoogle();
-      if (!loginResult && !currentUser) {
-        return;
-      }
-      if (loginResult || currentUser) {
-        const storedRedirect = sessionStorage.getItem('postLoginRedirect');
-        const destination = storedRedirect || location.state?.from?.pathname || '/dashboard';
-        if (storedRedirect) {
-          sessionStorage.removeItem('postLoginRedirect');
-        }
-        console.log('Navigating to', destination);
-        navigate(destination, { replace: true });
-      }
-    } catch (err) {
-      const firebaseError = err as { code?: string };
-      if (firebaseError.code === 'auth/popup-closed-by-user') {
-        return;
-      }
-      setLocalError(err instanceof Error ? err.message : 'Failed to sign in');
-      console.error('Login error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading || authLoading) {
-    return (
-      <LoadingContainer>
-        <LoadingSpinner />
-        {isFinishingSignIn && <LoadingMessage>Finishing sign-in…</LoadingMessage>}
-      </LoadingContainer>
-    );
-  }
-
   return (
     <LoginContainer>
       <LoginContent className="glass-card">
@@ -101,26 +20,7 @@ const Login: React.FC = () => {
 
         <LoginBox>
           <Title>Sign in</Title>
-          {(localError || authError) && (
-            <ErrorMessage>
-              <span>{localError || authError}</span>
-              <DismissButton 
-                onClick={handleDismissError}
-                type="button"
-                aria-label="Dismiss error message"
-              >✕</DismissButton>
-            </ErrorMessage>
-          )}
-          
-          <GoogleButton 
-            onClick={handleGoogleLogin} 
-            disabled={loading}
-            type="button"
-            aria-label="Sign in with Google"
-          >
-            <FcGoogle />
-            Sign in with Google
-          </GoogleButton>
+          <LoginForm />
           <SignUpPrompt>
             Don't have an account? <StyledLink to="/signup">Sign up</StyledLink>
           </SignUpPrompt>
@@ -129,20 +29,6 @@ const Login: React.FC = () => {
     </LoginContainer>
   );
 };
-
-const LoadingContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  gap: 0.75rem;
-  min-height: calc(100vh - 60px);
-`;
-
-const LoadingMessage = styled.p`
-  color: var(--text-secondary);
-  margin: 0;
-`;
 
 const LoginContainer = styled.div`
   display: flex;
@@ -192,25 +78,6 @@ const Title = styled.h1`
   margin-bottom: 2rem;
 `;
 
-const GoogleButton = styled.button`
-  width: 100%;
-  padding: 0.75rem;
-  background-color: white;
-  color: #111827;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-`;
-
 const SignUpPrompt = styled.p`
   text-align: center;
   margin-top: 1rem;
@@ -223,29 +90,6 @@ const StyledLink = styled(Link)`
   
   &:hover {
     text-decoration: underline;
-  }
-`;
-
-const ErrorMessage = styled.div`
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  padding: 0.75rem;
-  border-radius: 12px;
-  margin-bottom: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const DismissButton = styled.button`
-  background: none;
-  border: none;
-  color: #ef4444;
-  cursor: pointer;
-  padding: 0 0.5rem;
-  
-  &:hover {
-    opacity: 0.7;
   }
 `;
 

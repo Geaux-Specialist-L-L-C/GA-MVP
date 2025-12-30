@@ -79,7 +79,7 @@ const LoginForm: React.FC = (): JSX.Element => {
       setLocalError('');
       setLoading(true);
       await login(email, password);
-      const destination = location.state?.from?.pathname || '/dashboard';
+      const destination = (location.state as { from?: string } | null)?.from || '/dashboard';
       navigate(destination, { replace: true });
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to log in');
@@ -94,7 +94,7 @@ const LoginForm: React.FC = (): JSX.Element => {
       setLocalError('');
       setLoading(true);
       await loginWithGoogle();
-      const destination = location.state?.from?.pathname || '/dashboard';
+      const destination = (location.state as { from?: string } | null)?.from || '/dashboard';
       navigate(destination, { replace: true });
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to sign in');

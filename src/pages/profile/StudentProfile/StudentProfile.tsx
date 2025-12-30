@@ -1,7 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../../../contexts/AuthContext";
-import { FcGoogle } from "react-icons/fc";
 import styled from "styled-components";
 import CourseCard from "../../../components/CourseCard";
 
@@ -12,23 +9,7 @@ interface Course {
 }
 
 const StudentProfile: React.FC = () => {
-  const { loginWithGoogle } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [error, setError] = useState<string>("");
   const [filter, setFilter] = useState<string>("");
-
-  const handleGoogleLogin = async () => {
-    try {
-      setError("");
-      await loginWithGoogle();
-      const destination = location.state?.from?.pathname || "/dashboard";
-      navigate(destination, { replace: true });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to login");
-      console.error("Login error:", err);
-    }
-  };
 
   const courses: Course[] = [
     { title: "Introduction to Learning Styles", type: "Video Animated", category: "Learning Fundamentals" },
@@ -41,13 +22,6 @@ const StudentProfile: React.FC = () => {
       <ProfileBox>
         <Title>Student Profile</Title>
         
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-
-        <GoogleButton onClick={handleGoogleLogin}>
-          <FcGoogle className="text-xl" />
-          Sign in with Google
-        </GoogleButton>
-
         {/* Search Filter */}
         <input
           type="text"
@@ -94,43 +68,6 @@ const Title = styled.h2`
   color: #2C3E50;
   margin-bottom: 1.5rem;
   font-size: 1.75rem;
-`;
-
-const ErrorMessage = styled.div`
-  background-color: #fee2e2;
-  color: #dc2626;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-  text-align: center;
-`;
-
-const GoogleButton = styled.button`
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  background-color: white;
-  color: #333;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #f8fafc;
-  }
-
-  &:focus {
-    outline: none;
-    ring: 2px;
-    ring-offset: 2px;
-    ring-blue-500;
-  }
 `;
 
 export default StudentProfile;

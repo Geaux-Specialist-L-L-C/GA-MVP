@@ -17,10 +17,13 @@ interface AuthRouteProps {
 }
 
 const AuthRoute: React.FC<AuthRouteProps> = ({ children }) => {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, isAuthReady } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  if (!isAuthReady) {
+    if (import.meta.env.DEV) {
+      console.debug('[AuthRoute] auth ready:', isAuthReady, 'authed:', !!currentUser);
+    }
     return (
       <LoadingContainer>
         <LoadingSpinner />
@@ -30,8 +33,12 @@ const AuthRoute: React.FC<AuthRouteProps> = ({ children }) => {
 
   // If user is authenticated and tries to access auth pages, redirect to dashboard
   if (currentUser) {
-    const from = location.state?.from?.pathname || '/dashboard';
+    const from = (location.state as { from?: string } | null)?.from || '/dashboard';
     return <Navigate to={from} replace />;
+  }
+
+  if (import.meta.env.DEV) {
+    console.debug('[AuthRoute] auth ready:', isAuthReady, 'authed:', !!currentUser);
   }
 
   // Allow access to auth pages if not authenticated
