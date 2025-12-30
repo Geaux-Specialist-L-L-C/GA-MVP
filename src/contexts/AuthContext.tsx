@@ -67,48 +67,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       try {
         await authInit;
-        if (!isMounted) return;
-        if (isDev) {
-          console.debug('[AuthProvider] before onAuthStateChanged subscribe');
-        }
-        unsubscribe = onAuthStateChanged(
-          auth,
-          (user) => {
-            if (isDev) {
-              console.debug('[AuthProvider] onAuthStateChanged', {
-                userUid: user?.uid ?? null,
-                currentUserUid: auth.currentUser?.uid ?? null
-              });
-            }
-            setCurrentUser(user);
-            setError(null);
-            if (!hasResolved) {
-              hasResolved = true;
-              setLoading(false);
-              setIsAuthReady(true);
-            }
-          },
-          (authError) => {
-            console.error('Auth state change error:', authError);
-            setError(authError instanceof Error ? authError.message : 'Failed to determine auth state');
-            if (!hasResolved) {
-              hasResolved = true;
-              setLoading(false);
-              setIsAuthReady(true);
-            }
-          }
-        );
-        if (isDev) {
-          console.debug('[AuthProvider] after onAuthStateChanged subscribe');
-        }
       } catch (authError) {
-        console.error('Auth state listener registration failed:', authError);
-        setError(
-          authError instanceof Error ? authError.message : 'Failed to initialize auth listener'
-        );
-        setLoading(false);
-        setIsAuthReady(true);
+        console.warn('[AuthProvider] authInit failed (continuing):', authError);
       }
+
+      if (!isMounted) return;
+      if (isDev) {
+        console.debug('[AuthProvider] subscribing onAuthStateChanged');
+      }
+      unsubscribe = onAuthStateChanged(
+        auth,
+        (user) => {
+          if (isDev) {
+            console.debug('[AuthProvider] onAuthStateChanged', {
+              userUid: user?.uid ?? null,
+              currentUserUid: auth.currentUser?.uid ?? null,
+              persistenceManager: (auth as { persistenceManager?: unknown }).persistenceManager
+            });
+          }
+          setCurrentUser(user);
+          setError(null);
+          if (!hasResolved) {
+            hasResolved = true;
+            setLoading(false);
+            setIsAuthReady(true);
+          }
+        },
+        (authError) => {
+          console.error('Auth state change error:', authError);
+          setError(authError instanceof Error ? authError.message : 'Failed to determine auth state');
+          if (!hasResolved) {
+            hasResolved = true;
+            setLoading(false);
+            setIsAuthReady(true);
+          }
+        }
+      );
     };
 
     initAuth();

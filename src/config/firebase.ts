@@ -4,7 +4,12 @@
 // Created: 2025-09-07
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { browserLocalPersistence, getAuth, setPersistence } from 'firebase/auth';
+import {
+  browserLocalPersistence,
+  browserSessionPersistence,
+  getAuth,
+  setPersistence
+} from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Validate required Firebase config (warn only in dev so UI still mounts)
@@ -41,9 +46,43 @@ export const firebaseConfig = {
 // Ensure single app instance
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const authInit = setPersistence(auth, browserLocalPersistence).catch((error) => {
-  console.error('[firebase] Failed to set auth persistence:', error);
-});
+const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(`${label} timeout`)), ms);
+    })
+  ]);
+
+export const authInit = (async () => {
+  if (!import.meta.env.DEV) {
+    try {
+      await setPersistence(auth, browserLocalPersistence);
+    } catch {
+      // ignore in production
+    }
+    return;
+  }
+
+  console.debug('[firebase] setPersistence start');
+  try {
+    await withTimeout(setPersistence(auth, browserLocalPersistence), 1000, 'local persistence');
+    console.debug('[firebase] persistence=local');
+    return;
+  } catch (error) {
+    console.warn('[firebase] local persistence failed:', error);
+  }
+
+  try {
+    await withTimeout(setPersistence(auth, browserSessionPersistence), 1000, 'session persistence');
+    console.debug('[firebase] persistence=session');
+    return;
+  } catch (error) {
+    console.warn('[firebase] session persistence failed:', error);
+  }
+
+  console.warn('[firebase] persistence disabled (continuing)');
+})();
 export const firestore = getFirestore(app);
 
 if (import.meta.env.DEV) {
