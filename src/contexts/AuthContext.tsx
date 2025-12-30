@@ -47,30 +47,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     console.log('Auth init start');
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (user) => {
-        console.log('onAuthStateChanged user=', user);
-        setCurrentUser(user);
-        setError(null);
-        if (!authResolvedRef.current) {
-          authResolvedRef.current = true;
-          setLoading(false);
-          setIsAuthReady(true);
-        }
-      },
-      (authError) => {
-        console.error('Auth state change error:', authError);
-        setError(authError instanceof Error ? authError.message : 'Failed to determine auth state');
-        if (!authResolvedRef.current) {
-          authResolvedRef.current = true;
-          setLoading(false);
-          setIsAuthReady(true);
-        }
+    const fallbackTimeout = window.setTimeout(() => {
+      if (!authResolvedRef.current) {
+        console.warn('Auth fallback timeout hit; marking auth ready.');
+        authResolvedRef.current = true;
+        setLoading(false);
+        setIsAuthReady(true);
       }
-    );
+    }, 4000);
+
+    let unsubscribe = () => undefined;
+
+    try {
+      unsubscribe = onAuthStateChanged(
+        auth,
+        (user) => {
+          console.log('onAuthStateChanged user=', user);
+          window.clearTimeout(fallbackTimeout);
+          setCurrentUser(user);
+          setError(null);
+          if (!authResolvedRef.current) {
+            authResolvedRef.current = true;
+            setLoading(false);
+            setIsAuthReady(true);
+          }
+        },
+        (authError) => {
+          console.error('Auth state change error:', authError);
+          window.clearTimeout(fallbackTimeout);
+          setError(authError instanceof Error ? authError.message : 'Failed to determine auth state');
+          if (!authResolvedRef.current) {
+            authResolvedRef.current = true;
+            setLoading(false);
+            setIsAuthReady(true);
+          }
+        }
+      );
+    } catch (authError) {
+      console.error('Auth state listener registration failed:', authError);
+      window.clearTimeout(fallbackTimeout);
+      setError(
+        authError instanceof Error ? authError.message : 'Failed to initialize auth listener'
+      );
+      if (!authResolvedRef.current) {
+        authResolvedRef.current = true;
+        setLoading(false);
+        setIsAuthReady(true);
+      }
+    }
 
     return () => {
+      window.clearTimeout(fallbackTimeout);
       unsubscribe();
     };
   }, []);
@@ -127,16 +154,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = (email: string, password: string): Promise<UserCredential> =>
-    runWithAuthState(
-      () => signInWithEmailAndPassword(auth, email, password),
-      'Failed to log in'
-    );
+    runWithAuthState(async () => {
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      setCurrentUser(credential.user);
+      return credential;
+    }, 'Failed to log in');
 
   const signup = (email: string, password: string): Promise<UserCredential> =>
-    runWithAuthState(
-      () => createUserWithEmailAndPassword(auth, email, password),
-      'Failed to sign up'
-    );
+    runWithAuthState(async () => {
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      setCurrentUser(credential.user);
+      return credential;
+    }, 'Failed to sign up');
 
   const loginWithGoogle = (): Promise<User | null> =>
     runWithAuthState(async () => {

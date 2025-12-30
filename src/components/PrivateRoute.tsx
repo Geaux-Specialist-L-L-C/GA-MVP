@@ -43,7 +43,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }): JSX.Element =>
       <Navigate 
         to="/login" 
         state={{ 
-          from: location.pathname
+          from: location
         }} 
         replace 
       />

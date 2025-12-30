@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, type Location } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../common/LoadingSpinner';
 import styled from 'styled-components';
@@ -33,8 +33,14 @@ const AuthRoute: React.FC<AuthRouteProps> = ({ children }) => {
 
   // If user is authenticated and tries to access auth pages, redirect to dashboard
   if (currentUser) {
-    const from = (location.state as { from?: string } | null)?.from || '/dashboard';
-    return <Navigate to={from} replace />;
+    const fromState = (location.state as { from?: string | Location } | null)?.from;
+    const destination =
+      typeof fromState === 'string'
+        ? fromState
+        : fromState?.pathname
+          ? `${fromState.pathname}${fromState.search || ''}${fromState.hash || ''}`
+          : '/dashboard';
+    return <Navigate to={destination} replace />;
   }
 
   if (import.meta.env.DEV) {

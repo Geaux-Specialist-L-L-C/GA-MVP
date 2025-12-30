@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, type Location } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../contexts/AuthContext';
 import GoogleLoginButton from '../GoogleLoginButton';
@@ -78,9 +78,17 @@ const LoginForm: React.FC = (): JSX.Element => {
     try {
       setLocalError('');
       setLoading(true);
-      await login(email, password);
-      const destination = (location.state as { from?: string } | null)?.from || '/dashboard';
-      navigate(destination, { replace: true });
+      const credential = await login(email, password);
+      if (credential?.user) {
+        const fromState = (location.state as { from?: string | Location } | null)?.from;
+        const destination =
+          typeof fromState === 'string'
+            ? fromState
+            : fromState?.pathname
+              ? `${fromState.pathname}${fromState.search || ''}${fromState.hash || ''}`
+              : '/dashboard';
+        navigate(destination, { replace: true });
+      }
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to log in');
       console.error('Login error:', err);
@@ -93,9 +101,17 @@ const LoginForm: React.FC = (): JSX.Element => {
     try {
       setLocalError('');
       setLoading(true);
-      await loginWithGoogle();
-      const destination = (location.state as { from?: string } | null)?.from || '/dashboard';
-      navigate(destination, { replace: true });
+      const user = await loginWithGoogle();
+      if (user) {
+        const fromState = (location.state as { from?: string | Location } | null)?.from;
+        const destination =
+          typeof fromState === 'string'
+            ? fromState
+            : fromState?.pathname
+              ? `${fromState.pathname}${fromState.search || ''}${fromState.hash || ''}`
+              : '/dashboard';
+        navigate(destination, { replace: true });
+      }
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to sign in');
       console.error('Login error:', err);
