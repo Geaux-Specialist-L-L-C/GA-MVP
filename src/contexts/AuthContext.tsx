@@ -60,7 +60,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    return unsubscribe;
+    const authStateTimeout = window.setTimeout(() => {
+      setIsAuthStateResolved(true);
+    }, 7000);
+
+    return () => {
+      window.clearTimeout(authStateTimeout);
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -68,7 +75,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const resolveRedirect = async () => {
       try {
-        const result = await getRedirectResult(auth);
+        const result = await Promise.race([
+          getRedirectResult(auth),
+          new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 7000))
+        ]);
         if (result?.user && isMounted) {
           setCurrentUser(result.user);
           const redirectTarget = sessionStorage.getItem('postLoginRedirect');
