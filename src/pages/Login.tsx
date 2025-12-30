@@ -18,6 +18,7 @@ const Login: React.FC = () => {
   const location = useLocation();
   const [localError, setLocalError] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const isFinishingSignIn = authLoading && !isAuthReady;
 
   useEffect(() => {
     if (typeof clearError === 'function') {
@@ -43,9 +44,11 @@ const Login: React.FC = () => {
     try {
       setLocalError('');
       setLoading(true);
-      await loginWithGoogle();
-      const destination = location.state?.from?.pathname || '/dashboard';
-      navigate(destination, { replace: true });
+      const loginResult = await loginWithGoogle();
+      if (loginResult || currentUser) {
+        const destination = location.state?.from?.pathname || '/dashboard';
+        navigate(destination, { replace: true });
+      }
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to sign in');
       console.error('Login error:', err);
@@ -58,6 +61,7 @@ const Login: React.FC = () => {
     return (
       <LoadingContainer>
         <LoadingSpinner />
+        {isFinishingSignIn && <LoadingMessage>Finishing sign-in…</LoadingMessage>}
       </LoadingContainer>
     );
   }
@@ -111,7 +115,14 @@ const LoadingContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: column;
+  gap: 0.75rem;
   min-height: calc(100vh - 60px);
+`;
+
+const LoadingMessage = styled.p`
+  color: var(--text-secondary);
+  margin: 0;
 `;
 
 const LoginContainer = styled.div`

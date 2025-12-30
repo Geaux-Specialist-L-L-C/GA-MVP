@@ -13,7 +13,7 @@ export interface AuthContextType {
   isAuthReady: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<UserCredential>;
-  loginWithGoogle: () => Promise<void>;
+  loginWithGoogle: () => Promise<User | null>;
   signup: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
   clearError: () => void;
