@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, type Location } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../contexts/AuthContext';
+import { auth } from '../../config/firebase';
 import GoogleLoginButton from '../GoogleLoginButton';
 import Button from '../common/Button';
 import FormGroup from '../molecules/FormGroup';
@@ -40,6 +40,14 @@ const Form = styled.form`
   max-width: 400px;
 `;
 
+const SigningInMessage = styled.div`
+  font-size: 0.9rem;
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
 const Input = styled.input`
   padding: 0.75rem;
   border: 1px solid var(--border-color);
@@ -54,12 +62,11 @@ const Input = styled.input`
 
 const LoginForm: React.FC = (): JSX.Element => {
   const { login, loginWithGoogle, loading: authLoading, error: authError, clearError } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [localError, setLocalError] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const isDev = import.meta.env.DEV;
 
   useEffect(() => {
     if (typeof clearError === 'function') {
@@ -78,16 +85,12 @@ const LoginForm: React.FC = (): JSX.Element => {
     try {
       setLocalError('');
       setLoading(true);
-      const credential = await login(email, password);
-      if (credential?.user) {
-        const fromState = (location.state as { from?: string | Location } | null)?.from;
-        const destination =
-          typeof fromState === 'string'
-            ? fromState
-            : fromState?.pathname
-              ? `${fromState.pathname}${fromState.search || ''}${fromState.hash || ''}`
-              : '/dashboard';
-        navigate(destination, { replace: true });
+      if (isDev) {
+        console.debug('[LoginForm] submit start', email);
+      }
+      await login(email, password);
+      if (isDev) {
+        console.debug('[LoginForm] login() resolved', auth.currentUser?.uid ?? null);
       }
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to log in');
@@ -101,16 +104,12 @@ const LoginForm: React.FC = (): JSX.Element => {
     try {
       setLocalError('');
       setLoading(true);
-      const user = await loginWithGoogle();
-      if (user) {
-        const fromState = (location.state as { from?: string | Location } | null)?.from;
-        const destination =
-          typeof fromState === 'string'
-            ? fromState
-            : fromState?.pathname
-              ? `${fromState.pathname}${fromState.search || ''}${fromState.hash || ''}`
-              : '/dashboard';
-        navigate(destination, { replace: true });
+      if (isDev) {
+        console.debug('[LoginForm] google submit start', email);
+      }
+      await loginWithGoogle();
+      if (isDev) {
+        console.debug('[LoginForm] google login() resolved', auth.currentUser?.uid ?? null);
       }
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to sign in');
@@ -144,8 +143,14 @@ const LoginForm: React.FC = (): JSX.Element => {
         }]}
       />
       <Button type="submit" $variant="primary" disabled={loading || authLoading}>
-        Login
+        {loading || authLoading ? 'Signing in…' : 'Login'}
       </Button>
+      {(loading || authLoading) && (
+        <SigningInMessage>
+          <span aria-hidden="true">⏳</span>
+          Signing in…
+        </SigningInMessage>
+      )}
       <GoogleLoginButton
         handleGoogleLogin={handleGoogleLogin}
         loading={loading || authLoading}

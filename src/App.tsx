@@ -1,5 +1,5 @@
 import React, { useEffect, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import Layout from './components/layout/Layout';
 import LoadingSpinner from './components/common/LoadingSpinner';
@@ -7,6 +7,8 @@ import PrivateRoute from './components/PrivateRoute';
 import AuthRoute from './components/auth/AuthRoute';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import RenderDebugOverlay from './components/debug/RenderDebugOverlay';
+import { useAuth } from './contexts/AuthContext';
+import { auth } from './config/firebase';
 import { ThemeModeProvider } from './theme/ThemeModeContext';
 
 // Lazy load components with explicit types
@@ -27,6 +29,25 @@ const LearningStyleChat = React.lazy(() => import('./components/chat/LearningSty
 const TestChat = React.lazy(() => import('./components/chat/TestChat'));
 const Todos = React.lazy(() => import('./pages/Todos'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
+
+const DebugPanel: React.FC = () => {
+  const { currentUser, isAuthReady } = useAuth();
+  const location = useLocation();
+
+  if (!import.meta.env.DEV) {
+    return null;
+  }
+
+  return (
+    <DebugPanelContainer>
+      <div><strong>Auth Debug</strong></div>
+      <div>isAuthReady: {String(isAuthReady)}</div>
+      <div>currentUser.uid: {currentUser?.uid ?? 'null'}</div>
+      <div>auth.currentUser.uid: {auth.currentUser?.uid ?? 'null'}</div>
+      <div>route: {location.pathname}</div>
+    </DebugPanelContainer>
+  );
+};
 
 const App: React.FC = (): JSX.Element => {
   // Register service worker for Firebase messaging
@@ -95,6 +116,7 @@ const App: React.FC = (): JSX.Element => {
             </Routes>
           </Suspense>
           <RenderDebugOverlay />
+          <DebugPanel />
         </AppContainer>
       </ThemeModeProvider>
     </ErrorBoundary>
@@ -104,6 +126,22 @@ const App: React.FC = (): JSX.Element => {
 const AppContainer = styled.div`
   min-height: 100vh;
   background-color: ${({ theme }) => theme.palette.background.default};
+`;
+
+const DebugPanelContainer = styled.div`
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 9999;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  border-radius: 8px;
+  pointer-events: none;
+  max-width: 240px;
+  word-break: break-word;
 `;
 
 export default App;

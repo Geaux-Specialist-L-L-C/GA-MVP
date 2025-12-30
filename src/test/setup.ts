@@ -22,7 +22,7 @@ jest.mock('react-icons/fc', () => ({
 jest.mock('firebase/auth');
 
 // Mock Firebase Config
-jest.mock('../firebase/config', () => ({
+jest.mock('../config/firebase', () => ({
   auth: jest.fn(),
   googleProvider: {
     setCustomParameters: jest.fn()

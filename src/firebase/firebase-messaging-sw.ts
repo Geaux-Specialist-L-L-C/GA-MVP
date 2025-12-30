@@ -7,7 +7,7 @@
 
 import { initializeApp } from 'firebase/app';
 import { getMessaging, onBackgroundMessage, MessagePayload } from 'firebase/messaging/sw';
-import { firebaseConfig } from './config';
+import { firebaseConfig } from '../config/firebase';
 
 declare const self: ServiceWorkerGlobalScope;
 
