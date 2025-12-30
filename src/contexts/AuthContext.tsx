@@ -91,8 +91,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               window.location.replace(redirectTarget);
             }
           }
-        } else if (auth.currentUser && isMounted) {
-          setCurrentUser(auth.currentUser);
         }
       } catch (redirectError) {
         console.error('Redirect result error:', redirectError);
