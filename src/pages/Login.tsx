@@ -27,11 +27,11 @@ const Login: React.FC = () => {
   }, [clearError]);
 
   useEffect(() => {
-    if (currentUser && isAuthReady) {
+    if (!authLoading && currentUser) {
       const destination = location.state?.from?.pathname || '/dashboard';
       navigate(destination, { replace: true });
     }
-  }, [currentUser, isAuthReady, location.state?.from?.pathname, navigate]);
+  }, [authLoading, currentUser, location.state?.from?.pathname, navigate]);
 
   const handleDismissError = () => {
     setLocalError('');
