@@ -47,26 +47,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     console.log('Auth init start');
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log('onAuthStateChanged user=', user);
-      setCurrentUser(user);
-      setError(null);
-      if (!authResolvedRef.current) {
-        authResolvedRef.current = true;
-        setLoading(false);
-        setIsAuthReady(true);
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (user) => {
+        console.log('onAuthStateChanged user=', user);
+        setCurrentUser(user);
+        setError(null);
+        if (!authResolvedRef.current) {
+          authResolvedRef.current = true;
+          setLoading(false);
+          setIsAuthReady(true);
+        }
+      },
+      (authError) => {
+        console.error('Auth state change error:', authError);
+        setError(authError instanceof Error ? authError.message : 'Failed to determine auth state');
+        if (!authResolvedRef.current) {
+          authResolvedRef.current = true;
+          setLoading(false);
+          setIsAuthReady(true);
+        }
       }
-    }, (authError) => {
-      console.error('Auth state change error:', authError);
-      setError(authError instanceof Error ? authError.message : 'Failed to determine auth state');
-      if (!authResolvedRef.current) {
-        authResolvedRef.current = true;
-        setLoading(false);
-        setIsAuthReady(true);
-      }
-    });
+    };
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {

@@ -179,7 +179,7 @@ export default defineConfig({
     hmr: {
       protocol: "wss",
       host: "evopimp-stylistic-q704.tail78d61.ts.net",
-      port: 443,
+      port: 5173,
       clientPort: 443,
       timeout: 120000,
     },
