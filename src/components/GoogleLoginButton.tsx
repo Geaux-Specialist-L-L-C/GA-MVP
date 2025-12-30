@@ -1,9 +1,10 @@
 import React from 'react';
 import styled from 'styled-components';
 import { FcGoogle } from 'react-icons/fc';
+import { useAuth } from '../contexts/AuthContext';
 
 interface GoogleLoginButtonProps {
-  handleGoogleLogin: () => Promise<void>;
+  handleGoogleLogin?: () => Promise<void>;
   loading?: boolean;
   error?: string;
   onDismissError?: () => void;
@@ -15,9 +16,12 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   error,
   onDismissError
 }): JSX.Element => {
+  const { loginWithGoogle } = useAuth();
+  const triggerLogin = handleGoogleLogin ?? loginWithGoogle;
+
   const handleClick = async (): Promise<void> => {
     try {
-      await handleGoogleLogin();
+      await triggerLogin();
     } catch (err) {
       console.error('Google login error:', err);
     }
