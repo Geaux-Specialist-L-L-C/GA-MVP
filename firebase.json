@@ -9,6 +9,21 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "/**",
+        "headers": [
+          {
+            "key": "Cross-Origin-Opener-Policy",
+            "value": "same-origin-allow-popups"
+          },
+          {
+            "key": "Cross-Origin-Embedder-Policy",
+            "value": "credentialless"
+          }
+        ]
+      }
     ]
   },
   "remoteconfig": {
