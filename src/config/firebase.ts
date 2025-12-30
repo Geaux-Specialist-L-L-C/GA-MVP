@@ -8,6 +8,7 @@ import {
   browserLocalPersistence,
   browserSessionPersistence,
   getAuth,
+  inMemoryPersistence,
   setPersistence
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -54,6 +55,8 @@ const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promis
     })
   ]);
 
+const DEV_PERSISTENCE_TIMEOUT_MS = 5000;
+
 export const authInit = (async () => {
   if (!import.meta.env.DEV) {
     try {
@@ -66,7 +69,11 @@ export const authInit = (async () => {
 
   console.debug('[firebase] setPersistence start');
   try {
-    await withTimeout(setPersistence(auth, browserLocalPersistence), 1000, 'local persistence');
+    await withTimeout(
+      setPersistence(auth, browserLocalPersistence),
+      DEV_PERSISTENCE_TIMEOUT_MS,
+      'local persistence'
+    );
     console.debug('[firebase] persistence=local');
     return;
   } catch (error) {
@@ -74,14 +81,27 @@ export const authInit = (async () => {
   }
 
   try {
-    await withTimeout(setPersistence(auth, browserSessionPersistence), 1000, 'session persistence');
+    await withTimeout(
+      setPersistence(auth, browserSessionPersistence),
+      DEV_PERSISTENCE_TIMEOUT_MS,
+      'session persistence'
+    );
     console.debug('[firebase] persistence=session');
     return;
   } catch (error) {
     console.warn('[firebase] session persistence failed:', error);
   }
 
-  console.warn('[firebase] persistence disabled (continuing)');
+  try {
+    await withTimeout(
+      setPersistence(auth, inMemoryPersistence),
+      DEV_PERSISTENCE_TIMEOUT_MS,
+      'memory persistence'
+    );
+    console.debug('[firebase] persistence=memory');
+  } catch (error) {
+    console.warn('[firebase] persistence disabled (continuing):', error);
+  }
 })();
 export const firestore = getFirestore(app);
 

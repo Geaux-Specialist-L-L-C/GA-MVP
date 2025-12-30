@@ -60,6 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let isMounted = true;
     let unsubscribe = () => undefined;
     let hasResolved = false;
+    let authReadyTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const initAuth = async () => {
       if (isDev) {
@@ -78,6 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       unsubscribe = onAuthStateChanged(
         auth,
         (user) => {
+          console.log('[AuthProvider] onAuthStateChanged fired uid=', user?.uid ?? null);
           if (isDev) {
             console.debug('[AuthProvider] onAuthStateChanged', {
               userUid: user?.uid ?? null,
@@ -91,6 +93,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             hasResolved = true;
             setLoading(false);
             setIsAuthReady(true);
+            if (authReadyTimeout) {
+              clearTimeout(authReadyTimeout);
+              authReadyTimeout = null;
+            }
           }
         },
         (authError) => {
@@ -100,9 +106,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             hasResolved = true;
             setLoading(false);
             setIsAuthReady(true);
+            if (authReadyTimeout) {
+              clearTimeout(authReadyTimeout);
+              authReadyTimeout = null;
+            }
           }
         }
       );
+
+      authReadyTimeout = setTimeout(() => {
+        if (!hasResolved) {
+          console.error('[AuthProvider] auth readiness timeout: forcing ready state');
+          hasResolved = true;
+          setIsAuthReady(true);
+          setLoading(false);
+        }
+      }, 2000);
     };
 
     initAuth();
@@ -110,6 +129,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       isMounted = false;
       unsubscribe();
+      if (authReadyTimeout) {
+        clearTimeout(authReadyTimeout);
+      }
     };
   }, [isDev]);
 
