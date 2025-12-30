@@ -50,6 +50,7 @@ const csp = `
     http://0.0.0.0:5173 ws://0.0.0.0:5173
     http://100.86.7.87:5173 ws://100.86.7.87:5173
     http://*.${TAILNET_DOMAIN}:5173 ws://*.${TAILNET_DOMAIN}:5173
+    https://*.${TAILNET_DOMAIN} wss://*.${TAILNET_DOMAIN}
     https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com
     https://*.googleapis.com https://firestore.googleapis.com wss://firestore.googleapis.com;
   frame-src 'self'
@@ -174,20 +175,13 @@ export default defineConfig({
     },
 
     // HMR: let it auto-detect unless you explicitly set VITE_DEV_HOST
-    hmr: DEV_HOST
-      ? {
-          protocol: "ws",
-          host: DEV_HOST,
-          port: 5173,
-          clientPort: 5173,
-          timeout: 120000,
-        }
-      : {
-          protocol: "ws",
-          port: 5173,
-          clientPort: 5173,
-          timeout: 120000,
-        },
+    hmr: {
+      protocol: "wss",
+      host: "evopimp-stylistic-q704.tail78d61.ts.net",
+      port: 443,
+      clientPort: 443,
+      timeout: 120000,
+    },
 
     watch: {
       usePolling: true,
