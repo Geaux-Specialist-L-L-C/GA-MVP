@@ -7,7 +7,7 @@ import {
   User,
   UserCredential
 } from 'firebase/auth';
-import { auth } from '../config/firebase';
+import { auth, authInit } from '../config/firebase';
 import { firebaseService } from '../services/firebaseService';
 import type { AuthContextType } from '../types/auth';
 
@@ -43,64 +43,81 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const redirectHandledRef = useRef(false);
-  const authResolvedRef = useRef(false);
+  const isDev = import.meta.env.DEV;
 
   useEffect(() => {
-    console.log('Auth init start');
-    const fallbackTimeout = window.setTimeout(() => {
-      if (!authResolvedRef.current) {
-        console.warn('Auth fallback timeout hit; marking auth ready.');
-        authResolvedRef.current = true;
-        setLoading(false);
-        setIsAuthReady(true);
-      }
-    }, 4000);
-
-    let unsubscribe = () => undefined;
-
-    try {
-      unsubscribe = onAuthStateChanged(
-        auth,
-        (user) => {
-          console.log('onAuthStateChanged user=', user);
-          window.clearTimeout(fallbackTimeout);
-          setCurrentUser(user);
-          setError(null);
-          if (!authResolvedRef.current) {
-            authResolvedRef.current = true;
-            setLoading(false);
-            setIsAuthReady(true);
-          }
-        },
-        (authError) => {
-          console.error('Auth state change error:', authError);
-          window.clearTimeout(fallbackTimeout);
-          setError(authError instanceof Error ? authError.message : 'Failed to determine auth state');
-          if (!authResolvedRef.current) {
-            authResolvedRef.current = true;
-            setLoading(false);
-            setIsAuthReady(true);
-          }
-        }
-      );
-    } catch (authError) {
-      console.error('Auth state listener registration failed:', authError);
-      window.clearTimeout(fallbackTimeout);
-      setError(
-        authError instanceof Error ? authError.message : 'Failed to initialize auth listener'
-      );
-      if (!authResolvedRef.current) {
-        authResolvedRef.current = true;
-        setLoading(false);
-        setIsAuthReady(true);
-      }
+    if (isDev) {
+      console.debug('[AuthProvider] mount');
     }
+    return () => {
+      if (isDev) {
+        console.debug('[AuthProvider] unmount');
+      }
+    };
+  }, [isDev]);
+
+  useEffect(() => {
+    let isMounted = true;
+    let unsubscribe = () => undefined;
+    let hasResolved = false;
+
+    const initAuth = async () => {
+      if (isDev) {
+        console.debug('[AuthProvider] awaiting authInit');
+      }
+      try {
+        await authInit;
+        if (!isMounted) return;
+        if (isDev) {
+          console.debug('[AuthProvider] before onAuthStateChanged subscribe');
+        }
+        unsubscribe = onAuthStateChanged(
+          auth,
+          (user) => {
+            if (isDev) {
+              console.debug('[AuthProvider] onAuthStateChanged', {
+                userUid: user?.uid ?? null,
+                currentUserUid: auth.currentUser?.uid ?? null
+              });
+            }
+            setCurrentUser(user);
+            setError(null);
+            if (!hasResolved) {
+              hasResolved = true;
+              setLoading(false);
+              setIsAuthReady(true);
+            }
+          },
+          (authError) => {
+            console.error('Auth state change error:', authError);
+            setError(authError instanceof Error ? authError.message : 'Failed to determine auth state');
+            if (!hasResolved) {
+              hasResolved = true;
+              setLoading(false);
+              setIsAuthReady(true);
+            }
+          }
+        );
+        if (isDev) {
+          console.debug('[AuthProvider] after onAuthStateChanged subscribe');
+        }
+      } catch (authError) {
+        console.error('Auth state listener registration failed:', authError);
+        setError(
+          authError instanceof Error ? authError.message : 'Failed to initialize auth listener'
+        );
+        setLoading(false);
+        setIsAuthReady(true);
+      }
+    };
+
+    initAuth();
 
     return () => {
-      window.clearTimeout(fallbackTimeout);
+      isMounted = false;
       unsubscribe();
     };
-  }, []);
+  }, [isDev]);
 
   useEffect(() => {
     if (redirectHandledRef.current) {

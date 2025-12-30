@@ -41,10 +41,15 @@ export const firebaseConfig = {
 // Ensure single app instance
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-setPersistence(auth, browserLocalPersistence).catch((error) => {
+export const authInit = setPersistence(auth, browserLocalPersistence).catch((error) => {
   console.error('[firebase] Failed to set auth persistence:', error);
 });
 export const firestore = getFirestore(app);
+
+if (import.meta.env.DEV) {
+  console.debug('[firebase] app name', app.name);
+  console.debug('[firebase] auth instance', auth.app.name);
+}
 
 // Default export kept for backward compatibility (legacy imports)
 export default app;
