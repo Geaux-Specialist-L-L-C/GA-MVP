@@ -123,6 +123,7 @@ export default defineConfig({
     // ✅ Fix for: "Blocked request. This host (...) is not allowed."
     // Allow your MagicDNS host + any *.tail78d61.ts.net hosts
     allowedHosts: [
+      "localhost",
       "evopimp-stylistic-q704",
       "100.86.7.87",
       `.${TAILNET_DOMAIN}`,
