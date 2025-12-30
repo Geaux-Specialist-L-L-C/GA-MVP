@@ -28,7 +28,12 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     if (!authLoading && currentUser) {
-      const destination = location.state?.from?.pathname || '/dashboard';
+      const storedRedirect = sessionStorage.getItem('postLoginRedirect');
+      const destination = storedRedirect || location.state?.from?.pathname || '/dashboard';
+      if (storedRedirect) {
+        sessionStorage.removeItem('postLoginRedirect');
+      }
+      console.log('Navigating to', destination);
       navigate(destination, { replace: true });
     }
   }, [authLoading, currentUser, location.state?.from?.pathname, navigate]);
@@ -44,12 +49,19 @@ const Login: React.FC = () => {
     try {
       setLocalError('');
       setLoading(true);
+      const redirectTarget = location.state?.from?.pathname || '/dashboard';
+      sessionStorage.setItem('postLoginRedirect', redirectTarget);
       const loginResult = await loginWithGoogle();
       if (!loginResult && !currentUser) {
         return;
       }
       if (loginResult || currentUser) {
-        const destination = location.state?.from?.pathname || '/dashboard';
+        const storedRedirect = sessionStorage.getItem('postLoginRedirect');
+        const destination = storedRedirect || location.state?.from?.pathname || '/dashboard';
+        if (storedRedirect) {
+          sessionStorage.removeItem('postLoginRedirect');
+        }
+        console.log('Navigating to', destination);
         navigate(destination, { replace: true });
       }
     } catch (err) {
