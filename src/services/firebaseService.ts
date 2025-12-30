@@ -18,6 +18,15 @@ export const firebaseService = {
   // Firebase Authentication
   signInWithGoogle: async () => {
     try {
+      const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+      if (!isLocalhost) {
+        sessionStorage.setItem(
+          'postLoginRedirect',
+          `${window.location.pathname}${window.location.search}${window.location.hash}`
+        );
+        await signInWithRedirect(auth, googleProvider);
+        return null;
+      }
       const result = await signInWithPopup(auth, googleProvider);
       return result.user;
     } catch (error) {
@@ -30,6 +39,10 @@ export const firebaseService = {
         firebaseError.code === 'auth/popup-blocked' ||
         firebaseError.code === 'auth/internal-error'
       ) {
+        sessionStorage.setItem(
+          'postLoginRedirect',
+          `${window.location.pathname}${window.location.search}${window.location.hash}`
+        );
         await signInWithRedirect(auth, googleProvider);
         return null;
       }

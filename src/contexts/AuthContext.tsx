@@ -71,6 +71,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const result = await getRedirectResult(auth);
         if (result?.user && isMounted) {
           setCurrentUser(result.user);
+          const redirectTarget = sessionStorage.getItem('postLoginRedirect');
+          if (redirectTarget) {
+            sessionStorage.removeItem('postLoginRedirect');
+            if (
+              `${window.location.pathname}${window.location.search}${window.location.hash}` !==
+              redirectTarget
+            ) {
+              window.location.replace(redirectTarget);
+            }
+          }
         }
       } catch (redirectError) {
         console.error('Redirect result error:', redirectError);
