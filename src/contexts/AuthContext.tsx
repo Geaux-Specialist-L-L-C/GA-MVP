@@ -71,6 +71,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const result = await getRedirectResult(auth);
         if (result?.user && isMounted) {
           setCurrentUser(result.user);
+          const redirectTarget = sessionStorage.getItem('postLoginRedirect');
+          if (redirectTarget) {
+            sessionStorage.removeItem('postLoginRedirect');
+            if (
+              `${window.location.pathname}${window.location.search}${window.location.hash}` !==
+              redirectTarget
+            ) {
+              window.location.replace(redirectTarget);
+            }
+          }
         }
       } catch (redirectError) {
         console.error('Redirect result error:', redirectError);
@@ -143,10 +153,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
   const loginWithGoogle = (): Promise<User | null> =>
-    runWithAuthState(
-      async () => firebaseService.signInWithGoogle(),
-      'Failed to sign in with Google'
-    );
+    runWithAuthState(async () => {
+      const user = await firebaseService.signInWithGoogle();
+      if (user) {
+        setCurrentUser(user);
+      }
+      return user;
+    }, 'Failed to sign in with Google');
 
   const logout = (): Promise<void> =>
     runWithAuthState(async () => {
