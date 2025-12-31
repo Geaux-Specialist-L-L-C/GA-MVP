@@ -34,36 +34,76 @@ const StudentDashboard: React.FC = () => {
   const [studentData, setStudentData] = useState<StudentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
+
+  const logDebug = (...args: unknown[]) => {
+    if (import.meta.env.DEV) {
+      console.debug(...args);
+    }
+  };
+
+  const fetchWithTimeout = async <T,>(promise: Promise<T>, timeoutMs: number) => {
+    let timeoutId: number | undefined;
+    const timeoutPromise = new Promise<T>((_, reject) => {
+      timeoutId = window.setTimeout(() => {
+        reject(new Error('Timed out loading dashboard data'));
+      }, timeoutMs);
+    });
+
+    return Promise.race([promise, timeoutPromise]).finally(() => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    });
+  };
+
+  const handleRetry = () => {
+    setLoading(true);
+    setError('');
+    setNeedsSetup(false);
+    setReloadToken((value) => value + 1);
+  };
 
   useEffect(() => {
     const fetchStudentData = async () => {
-      if (!id) {
+      const studentId = id ?? currentUser?.uid;
+      setError('');
+      setNeedsSetup(false);
+
+      if (!studentId) {
         setError('Student ID not found');
+        setLoading(false);
         return;
       }
 
       try {
-        const data = await getStudentProfile(id);
+        logDebug('Dashboard load start', studentId);
+        const data = await fetchWithTimeout(getStudentProfile(studentId), 8000);
         if (data) {
           setStudentData({
             ...data,
-            id: data.id || id,
+            id: data.id || studentId,
             recentActivities: [],
             progress: []
           } as StudentData);
+          logDebug('Dashboard load success', { data });
         } else {
-          setError('Student not found');
+          setStudentData(null);
+          setNeedsSetup(true);
+          logDebug('Dashboard load success', { data: null });
         }
       } catch (err) {
-        console.error('Error fetching student data:', err);
-        setError('Failed to load student data');
+        logDebug('Dashboard load error', err);
+        const message = err instanceof Error ? err.message : 'Failed to load student data';
+        setError(message);
       } finally {
         setLoading(false);
       }
     };
 
     fetchStudentData();
-  }, [id]);
+  }, [currentUser?.uid, id, reloadToken]);
 
   if (loading) {
     return (
@@ -74,7 +114,22 @@ const StudentDashboard: React.FC = () => {
   }
 
   if (error) {
-    return <StyledErrorContainer>{error}</StyledErrorContainer>;
+    return (
+      <StyledErrorContainer>
+        <p>{error}</p>
+        <StyledRetryButton type="button" onClick={handleRetry}>Retry</StyledRetryButton>
+      </StyledErrorContainer>
+    );
+  }
+
+  if (needsSetup) {
+    return (
+      <StyledSetupContainer>
+        <h2>Finish setting up your dashboard</h2>
+        <p>No student profile was found yet. Complete your setup to start tracking progress.</p>
+        <StyledRetryButton type="button" onClick={handleRetry}>Retry</StyledRetryButton>
+      </StyledSetupContainer>
+    );
   }
 
   return (
@@ -134,6 +189,34 @@ const StyledErrorContainer = styled.div`
   text-align: center;
   color: red;
   padding: 2rem;
+  display: grid;
+  gap: 1rem;
+`;
+
+const StyledSetupContainer = styled.div`
+  text-align: center;
+  padding: 2rem;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 12px;
+  display: grid;
+  gap: 0.75rem;
+  color: #9a3412;
+`;
+
+const StyledRetryButton = styled.button`
+  margin: 0 auto;
+  padding: 0.6rem 1.5rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--primary-color);
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+
+  &:hover {
+    background: var(--primary-dark);
+  }
 `;
 
 const StyledHeader = styled(m.header)`
