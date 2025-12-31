@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { addStudentProfile } from '../../../services/profileService';
 import { useAuth } from '../../../contexts/AuthContext';
-import StudentCard from '../../../components/student/StudentCard';
 
 interface NewStudent {
   name: string;
@@ -18,11 +17,20 @@ const CreateStudent: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!currentUser) {
       setError('Please sign in to add a student.');
+      return;
+    }
+    if (!studentName.trim()) {
+      setError('Student name is required.');
+      return;
+    }
+    if (!grade.trim()) {
+      setError('Grade level is required.');
       return;
     }
 
@@ -31,8 +39,8 @@ const CreateStudent: React.FC = () => {
 
     try {
       const newStudent: NewStudent = { 
-        name: studentName, 
-        grade, 
+        name: studentName.trim(), 
+        grade: grade.trim(), 
         parentId: currentUser.uid,
         hasTakenAssessment: false
       };
