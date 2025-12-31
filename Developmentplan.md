@@ -1,35 +1,90 @@
 # Development Plan
 
 ## Project Overview
-Geaux Academy is an innovative educational platform designed to provide personalized learning experiences for students. The platform leverages advanced technologies such as AI and machine learning to tailor educational content to individual learning styles, ensuring that each student can learn at their own pace and in their own way.
+Geaux Academy provides personalized learning for K-12 students through a parent-led workflow:
+1) Parent creates a Student Profile.
+2) Student completes an AI-guided Learning Style Assessment.
+3) The platform generates grade-appropriate curriculum and activities aligned to the student’s learning style.
+4) Parent approves curriculum before it reaches the student.
+5) Student progress is tracked and surfaced to the parent with insights and interventions.
 
-## Goals
-1. **Personalized Learning Paths**: Develop a system that creates customized learning paths for each student based on their unique learning style and progress.
-2. **Interactive Content**: Integrate interactive and engaging content to enhance the learning experience.
-3. **Progress Tracking**: Implement a robust progress tracking system to monitor student performance and provide feedback.
-4. **Scalability**: Ensure the platform can scale to accommodate a growing number of users without compromising performance.
-5. **Security**: Implement strong security measures to protect user data and ensure privacy.
+## Core Goals
+1) Personalized Learning Paths
+- Generate learning paths based on grade + learning style + progress signals.
 
-## Milestones
-1. **MVP Launch** (Q1 2023)
-   - Complete core features: personalized learning paths, interactive content, and progress tracking.
-   - Conduct initial user testing and gather feedback.
-2. **User Feedback Integration** (Q2 2023)
-   - Analyze user feedback and make necessary improvements.
-   - Enhance user interface and user experience based on feedback.
-3. **Scalability Improvements** (Q3 2023)
-   - Optimize the platform for scalability.
-   - Implement load testing and performance enhancements.
-4. **Security Enhancements** (Q4 2023)
-   - Conduct a comprehensive security audit.
-   - Implement additional security measures based on audit findings.
-5. **Full Launch** (Q1 2024)
-   - Launch the fully optimized and secure platform to the public.
-   - Initiate marketing and user acquisition campaigns.
+2) Interactive Learning Experience
+- Keep lessons engaging and approachable with multi-modal activities.
 
-## Timeline
-- **Q1 2023**: MVP Launch
-- **Q2 2023**: User Feedback Integration
-- **Q3 2023**: Scalability Improvements
-- **Q4 2023**: Security Enhancements
-- **Q1 2024**: Full Launch
+3) Parent Oversight
+- Parents approve curriculum, see progress, and get actionable intervention guidance.
+
+4) Scalable Architecture
+- Cloud Run backend for AI and core APIs; Firestore for rapid iteration.
+
+5) Security and Privacy
+- Strong access controls, least-privilege IAM, no AI keys on the client.
+
+---
+
+## Phased Roadmap
+
+### Phase 1: Foundation and Identity (Mostly Done)
+- [x] React + Vite + Firebase Auth setup
+- [x] Email/password login flow stable
+- [x] Parent Dashboard route gating
+- [x] Student creation from Parent Dashboard
+- [x] Student Dashboard loads and begins assessment UI
+
+Deliverable:
+- Parent can create student and reach student dashboard reliably.
+
+### Phase 2: Assessment Backend and Persistence
+- [ ] Node/Express backend scaffold in `/server`
+- [ ] Firebase Admin token verification middleware
+- [ ] Vertex AI integration wrapper (Gemini on Vertex)
+- [ ] POST /api/learning-style/assess endpoint
+- [ ] Save results to Firestore students/{studentId}
+- [ ] Assessment results UI (student view + parent view)
+
+Deliverable:
+- Assessment produces stored learning style + recommendations with confidence and rationale.
+
+### Phase 3: Curriculum Generation and Parent Approval (CrewAI)
+- [ ] Curriculum generation service (CrewAI or equivalent orchestration)
+- [ ] “Generate Curriculum” trigger only after assessment completion
+- [ ] Parent Approval workflow:
+  - approve/reject/edit
+  - versioning and history
+- [ ] Store curriculum artifacts per student and per term
+
+Deliverable:
+- Parent receives a proposed curriculum aligned to grade + learning style and can approve it.
+
+### Phase 4: Progress Tracking and Insights
+- [ ] Assignment/task model (daily/weekly lessons)
+- [ ] Student completion tracking
+- [ ] Parent insights:
+  - progress summaries
+  - struggle areas
+  - suggested interventions and pacing adjustments
+- [ ] Basic analytics (completion rates, topic mastery signals)
+
+Deliverable:
+- Parent dashboard shows progress and meaningful “what to do next” guidance.
+
+### Phase 5: Hardening and Scale
+- [ ] Security review (rules, IAM, token handling, logging)
+- [ ] Performance improvements and caching
+- [ ] Cost controls for model usage
+- [ ] Observability (Sentry, structured logs, alerts)
+- [ ] CI checks and deployment workflows
+
+Deliverable:
+- Stable, secure, cost-aware system ready for broader rollout.
+
+---
+
+## Key Risks and Mitigations
+- AI output reliability: enforce strict JSON schema and validation.
+- Cost creep: rate limit, cache, and keep inference server-side.
+- Access control: double-enforce in Firestore rules and backend checks.
