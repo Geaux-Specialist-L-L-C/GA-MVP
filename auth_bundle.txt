@@ -1,0 +1,3256 @@
+Geaux Academy Auth Bundle
+Generated: 2025-12-31 01:11:46
+Root: /home/evopimp/Geaux-Dev/GA-MVP
+Included files: 30
+
+Included file list:
+ - src/contexts/AuthContext.tsx
+ - src/config/firebase.ts
+ - src/services/firebaseService.ts
+ - src/components/PrivateRoute.tsx
+ - src/components/auth/AuthRoute.tsx
+ - src/pages/Login.tsx
+ - src/components/auth/LoginForm.tsx
+ - src/components/auth/SignUp.tsx
+ - src/App.tsx
+ - src/main.tsx
+ - index.html
+ - vite.config.js
+ - package.json
+ - scripts/generate-certs.js
+ - src/types/firebase.d.ts
+ - src/types/auth.ts
+ - src/components/GoogleLoginButton.test.tsx
+ - src/components/GoogleLoginButton.tsx
+ - src/firebase/auth-service.ts
+ - src/firebase/auth-service-worker.ts
+ - src/firebase/firebase-messaging-sw.ts
+ - src/firebase/messaging-utils.ts
+ - src/services/firestore.ts
+ - src/services/auth-service.ts
+ - src/components/organisms/AuthForm.tsx
+ - src/components/auth/SignUp.css
+ - src/components/auth/Login.css
+ - src/components/auth/AuthErrorDialog.tsx
+ - src/components/auth/auth.css
+ - src/server/routes/studentRoutes.js
+
+==========================================================================================
+FILE: src/contexts/AuthContext.tsx
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/contexts/AuthContext.tsx
+MOD:  2025-12-30 14:50:36
+SIZE: 6773 bytes
+==========================================================================================
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import {
+  createUserWithEmailAndPassword,
+  getRedirectResult,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  User,
+  UserCredential
+} from 'firebase/auth';
+import { auth, authInit } from '../config/firebase';
+import { firebaseService } from '../services/firebaseService';
+import type { AuthContextType } from '../types/auth';
+
+export type AuthContextProps = AuthContextType;
+
+export const AuthContext = createContext<AuthContextProps>({
+  currentUser: null,
+  user: null,
+  loading: true,
+  isLoading: true,
+  isAuthReady: false,
+  error: null,
+  login: async () => {
+    throw new Error('AuthProvider not initialized');
+  },
+  loginWithGoogle: async () => {
+    throw new Error('AuthProvider not initialized');
+  },
+  signup: async () => {
+    throw new Error('AuthProvider not initialized');
+  },
+  logout: async () => {
+    throw new Error('AuthProvider not initialized');
+  },
+  clearError: () => undefined
+});
+
+export const useAuth = () => useContext(AuthContext);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const redirectHandledRef = useRef(false);
+  const isDev = import.meta.env.DEV;
+
+  useEffect(() => {
+    if (isDev) {
+      console.debug('[AuthProvider] mount');
+    }
+    return () => {
+      if (isDev) {
+        console.debug('[AuthProvider] unmount');
+      }
+    };
+  }, [isDev]);
+
+  useEffect(() => {
+    let isMounted = true;
+    let unsubscribe = () => undefined;
+    let hasResolved = false;
+    let authReadyTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const initAuth = async () => {
+      if (isDev) {
+        console.debug('[AuthProvider] awaiting authInit');
+      }
+      try {
+        await authInit;
+      } catch (authError) {
+        console.warn('[AuthProvider] authInit failed (continuing):', authError);
+      }
+
+      if (!isMounted) return;
+      if (isDev) {
+        console.debug('[AuthProvider] subscribing onAuthStateChanged');
+      }
+      unsubscribe = onAuthStateChanged(
+        auth,
+        (user) => {
+          console.log('[AuthProvider] onAuthStateChanged fired uid=', user?.uid ?? null);
+          if (isDev) {
+            console.debug('[AuthProvider] onAuthStateChanged', {
+              userUid: user?.uid ?? null,
+              currentUserUid: auth.currentUser?.uid ?? null,
+              persistenceManager: (auth as { persistenceManager?: unknown }).persistenceManager
+            });
+          }
+          setCurrentUser(user);
+          setError(null);
+          if (!hasResolved) {
+            hasResolved = true;
+            setLoading(false);
+            setIsAuthReady(true);
+            if (authReadyTimeout) {
+              clearTimeout(authReadyTimeout);
+              authReadyTimeout = null;
+            }
+          }
+        },
+        (authError) => {
+          console.error('Auth state change error:', authError);
+          setError(authError instanceof Error ? authError.message : 'Failed to determine auth state');
+          if (!hasResolved) {
+            hasResolved = true;
+            setLoading(false);
+            setIsAuthReady(true);
+            if (authReadyTimeout) {
+              clearTimeout(authReadyTimeout);
+              authReadyTimeout = null;
+            }
+          }
+        }
+      );
+
+      authReadyTimeout = setTimeout(() => {
+        if (!hasResolved) {
+          console.error('[AuthProvider] auth readiness timeout: forcing ready state');
+          hasResolved = true;
+          setIsAuthReady(true);
+          setLoading(false);
+        }
+      }, 2000);
+    };
+
+    initAuth();
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+      if (authReadyTimeout) {
+        clearTimeout(authReadyTimeout);
+      }
+    };
+  }, [isDev]);
+
+  useEffect(() => {
+    if (redirectHandledRef.current) {
+      return;
+    }
+    redirectHandledRef.current = true;
+
+    const resolveRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        console.log('getRedirectResult result=', result);
+      } catch (redirectError) {
+        console.error('getRedirectResult error:', redirectError);
+        setError(
+          redirectError instanceof Error
+            ? redirectError.message
+            : 'Failed to complete redirect sign-in'
+        );
+      }
+    };
+
+    resolveRedirect();
+  }, []);
+
+  const clearError = () => setError(null);
+
+  const isPopupCancelled = (authError: unknown): boolean => {
+    const firebaseError = authError as { code?: string };
+    return firebaseError.code === 'auth/popup-closed-by-user';
+  };
+
+  const runWithAuthState = async <T,>(
+    action: () => Promise<T>,
+    fallbackMessage: string
+  ): Promise<T> => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await action();
+    } catch (authError) {
+      if (isPopupCancelled(authError)) {
+        return null as T;
+      }
+      const message =
+        authError instanceof Error ? authError.message : fallbackMessage;
+      setError(message);
+      throw authError instanceof Error ? authError : new Error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const login = (email: string, password: string): Promise<UserCredential> =>
+    runWithAuthState(async () => {
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      setCurrentUser(credential.user);
+      return credential;
+    }, 'Failed to log in');
+
+  const signup = (email: string, password: string): Promise<UserCredential> =>
+    runWithAuthState(async () => {
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      setCurrentUser(credential.user);
+      return credential;
+    }, 'Failed to sign up');
+
+  const loginWithGoogle = (): Promise<User | null> =>
+    runWithAuthState(async () => {
+      const user = await firebaseService.signInWithGoogle();
+      if (user) {
+        setCurrentUser(user);
+      }
+      return user;
+    }, 'Failed to sign in with Google');
+
+  const logout = (): Promise<void> =>
+    runWithAuthState(async () => {
+      await firebaseService.signOut();
+    }, 'Failed to log out');
+
+  return (
+    <AuthContext.Provider
+      value={{
+        currentUser,
+        user: currentUser,
+        loading,
+        isLoading: loading,
+        isAuthReady,
+        error,
+        login,
+        loginWithGoogle,
+        signup,
+        logout,
+        clearError
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export default AuthProvider;
+
+==========================================================================================
+FILE: src/config/firebase.ts
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/config/firebase.ts
+MOD:  2025-12-30 14:22:51
+SIZE: 3475 bytes
+==========================================================================================
+// File: /src/config/firebase.ts
+// Description: Centralized Firebase initialization & singleton exports (app, auth, firestore)
+// Author: GitHub Copilot
+// Created: 2025-09-07
+
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import {
+  browserLocalPersistence,
+  browserSessionPersistence,
+  getAuth,
+  inMemoryPersistence,
+  setPersistence
+} from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+
+// Validate required Firebase config (warn only in dev so UI still mounts)
+function validateFirebaseConfig() {
+  const requiredVars = [
+    'VITE_FIREBASE_API_KEY',
+    'VITE_FIREBASE_AUTH_DOMAIN',
+    'VITE_FIREBASE_PROJECT_ID',
+    'VITE_FIREBASE_STORAGE_BUCKET',
+    'VITE_FIREBASE_MESSAGING_SENDER_ID',
+    'VITE_FIREBASE_APP_ID'
+  ];
+  const missing = requiredVars.filter(v => !import.meta.env[v as keyof ImportMetaEnv]);
+  if (missing.length) {
+    // eslint-disable-next-line no-console
+    console.warn('[firebase] Missing env vars (continuing for dev):', missing.join(', '));
+  }
+}
+
+validateFirebaseConfig();
+
+export const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
+};
+
+// Ensure single app instance
+export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(`${label} timeout`)), ms);
+    })
+  ]);
+
+const DEV_PERSISTENCE_TIMEOUT_MS = 5000;
+
+export const authInit = (async () => {
+  if (!import.meta.env.DEV) {
+    try {
+      await setPersistence(auth, browserLocalPersistence);
+    } catch {
+      // ignore in production
+    }
+    return;
+  }
+
+  console.debug('[firebase] setPersistence start');
+  try {
+    await withTimeout(
+      setPersistence(auth, browserLocalPersistence),
+      DEV_PERSISTENCE_TIMEOUT_MS,
+      'local persistence'
+    );
+    console.debug('[firebase] persistence=local');
+    return;
+  } catch (error) {
+    console.warn('[firebase] local persistence failed:', error);
+  }
+
+  try {
+    await withTimeout(
+      setPersistence(auth, browserSessionPersistence),
+      DEV_PERSISTENCE_TIMEOUT_MS,
+      'session persistence'
+    );
+    console.debug('[firebase] persistence=session');
+    return;
+  } catch (error) {
+    console.warn('[firebase] session persistence failed:', error);
+  }
+
+  try {
+    await withTimeout(
+      setPersistence(auth, inMemoryPersistence),
+      DEV_PERSISTENCE_TIMEOUT_MS,
+      'memory persistence'
+    );
+    console.debug('[firebase] persistence=memory');
+  } catch (error) {
+    console.warn('[firebase] persistence disabled (continuing):', error);
+  }
+})();
+export const firestore = getFirestore(app);
+
+if (import.meta.env.DEV) {
+  console.debug('[firebase] app name', app.name);
+  console.debug('[firebase] auth instance', auth.app.name);
+}
+
+// Default export kept for backward compatibility (legacy imports)
+export default app;
+
+==========================================================================================
+FILE: src/services/firebaseService.ts
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/services/firebaseService.ts
+MOD:  2025-12-29 22:57:52
+SIZE: 1357 bytes
+==========================================================================================
+// frontend/src/services/firebaseService.ts
+// Using relative import until TS path mapping for @/config resolves in tooling
+import { auth } from '../config/firebase';
+import {
+  signInWithRedirect,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signOut,
+  User
+} from 'firebase/auth';
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
+export const firebaseService = {
+  // Firebase Authentication
+  signInWithGoogle: async () => {
+    try {
+      await signInWithRedirect(auth, googleProvider);
+      return null;
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+      throw error;
+    }
+  },
+  
+  signOut: async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Error signing out:', error);
+      throw error;
+    }
+  },
+  
+  getCurrentUser: (): Promise<User | null> => {
+    return new Promise((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        unsubscribe();
+        resolve(user);
+      });
+    });
+  },
+  
+  getIdToken: async (): Promise<string | null> => {
+    const user = auth.currentUser;
+    if (!user) return null;
+    try {
+      return await user.getIdToken();
+    } catch (error) {
+      console.error('Error getting ID token:', error);
+      return null;
+    }
+  }
+};
+
+==========================================================================================
+FILE: src/components/PrivateRoute.tsx
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/components/PrivateRoute.tsx
+MOD:  2025-12-30 13:24:30
+SIZE: 1590 bytes
+==========================================================================================
+// File: /src/components/PrivateRoute.tsx
+// Description: A route component that protects routes from unauthorized access
+// Author: GitHub Copilot
+
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import LoadingSpinner from './common/LoadingSpinner';
+import styled from 'styled-components';
+
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: rgba(255, 255, 255, 0.8);
+`;
+
+interface PrivateRouteProps {
+  children: React.ReactNode;
+}
+
+const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }): JSX.Element => {
+  const { currentUser, isAuthReady } = useAuth();
+  const location = useLocation();
+
+  // Show loading spinner while auth state is being determined
+  if (!isAuthReady) {
+    if (import.meta.env.DEV) {
+      console.debug('[PrivateRoute] auth ready:', isAuthReady, 'authed:', !!currentUser);
+    }
+    return (
+      <LoadingContainer>
+        <LoadingSpinner />
+        <span>Loading…</span>
+      </LoadingContainer>
+    );
+  }
+
+  // If not authenticated, redirect to login with current location
+  if (!currentUser) {
+    return (
+      <Navigate 
+        to="/login" 
+        state={{ 
+          from: location
+        }} 
+        replace 
+      />
+    );
+  }
+
+  // If authenticated, render the protected route
+  if (import.meta.env.DEV) {
+    console.debug('[PrivateRoute] auth ready:', isAuthReady, 'authed:', !!currentUser);
+  }
+
+  return <>{children}</>;
+};
+
+export default PrivateRoute;
+
+==========================================================================================
+FILE: src/components/auth/AuthRoute.tsx
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/components/auth/AuthRoute.tsx
+MOD:  2025-12-30 13:24:30
+SIZE: 1569 bytes
+==========================================================================================
+import React from 'react';
+import { Navigate, useLocation, type Location } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import LoadingSpinner from '../common/LoadingSpinner';
+import styled from 'styled-components';
+
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: rgba(255, 255, 255, 0.8);
+`;
+
+interface AuthRouteProps {
+  children: React.ReactNode;
+}
+
+const AuthRoute: React.FC<AuthRouteProps> = ({ children }) => {
+  const { currentUser, isAuthReady } = useAuth();
+  const location = useLocation();
+
+  if (!isAuthReady) {
+    if (import.meta.env.DEV) {
+      console.debug('[AuthRoute] auth ready:', isAuthReady, 'authed:', !!currentUser);
+    }
+    return (
+      <LoadingContainer>
+        <LoadingSpinner />
+      </LoadingContainer>
+    );
+  }
+
+  // If user is authenticated and tries to access auth pages, redirect to dashboard
+  if (currentUser) {
+    const fromState = (location.state as { from?: string | Location } | null)?.from;
+    const destination =
+      typeof fromState === 'string'
+        ? fromState
+        : fromState?.pathname
+          ? `${fromState.pathname}${fromState.search || ''}${fromState.hash || ''}`
+          : '/dashboard';
+    return <Navigate to={destination} replace />;
+  }
+
+  if (import.meta.env.DEV) {
+    console.debug('[AuthRoute] auth ready:', isAuthReady, 'authed:', !!currentUser);
+  }
+
+  // Allow access to auth pages if not authenticated
+  return <>{children}</>;
+};
+
+export default AuthRoute;
+
+==========================================================================================
+FILE: src/pages/Login.tsx
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/pages/Login.tsx
+MOD:  2025-12-30 13:07:40
+SIZE: 2128 bytes
+==========================================================================================
+import React from 'react';
+import { Link } from 'react-router-dom';
+import styled from 'styled-components';
+import LoginForm from '../components/auth/LoginForm';
+
+const Login: React.FC = () => {
+  return (
+    <LoginContainer>
+      <LoginContent className="glass-card">
+        <LoginCopy>
+          <span className="badge">Welcome back</span>
+          <h1>Continue your learning journey.</h1>
+          <p>Access your personalized dashboard, progress insights, and learning plan.</p>
+          <InfoList>
+            <li>Secure, one-tap Google sign in</li>
+            <li>Instant access to your assessment results</li>
+            <li>Personalized learning plan updates</li>
+          </InfoList>
+        </LoginCopy>
+
+        <LoginBox>
+          <Title>Sign in</Title>
+          <LoginForm />
+          <SignUpPrompt>
+            Don't have an account? <StyledLink to="/signup">Sign up</StyledLink>
+          </SignUpPrompt>
+        </LoginBox>
+      </LoginContent>
+    </LoginContainer>
+  );
+};
+
+const LoginContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 80px);
+  padding: 20px;
+`;
+
+const LoginContent = styled.div`
+  width: 100%;
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 2rem;
+  padding: 2rem;
+`;
+
+const LoginCopy = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  p {
+    color: var(--text-secondary);
+  }
+`;
+
+const InfoList = styled.ul`
+  display: grid;
+  gap: 0.5rem;
+  padding-left: 1.2rem;
+  color: var(--text-secondary);
+`;
+
+const LoginBox = styled.div`
+  width: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid var(--border-color);
+`;
+
+const Title = styled.h1`
+  text-align: left;
+  color: var(--text-primary);
+  margin-bottom: 2rem;
+`;
+
+const SignUpPrompt = styled.p`
+  text-align: center;
+  margin-top: 1rem;
+  color: #666;
+`;
+
+const StyledLink = styled(Link)`
+  color: var(--primary-color);
+  text-decoration: none;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+export default Login;
+
+==========================================================================================
+FILE: src/components/auth/LoginForm.tsx
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/components/auth/LoginForm.tsx
+MOD:  2025-12-30 13:42:07
+SIZE: 4216 bytes
+==========================================================================================
+import React, { useState, useEffect } from 'react';
+import styled from 'styled-components';
+import { useAuth } from '../../contexts/AuthContext';
+import { auth } from '../../config/firebase';
+import GoogleLoginButton from '../GoogleLoginButton';
+import Button from '../common/Button';
+import FormGroup from '../molecules/FormGroup';
+import './auth.css';
+
+const ErrorMessage = styled.div`
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 10px 0;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 5px;
+  color: #dc3545;
+  &:hover {
+    opacity: 0.7;
+  }
+`;
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 400px;
+`;
+
+const SigningInMessage = styled.div`
+  font-size: 0.9rem;
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const Input = styled.input`
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 1rem;
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(70, 84, 246, 0.2);
+  }
+`;
+
+const LoginForm: React.FC = (): JSX.Element => {
+  const { login, loginWithGoogle, loading: authLoading, error: authError, clearError } = useAuth();
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [localError, setLocalError] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const isDev = import.meta.env.DEV;
+
+  useEffect(() => {
+    if (typeof clearError === 'function') {
+      clearError();
+    }
+  }, [clearError]);
+
+  const handleDismissError = () => {
+    setLocalError('');
+    if (typeof clearError === 'function') {
+      clearError();
+    }
+  };
+
+  const handleLogin = async (): Promise<void> => {
+    try {
+      setLocalError('');
+      setLoading(true);
+      if (isDev) {
+        console.debug('[LoginForm] submit start', email);
+      }
+      await login(email, password);
+      if (isDev) {
+        console.debug('[LoginForm] login() resolved', auth.currentUser?.uid ?? null);
+      }
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : 'Failed to log in');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async (): Promise<void> => {
+    try {
+      setLocalError('');
+      setLoading(true);
+      if (isDev) {
+        console.debug('[LoginForm] google submit start', email);
+      }
+      await loginWithGoogle();
+      if (isDev) {
+        console.debug('[LoginForm] google login() resolved', auth.currentUser?.uid ?? null);
+      }
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : 'Failed to sign in');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Form onSubmit={(e) => {
+      e.preventDefault();
+      handleLogin();
+    }}>
+      <FormGroup
+        label="Email"
+        inputs={[{
+          placeholder: 'Enter your email',
+          value: email,
+          onChange: (e) => setEmail(e.target.value),
+          error: false
+        }]}
+      />
+      <FormGroup
+        label="Password"
+        inputs={[{
+          placeholder: 'Enter your password',
+          value: password,
+          onChange: (e) => setPassword(e.target.value),
+          error: false
+        }]}
+      />
+      <Button type="submit" $variant="primary" disabled={loading || authLoading}>
+        {loading || authLoading ? 'Signing in…' : 'Login'}
+      </Button>
+      {(loading || authLoading) && (
+        <SigningInMessage>
+          <span aria-hidden="true">⏳</span>
+          Signing in…
+        </SigningInMessage>
+      )}
+      <GoogleLoginButton
+        handleGoogleLogin={handleGoogleLogin}
+        loading={loading || authLoading}
+        error={localError || authError || undefined}
+        onDismissError={handleDismissError}
+      />
+    </Form>
+  );
+};
+
+export default LoginForm;
+
+==========================================================================================
+FILE: src/components/auth/SignUp.tsx
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/components/auth/SignUp.tsx
+MOD:  2025-12-29 16:06:08
+SIZE: 6177 bytes
+==========================================================================================
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import styled from 'styled-components';
+import { FcGoogle } from 'react-icons/fc';
+import { useAuth } from '../../contexts/AuthContext';
+import { CheshireService } from '../../services/cheshireService';
+import Button from '../common/Button';
+import FormGroup from '../molecules/FormGroup';
+
+interface FormData {
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+const SignUp: React.FC = () => {
+  const [formData, setFormData] = useState<FormData>({
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const { signup, loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
+
+  const createCheshireAccount = async (uid: string, email: string) => {
+    try {
+      await CheshireService.createCheshireUser(uid, email);
+    } catch (error) {
+      console.error('Error creating Cheshire account:', error);
+      throw new Error('Failed to create Cheshire account');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const userCredential = await signup(formData.email, formData.password);
+      
+      if (userCredential?.user) {
+        await createCheshireAccount(userCredential.user.uid, userCredential.user.email || '');
+      }
+      
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create account');
+      console.error('Signup error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      await loginWithGoogle();
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sign up with Google');
+      console.error('Google signup error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SignUpContainer>
+      <SignUpCard className="glass-card">
+        <Header>
+          <span className="badge">Create account</span>
+          <h2>Join the Geaux Academy learning lab.</h2>
+          <p>Start with an assessment and build a learning path that fits you.</p>
+        </Header>
+        {error && (
+          <ErrorMessage>
+            <span>{error}</span>
+            <DismissButton onClick={() => setError('')}>✕</DismissButton>
+          </ErrorMessage>
+        )}
+        
+        <Form onSubmit={handleSubmit}>
+          <FormGroup
+            label="Email"
+            inputs={[{
+              placeholder: 'Enter your email',
+              value: formData.email,
+              onChange: (e) => setFormData({ ...formData, email: e.target.value }),
+              error: false
+            }]}
+          />
+          <FormGroup
+            label="Password"
+            inputs={[{
+              placeholder: 'Enter your password',
+              value: formData.password,
+              onChange: (e) => setFormData({ ...formData, password: e.target.value }),
+              error: false
+            }]}
+          />
+          <FormGroup
+            label="Confirm Password"
+            inputs={[{
+              placeholder: 'Confirm your password',
+              value: formData.confirmPassword,
+              onChange: (e) => setFormData({ ...formData, confirmPassword: e.target.value }),
+              error: false
+            }]}
+          />
+          <Button type="submit" $variant="primary">
+            {loading ? 'Creating Account...' : 'Sign Up'}
+          </Button>
+        </Form>
+
+        <Divider>
+          <span>Or</span>
+        </Divider>
+
+        <GoogleButton onClick={handleGoogleSignup} disabled={loading}>
+          <FcGoogle />
+          <span>Sign up with Google</span>
+        </GoogleButton>
+
+        <LoginPrompt>
+          Already have an account? <Link to="/login">Log In</Link>
+        </LoginPrompt>
+      </SignUpCard>
+    </SignUpContainer>
+  );
+};
+
+const SignUpContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 80px);
+  padding: 1rem;
+  background-color: var(--background-color);
+`;
+
+const SignUpCard = styled.div`
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2rem;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 460px;
+`;
+
+const Header = styled.div`
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+
+  p {
+    color: var(--text-secondary);
+  }
+`;
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const Divider = styled.div`
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.5rem 0;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #ddd;
+  }
+
+  span {
+    padding: 0 0.5rem;
+    color: #666;
+    font-size: 0.875rem;
+  }
+`;
+
+const GoogleButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f8f8f8;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`;
+
+const LoginPrompt = styled.p`
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--text-color);
+`;
+
+const Link = styled.a`
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: #dc2626;
+  background-color: #fee2e2;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+`;
+
+const DismissButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 5px;
+  color: #dc2626;
+  &:hover {
+    opacity: 0.7;
+  }
+`;
+
+export default SignUp;
+
+==========================================================================================
+FILE: src/App.tsx
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/App.tsx
+MOD:  2025-12-30 13:42:07
+SIZE: 6589 bytes
+==========================================================================================
+import React, { useEffect, Suspense } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import styled from 'styled-components';
+import Layout from './components/layout/Layout';
+import LoadingSpinner from './components/common/LoadingSpinner';
+import PrivateRoute from './components/PrivateRoute';
+import AuthRoute from './components/auth/AuthRoute';
+import ErrorBoundary from './components/shared/ErrorBoundary';
+import RenderDebugOverlay from './components/debug/RenderDebugOverlay';
+import { useAuth } from './contexts/AuthContext';
+import { auth } from './config/firebase';
+import { ThemeModeProvider } from './theme/ThemeModeContext';
+
+// Lazy load components with explicit types
+const Home = React.lazy(() => import('./pages/Home'));
+const About = React.lazy(() => import('./pages/About'));
+const Contact = React.lazy(() => import('./pages/Contact'));
+const Features = React.lazy(() => import('./pages/Features'));
+const Login = React.lazy(() => import('./pages/Login'));
+const SignUp = React.lazy(() => import('./components/auth/SignUp'));
+const LearningStyles = React.lazy(() => import('./pages/LearningStyles'));
+const Curriculum = React.lazy(() => import('./pages/Curriculum'));
+const ParentDashboard = React.lazy(() => import('./pages/profile/ParentProfile/ParentDashboard'));
+const StudentDashboard = React.lazy(() => import('./pages/profile/StudentProfile/StudentDashboard'));
+const StudentProfile = React.lazy(() => import('./pages/profile/StudentProfile/StudentProfile'));
+const LearningPlan = React.lazy(() => import('./pages/LearningPlan'));
+const TakeAssessment = React.lazy(() => import('./pages/TakeAssessment'));
+const LearningStyleChat = React.lazy(() => import('./components/chat/LearningStyleChat'));
+const TestChat = React.lazy(() => import('./components/chat/TestChat'));
+const Todos = React.lazy(() => import('./pages/Todos'));
+const NotFound = React.lazy(() => import('./pages/NotFound'));
+
+const DebugPanel: React.FC = () => {
+  const { currentUser, isAuthReady } = useAuth();
+  const location = useLocation();
+
+  if (!import.meta.env.DEV) {
+    return null;
+  }
+
+  return (
+    <DebugPanelContainer>
+      <div><strong>Auth Debug</strong></div>
+      <div>isAuthReady: {String(isAuthReady)}</div>
+      <div>currentUser.uid: {currentUser?.uid ?? 'null'}</div>
+      <div>auth.currentUser.uid: {auth.currentUser?.uid ?? 'null'}</div>
+      <div>route: {location.pathname}</div>
+    </DebugPanelContainer>
+  );
+};
+
+const App: React.FC = (): JSX.Element => {
+  // Register service worker for Firebase messaging
+  useEffect(() => {
+    const registerServiceWorker = async (): Promise<void> => {
+      const enableMessaging = import.meta.env.VITE_ENABLE_MESSAGING === 'true';
+      if (!enableMessaging) return;
+      if (!('serviceWorker' in navigator)) return;
+      if (!window.isSecureContext && import.meta.env.MODE !== 'development') {
+        console.debug('[sw] Skipped (insecure context outside dev)');
+        return;
+      }
+      try {
+        const qp = new URLSearchParams({
+          apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+          authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+            projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+          storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+          messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+          appId: import.meta.env.VITE_FIREBASE_APP_ID || ''
+        }).toString();
+        const swUrl = `/firebase-messaging-sw.js?${qp}`;
+        const registration = await navigator.serviceWorker.register(swUrl, {
+          scope: '/',
+          type: 'module',
+          updateViaCache: import.meta.env.DEV ? 'none' : 'imports'
+        });
+        console.debug('[sw] Registered:', registration.scope);
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Unknown error';
+        (import.meta.env.PROD ? console.error : console.warn)('[sw] Registration failed:', msg);
+      }
+    };
+    registerServiceWorker();
+  }, []);
+  
+  return (
+    <ErrorBoundary>
+      <ThemeModeProvider>
+        <AppContainer>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              <Route element={<Layout />}>
+                {/* Public Routes */}
+                <Route path="/" element={<Home />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
+                <Route path="/signup" element={<AuthRoute><SignUp /></AuthRoute>} />
+                <Route path="/learning-styles" element={<LearningStyles />} />
+                <Route path="/curriculum" element={<Curriculum />} />
+                <Route path="/todos" element={<Todos />} />
+                
+                {/* Protected Routes */}
+                <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+                <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
+                <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+                <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
+                <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />
+                <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
+                <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
+                <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </Suspense>
+          <RenderDebugOverlay />
+          <DebugPanel />
+        </AppContainer>
+      </ThemeModeProvider>
+    </ErrorBoundary>
+  );
+};
+
+const AppContainer = styled.div`
+  min-height: 100vh;
+  background-color: ${({ theme }) => theme.palette.background.default};
+`;
+
+const DebugPanelContainer = styled.div`
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 9999;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  border-radius: 8px;
+  pointer-events: none;
+  max-width: 240px;
+  word-break: break-word;
+`;
+
+export default App;
+
+==========================================================================================
+FILE: src/main.tsx
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/main.tsx
+MOD:  2025-12-30 14:50:36
+SIZE: 2367 bytes
+==========================================================================================
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProfileProvider } from './contexts/ProfileContext';
+import App from './App';
+import ErrorBoundary from './components/shared/ErrorBoundary';
+import './index.css';
+import './styles/global.css';
+// Firebase app initialized centrally in config/firebase.ts (tree-shaken singletons)
+import './config/firebase';
+
+if (import.meta.env.DEV) {
+  const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+  if (cspMeta) {
+    cspMeta.remove();
+    console.info('[CSP] Removed Content-Security-Policy meta tag in DEV for HMR.');
+  }
+
+  const metas = [
+    'Cross-Origin-Embedder-Policy',
+    'Cross-Origin-Opener-Policy',
+    'Cross-Origin-Resource-Policy'
+  ];
+  metas.forEach((name) => {
+    const el = document.querySelector(`meta[http-equiv="${name}"]`);
+    if (el) {
+      el.remove();
+      console.warn(`[DEV] Removed ${name} meta tag for Firebase auth compatibility.`);
+    }
+  });
+}
+
+// Configure future flags for React Router v7
+const future = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true
+};
+
+const router = createBrowserRouter([
+  {
+    path: "/*",
+    element: (
+      <ErrorBoundary>
+        <AuthProvider>
+          <ProfileProvider>
+            <App />
+          </ProfileProvider>
+        </AuthProvider>
+      </ErrorBoundary>
+    ),
+  }
+], {
+  future
+});
+
+// Listen for auth service worker status events
+window.addEventListener('firebase-auth-worker-status', (event: Event) => {
+  const { success, isSecure, error } = (event as CustomEvent).detail;
+  if (!success) {
+    console.warn(
+      'Auth service worker initialization status:', 
+      { success, isSecure, error }
+    );
+  }
+});
+
+// Listen for auth errors from service worker
+window.addEventListener('firebase-auth-error', (event: Event) => {
+  const { error, fallbackToRedirect } = (event as CustomEvent).detail;
+  console.error('Firebase auth error:', error);
+  if (fallbackToRedirect) {
+    console.info('Falling back to redirect method for authentication');
+  }
+});
+
+const root = ReactDOM.createRoot(
+  document.getElementById('root') as HTMLElement
+);
+
+root.render(
+  <React.StrictMode>
+    <RouterProvider router={router} />
+  </React.StrictMode>
+);
+
+==========================================================================================
+FILE: index.html
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/index.html
+MOD:  2025-12-30 13:27:50
+SIZE: 2286 bytes
+==========================================================================================
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups" />
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
+    <meta http-equiv="Cross-Origin-Resource-Policy" content="same-site" />
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseio.com https://*.firebase.com https://*.googleapis.com https://apis.google.com https://*.gstatic.com https://www.googletagmanager.com;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' https://fonts.gstatic.com;
+      img-src 'self' data: https: blob:;
+      media-src 'self';
+      connect-src 'self'
+        http://localhost:5173
+        ws://localhost:5173
+        http://127.0.0.1:5173
+        ws://127.0.0.1:5173
+        http://100.86.7.87:5173
+        ws://100.86.7.87:5173
+        wss://evopimp-stylistic-q704.tail78d61.ts.net
+        wss://*.ts.net
+        https://*.firebaseio.com
+        https://*.googleapis.com
+        wss://*.firebaseio.com
+        https://*.google.com
+        https://firestore.googleapis.com
+        https://*.firebaseauth.com
+        https://*.firebasestorage.googleapis.com;
+      frame-src 'self' https://*.firebaseapp.com https://*.google.com;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+      ">
+    <title>Geaux Academy</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+    <script>
+      // Expose Firebase keys for service worker (only the required public ones)
+      self.__FIREBASE_API_KEY__ = "%VITE_FIREBASE_API_KEY%";
+      self.__FIREBASE_AUTH_DOMAIN__ = "%VITE_FIREBASE_AUTH_DOMAIN%";
+      self.__FIREBASE_PROJECT_ID__ = "%VITE_FIREBASE_PROJECT_ID%";
+      self.__FIREBASE_STORAGE_BUCKET__ = "%VITE_FIREBASE_STORAGE_BUCKET%";
+      self.__FIREBASE_MESSAGING_SENDER_ID__ = "%VITE_FIREBASE_MESSAGING_SENDER_ID%";
+      self.__FIREBASE_APP_ID__ = "%VITE_FIREBASE_APP_ID%";
+    </script>
+</html>
+
+==========================================================================================
+FILE: vite.config.js
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/vite.config.js
+MOD:  2025-12-29 22:57:52
+SIZE: 6754 bytes
+==========================================================================================
+// vite.config.js
+import fs from "fs";
+import { resolve } from "path";
+import path from "path";
+
+import react from "@vitejs/plugin-react";
+import vue from "@vitejs/plugin-vue";
+import { defineConfig } from "vite";
+
+// Get SSL certificates for local development (optional)
+// NOTE: If you enable HTTPS here, make sure your certs match the hostname you browse with.
+const getHttpsConfig = () => {
+  const certPath = path.join(process.cwd(), "certificates");
+
+  // Only use HTTPS in development
+  if (process.env.NODE_ENV === "development") {
+    try {
+      return {
+        key: fs.readFileSync(path.join(certPath, "localhost-key.pem")),
+        cert: fs.readFileSync(path.join(certPath, "localhost.pem")),
+      };
+    } catch (e) {
+      console.warn(
+        "No SSL certificates found. Run `npm run generate-certs` to create them."
+      );
+      return false;
+    }
+  }
+  return false;
+};
+
+const TAILNET_DOMAIN = "tail78d61.ts.net";
+
+// Optional: set this to your MagicDNS name or tailnet FQDN when needed
+// Examples:
+//   export VITE_DEV_HOST=evopimp-stylistic-q704
+//   export VITE_DEV_HOST=evopimp-stylistic-q704.tail78d61.ts.net
+const DEV_HOST = process.env.VITE_DEV_HOST;
+
+// CSP: allow local + tailscale dev access (http/ws) plus Firebase/Google endpoints
+const csp = `
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval'
+    https://*.firebaseio.com https://*.firebase.com
+    https://*.googleapis.com https://apis.google.com
+    https://*.gstatic.com https://www.googletagmanager.com;
+  connect-src 'self'
+    http://localhost:5173 ws://localhost:5173
+    http://127.0.0.1:5173 ws://127.0.0.1:5173
+    http://0.0.0.0:5173 ws://0.0.0.0:5173
+    http://100.86.7.87:5173 ws://100.86.7.87:5173
+    http://*.${TAILNET_DOMAIN}:5173 ws://*.${TAILNET_DOMAIN}:5173
+    https://*.${TAILNET_DOMAIN} wss://*.${TAILNET_DOMAIN}
+    https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com
+    https://*.googleapis.com https://firestore.googleapis.com wss://firestore.googleapis.com;
+  frame-src 'self'
+    https://*.firebaseapp.com https://*.firebase.com
+    https://accounts.google.com https://*.googleapis.com;
+  img-src 'self' data: https: blob:;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src 'self' https://fonts.gstatic.com;
+  worker-src 'self' blob: 'unsafe-inline';
+`.replace(/\s+/g, " ");
+
+export default defineConfig({
+  plugins: [
+    react({
+      jsxImportSource: "@emotion/react",
+      babel: {
+        plugins: ["@emotion/babel-plugin"],
+      },
+      // Enable React Router v7 future flags
+      future: {
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      },
+    }),
+    vue(),
+  ],
+
+  build: {
+    target: "esnext",
+    outDir: "dist",
+    sourcemap: true,
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, "index.html"),
+        "firebase-messaging-sw": resolve(__dirname, "public/firebase-messaging-sw.js"),
+      },
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          "firebase-app": ["firebase/app"],
+          "firebase-auth": ["firebase/auth"],
+          "firebase-firestore": ["firebase/firestore"],
+        },
+      },
+    },
+  },
+
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
+    coverage: {
+      reporter: ["text", "json", "html"],
+      exclude: ["**/node_modules/**", "**/dist/**", "src/test/setup.ts"],
+    },
+  },
+
+  server: {
+    port: 5173,
+    strictPort: true,
+
+    // Leave HTTPS off unless you have certs that match the hostname you browse with.
+    // If you want to enable local HTTPS for localhost only, switch to:
+    // https: getHttpsConfig(),
+    https: false,
+
+    host: true,
+    cors: true,
+
+    // ✅ Fix for: "Blocked request. This host (...) is not allowed."
+    // Allow your MagicDNS host + any *.tail78d61.ts.net hosts
+    allowedHosts: [
+      "localhost",
+      "evopimp-stylistic-q704",
+      "100.86.7.87",
+      `.${TAILNET_DOMAIN}`,
+    ],
+
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+      "Cross-Origin-Embedder-Policy": "credentialless",
+      "Content-Security-Policy": csp,
+    },
+
+    proxy: {
+      "/api": {
+        target: process.env.VITE_AZURE_ENDPOINT,
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      "/auth": {
+        target: process.env.VITE_CHESHIRE_API_URL || "https://cheshire.geaux.app",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (p) => p.replace(/^\/auth/, "/auth"),
+        configure: (proxy) => {
+          proxy.on("error", (err) => {
+            console.error("Proxy error:", err);
+          });
+          proxy.on("proxyReq", (proxyReq, req) => {
+            console.log("Proxying request:", req.method, req.url);
+            proxyReq.setHeader("Cookie", "Global=Auth");
+          });
+        },
+      },
+      "/message": {
+        target: process.env.VITE_CHESHIRE_API_URL || "https://cheshire.geaux.app",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (p) => p.replace(/^\/message/, "/message"),
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq) => {
+            proxyReq.setHeader("Cookie", "Global=Auth");
+          });
+        },
+      },
+      "/__/auth/*": {
+        target: "https://localhost:3001",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+
+    // HMR: let it auto-detect unless you explicitly set VITE_DEV_HOST
+    hmr: {
+      protocol: "wss",
+      host: "evopimp-stylistic-q704.tail78d61.ts.net",
+      port: 5173,
+      clientPort: 443,
+      timeout: 120000,
+    },
+
+    watch: {
+      usePolling: true,
+    },
+  },
+
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "src"),
+    },
+    extensions: [".js", ".jsx", ".ts", ".tsx"],
+  },
+
+  define: {
+    __VITE_FIREBASE_API_KEY__: `"${process.env.VITE_FIREBASE_API_KEY}"`,
+    __VITE_FIREBASE_AUTH_DOMAIN__: `"${process.env.VITE_FIREBASE_AUTH_DOMAIN}"`,
+    __VITE_FIREBASE_PROJECT_ID__: `"${process.env.VITE_FIREBASE_PROJECT_ID}"`,
+    __VITE_FIREBASE_STORAGE_BUCKET__: `"${process.env.VITE_FIREBASE_STORAGE_BUCKET}"`,
+    __VITE_FIREBASE_MESSAGING_SENDER_ID__: `"${process.env.VITE_FIREBASE_MESSAGING_SENDER_ID}"`,
+    __VITE_FIREBASE_APP_ID__: `"${process.env.VITE_FIREBASE_APP_ID}"`,
+    __VITE_FIREBASE_MEASUREMENT_ID__: `"${process.env.VITE_FIREBASE_MEASUREMENT_ID}"`,
+    __VITE_FIREBASE_DATABASE_URL__: `"${process.env.VITE_FIREBASE_DATABASE_URL}"`,
+    // Enable React Router v7 future flags
+    "process.env.ROUTER_FUTURE_FLAGS": JSON.stringify({
+      v7_startTransition: true,
+      v7_relativeSplatPath: true,
+    }),
+  },
+
+  optimizeDeps: {
+    include: ["firebase/app", "firebase/auth"],
+  },
+});
+
+==========================================================================================
+FILE: package.json
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/package.json
+MOD:  2025-12-29 12:32:13
+SIZE: 3770 bytes
+==========================================================================================
+{
+  "name": "geaux-academy",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=18.20.6",
+    "npm": ">=8.0.0"
+  },
+  "scripts": {
+    "start": "vite",
+    "dev": "node scripts/generate-certs.js && vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "serve": "firebase emulators:start",
+    "deploy": "firebase deploy",
+    "ci": "npm ci --legacy-peer-deps && npm run lint && npm test && npm run build",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && husky install || true"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
+    "@fontsource/poppins": "^5.1.1",
+    "@fontsource/roboto": "^5.1.1",
+    "@fortawesome/fontawesome-svg-core": "^6.7.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/react-fontawesome": "^0.2.2",
+    "@genkit-ai/googleai": "0.9.12",
+    "@langchain/openai": "^0.4.2",
+    "@mui/icons-material": "^6.4.4",
+    "@mui/material": "^6.4.5",
+    "@mui/styles": "^6.4.3",
+    "@reduxjs/toolkit": "^2.5.0",
+    "@supabase/supabase-js": "^2.49.1",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/compiler-sfc": "^3.5.13",
+    "axios": "^1.7.9",
+    "chart.js": "^4.4.7",
+    "dotenv": "^16.4.7",
+    "express": "^4.18.2",
+    "firebase": "^11.3.1",
+    "firebase-admin": "12.7.0",
+    "firebase-functions": "^4.4.1",
+    "framer-motion": "^12.0.6",
+    "genkit": "0.9.12",
+    "google-auth-library": "^9.15.1",
+    "google-gax": "^4.4.1",
+    "langchain": "^0.3.13",
+    "mongodb": "^6.13.1",
+    "mongoose": "^8.10.2",
+    "prettier": "^3.4.2",
+    "react": "^18.0.0",
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "^18.0.0",
+    "react-icons": "^5.4.0",
+    "react-redux": "^9.2.0",
+    "react-router": "^6.22.0",
+    "react-router-dom": "^6.22.0",
+    "styled-components": "^6.1.15",
+    "vue": "^3.5.13",
+    "vue-chartjs": "^5.3.2"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.26.9",
+    "@babel/preset-react": "^7.26.3",
+    "@eslint/js": "^8.45.0",
+    "@firebase/app-types": "^0.9.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^14.3.1",
+    "@testing-library/react-hooks": "^8.0.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jest": "29.5.14",
+    "@types/node": "^22.13.1",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/parser": "^5.62.0",
+    "@typescript-eslint/typescript-estree": "^6.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^1.6.1",
+    "babel-jest": "^29.7.0",
+    "eslint": "^8.0.0",
+    "eslint-import-resolver-typescript": "^3.7.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "eslint-plugin-vue": "^9.32.0",
+    "firebase-functions-test": "^3.1.0",
+    "genkit-cli": "^1.0.0",
+    "glob": "^10.3.10",
+    "globals": "^15.14.0",
+    "husky": "^9.1.7",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^29.0.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jsdom": "^22.1.0",
+    "lru-cache": "^10.2.0",
+    "mkcert": "^3.2.0",
+    "prettier-eslint": "^15.0.0",
+    "rimraf": "^5.0.5",
+    "selfsigned": "^2.4.1",
+    "ts-jest": "^29.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.1.6",
+    "typescript-eslint": "^8.24.0",
+    "vite": "^6.1.0",
+    "vitest": "^1.6.1",
+    "vue-loader": "^17.4.2"
+  },
+  "overrides": {
+    "glob": "^10.3.10",
+    "rimraf": "^5.0.5"
+  }
+}
+
+==========================================================================================
+FILE: scripts/generate-certs.js
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/scripts/generate-certs.js
+MOD:  2025-12-29 12:32:13
+SIZE: 866 bytes
+==========================================================================================
+// File: /scripts/generate-certs.js
+// Description: Generates self-signed SSL certificates for local development
+// Author: GitHub Copilot
+// Created: 2023-10-10
+
+import mkcert from 'mkcert';
+import { mkdir, writeFile } from 'fs/promises';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+async function generateCerts() {
+  // Use existing certs in project root
+  const certPath = join(process.cwd(), 'localhost.pem');
+  const keyPath = join(process.cwd(), 'localhost-key.pem');
+
+  console.log('Using existing SSL certificate and key:');
+  console.log('Certificate:', certPath);
+  console.log('Key:', keyPath);
+}
+
+generateCerts().catch(err => {
+  console.error('Failed to generate certificates:', err);
+  process.exit(1);
+});
+
+==========================================================================================
+FILE: src/types/firebase.d.ts
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/types/firebase.d.ts
+MOD:  2025-12-29 12:32:13
+SIZE: 515 bytes
+==========================================================================================
+// File: /src/types/firebase.d.ts
+// Description: Type declarations for Firebase modules
+// Author: GitHub Copilot
+// Created: 2024-02-12
+
+declare module 'firebase/app' {
+  export * from '@firebase/app';
+}
+
+declare module 'firebase/auth' {
+  export * from '@firebase/auth';
+}
+
+declare module 'firebase/firestore' {
+  export * from '@firebase/firestore';
+}
+
+declare module 'firebase/analytics' {
+  export * from '@firebase/analytics';
+}
+
+declare module 'firebase/messaging' {
+  export * from '@firebase/messaging';
+}
+
+==========================================================================================
+FILE: src/types/auth.ts
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/types/auth.ts
+MOD:  2025-12-29 18:22:18
+SIZE: 1673 bytes
+==========================================================================================
+import { User, UserCredential } from 'firebase/auth';
+
+export interface AuthError {
+  code?: string;
+  message: string;
+}
+
+export interface AuthContextType {
+  currentUser: User | null;
+  user: User | null;
+  loading: boolean;
+  isLoading: boolean;
+  isAuthReady: boolean;
+  error: string | null;
+  login: (email: string, password: string) => Promise<UserCredential>;
+  loginWithGoogle: () => Promise<User | null>;
+  signup: (email: string, password: string) => Promise<UserCredential>;
+  logout: () => Promise<void>;
+  clearError: () => void;
+}
+
+export interface Student {
+  id: string;
+  name: string;
+  grade: string;
+  parentId: string;
+  hasTakenAssessment: boolean;
+  createdAt: string;
+  updatedAt: string;
+  learningStyle?: string;
+  assessmentResults?: object;
+}
+
+export interface Parent {
+  id: string;
+  uid: string;
+  email: string;
+  displayName: string;
+  phone?: string;
+  students: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuthRouteProps {
+  children: React.ReactNode;
+}
+
+export interface PrivateRouteProps {
+  children: React.ReactNode;
+}
+
+declare global {
+  interface WindowEventMap {
+    'firebase-auth-worker-status': CustomEvent<{
+      success: boolean;
+      isSecure: boolean;
+      supportsServiceWorker: boolean;
+      error?: string;
+    }>;
+    'firebase-auth-error': CustomEvent<{
+      error: string;
+      fallbackToRedirect?: boolean;
+      status?: number;
+    }>;
+    'firebase-auth-popup-ready': CustomEvent<{
+      secure: boolean;
+    }>;
+    'firebase-auth-success': CustomEvent<{
+      status: number;
+    }>;
+    'firebase-auth-security': CustomEvent<{
+      secure: boolean;
+    }>;
+  }
+}
+
+export {};
+
+==========================================================================================
+FILE: src/components/GoogleLoginButton.test.tsx
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/components/GoogleLoginButton.test.tsx
+MOD:  2025-12-29 12:32:13
+SIZE: 2285 bytes
+==========================================================================================
+/** @jest-environment jsdom */
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithProviders } from '../test/testUtils';
+import GoogleLoginButton from './GoogleLoginButton';
+
+describe('GoogleLoginButton', () => {
+  const mockHandleGoogleLogin = jest.fn();
+  const mockDismissError = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('renders sign in button with correct accessibility', () => {
+    renderWithProviders(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} />);
+    expect(screen.getByRole('button', { name: /sign in with google/i })).toBeInTheDocument();
+  });
+
+  it('shows loading state when loading prop is true', () => {
+    renderWithProviders(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} loading={true} />);
+    const button = screen.getByRole('button', { name: /signing in/i });
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent('Signing in...');
+  });
+
+  it('displays error message with dismiss button', () => {
+    const errorMessage = 'Test error message';
+    renderWithProviders(
+      <GoogleLoginButton 
+        handleGoogleLogin={mockHandleGoogleLogin} 
+        error={errorMessage}
+        onDismissError={mockDismissError} 
+      />
+    );
+    
+    expect(screen.getByRole('alert')).toHaveTextContent(errorMessage);
+    expect(screen.getByRole('button', { name: /dismiss error/i })).toBeInTheDocument();
+  });
+
+  it('calls onDismissError when dismiss button is clicked', async () => {
+    const errorMessage = 'Test error message';
+    renderWithProviders(
+      <GoogleLoginButton 
+        handleGoogleLogin={mockHandleGoogleLogin} 
+        error={errorMessage}
+        onDismissError={mockDismissError} 
+      />
+    );
+    
+    fireEvent.click(screen.getByRole('button', { name: /dismiss error/i }));
+    await waitFor(() => {
+      expect(mockDismissError).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('calls handleGoogleLogin when sign in button is clicked', async () => {
+    renderWithProviders(<GoogleLoginButton handleGoogleLogin={mockHandleGoogleLogin} />);
+    fireEvent.click(screen.getByRole('button', { name: /sign in with google/i }));
+    await waitFor(() => {
+      expect(mockHandleGoogleLogin).toHaveBeenCalled();
+    });
+  });
+});
+
+==========================================================================================
+FILE: src/components/GoogleLoginButton.tsx
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/components/GoogleLoginButton.tsx
+MOD:  2025-12-29 17:44:55
+SIZE: 2755 bytes
+==========================================================================================
+import React from 'react';
+import styled from 'styled-components';
+import { FcGoogle } from 'react-icons/fc';
+import { useAuth } from '../contexts/AuthContext';
+
+interface GoogleLoginButtonProps {
+  handleGoogleLogin?: () => Promise<void>;
+  loading?: boolean;
+  error?: string;
+  onDismissError?: () => void;
+}
+
+const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
+  handleGoogleLogin,
+  loading = false,
+  error,
+  onDismissError
+}): JSX.Element => {
+  const { loginWithGoogle } = useAuth();
+  const triggerLogin = handleGoogleLogin ?? loginWithGoogle;
+
+  const handleClick = async (): Promise<void> => {
+    try {
+      await triggerLogin();
+    } catch (err) {
+      console.error('Google login error:', err);
+    }
+  };
+
+  return (
+    <ButtonContainer>
+      {error && (
+        <ErrorMessage role="alert">
+          <span>{error}</span>
+          {onDismissError && (
+            <DismissButton 
+              onClick={onDismissError}
+              aria-label="dismiss error"
+            >
+              ✕
+            </DismissButton>
+          )}
+        </ErrorMessage>
+      )}
+      <LoginButton 
+        onClick={handleClick}
+        disabled={loading}
+        aria-label={loading ? 'Signing in...' : 'Sign in with Google'}
+      >
+        <FcGoogle />
+        {loading ? 'Signing in...' : 'Sign in with Google'}
+      </LoginButton>
+    </ButtonContainer>
+  );
+};
+
+const ButtonContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+  width: 100%;
+`;
+
+const LoginButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing.md};
+  border: 1px solid ${({ theme }) => theme.palette.divider};
+  border-radius: 4px;
+  background: white;
+  color: ${({ theme }) => theme.palette.text.primary};
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover:not(:disabled) {
+    background-color: ${({ theme }) => theme.palette.action?.hover || '#f5f5f5'};
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: ${({ theme }) => theme.spacing.sm};
+  background-color: ${({ theme }) => theme.palette.error.light};
+  color: ${({ theme }) => theme.palette.error.main};
+  border-radius: 4px;
+  font-size: 0.875rem;
+`;
+
+const DismissButton = styled.button`
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: ${({ theme }) => theme.spacing.xs};
+  margin-left: ${({ theme }) => theme.spacing.sm};
+
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
+export default GoogleLoginButton;
+
+==========================================================================================
+FILE: src/firebase/auth-service.ts
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/firebase/auth-service.ts
+MOD:  2025-12-29 12:32:13
+SIZE: 3225 bytes
+==========================================================================================
+import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, Auth, User } from "firebase/auth";
+import { auth } from './config';
+
+export class AuthService {
+  private provider: GoogleAuthProvider;
+  private initialized: boolean = false;
+  private popupOpen: boolean = false;
+  private _auth: Auth;
+
+  constructor() {
+    this.provider = new GoogleAuthProvider();
+    this.provider.setCustomParameters({
+      prompt: 'select_account',
+      scope: 'email profile'
+    });
+    this._auth = auth;
+  }
+
+  get auth(): Auth {
+    return this._auth;
+  }
+
+  private async ensureInitialized() {
+    if (!this.initialized) {
+      await new Promise<void>((resolve) => {
+        const unsubscribe = this._auth.onAuthStateChanged(() => {
+          unsubscribe();
+          this.initialized = true;
+          resolve();
+        });
+      });
+    }
+  }
+
+  private async refreshUserToken(user: User): Promise<string> {
+    try {
+      const token = await user.getIdToken(true);
+      return token;
+    } catch (error: any) {
+      console.error('Token refresh error:', error);
+      throw new Error(error.message || 'Failed to refresh authentication token');
+    }
+  }
+
+  async signInWithGoogle() {
+    try {
+      if (this.popupOpen) {
+        throw new Error('Authentication popup is already open');
+      }
+
+      await this.ensureInitialized();
+      this.popupOpen = true;
+
+      const result = await signInWithPopup(this._auth, this.provider);
+      const token = await this.refreshUserToken(result.user);
+      
+      // Store token in a secure way
+      if (window.isSecureContext) {
+        sessionStorage.setItem('authToken', token);
+      }
+      
+      return result;
+    } catch (error: any) {
+      console.error('Google sign-in error:', error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        throw new Error('Sign-in cancelled by user');
+      } else if (error.code === 'auth/popup-blocked') {
+        throw new Error('Sign-in popup was blocked. Please allow popups for this site');
+      }
+      throw new Error(error.message || 'Failed to sign in with Google');
+    } finally {
+      this.popupOpen = false;
+    }
+  }
+
+  async signOut() {
+    try {
+      await this.ensureInitialized();
+      if (window.isSecureContext) {
+        sessionStorage.removeItem('authToken');
+      }
+      await firebaseSignOut(this._auth);
+    } catch (error: any) {
+      console.error('Sign out error:', error);
+      throw new Error(error.message || 'Failed to sign out');
+    }
+  }
+
+  async refreshToken(): Promise<string | null> {
+    try {
+      await this.ensureInitialized();
+      const currentUser = this._auth.currentUser;
+      
+      if (!currentUser) {
+        return null;
+      }
+
+      const token = await this.refreshUserToken(currentUser);
+      
+      if (window.isSecureContext) {
+        sessionStorage.setItem('authToken', token);
+      }
+      
+      return token;
+    } catch (error: any) {
+      console.error('Token refresh error:', error);
+      throw new Error(error.message || 'Failed to refresh authentication token');
+    }
+  }
+
+  getCurrentToken(): string | null {
+    if (!window.isSecureContext) {
+      return null;
+    }
+    return sessionStorage.getItem('authToken');
+  }
+}
+
+==========================================================================================
+FILE: src/firebase/auth-service-worker.ts
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/firebase/auth-service-worker.ts
+MOD:  2025-12-29 12:32:13
+SIZE: 5378 bytes
+==========================================================================================
+import { enableIndexedDbPersistence, type FirestoreSettings } from 'firebase/firestore';
+import { firestore } from './config';
+
+interface ServiceWorkerError extends Error {
+  name: string;
+  code?: string;
+}
+
+interface AuthServiceWorkerMessage {
+  type: string;
+  status?: number;
+  ok?: boolean;
+  fallbackToRedirect?: boolean;
+  error?: string;
+  secure?: boolean;
+}
+
+interface ServiceWorkerRegistrationResult {
+  success: boolean;
+  isSecure: boolean;
+  supportsServiceWorker: boolean;
+  error?: string;
+}
+
+const SW_TIMEOUT = Number(import.meta.env.VITE_SERVICE_WORKER_TIMEOUT) || 10000;
+const MAX_RETRIES = Number(import.meta.env.VITE_MAX_AUTH_RETRIES) || 3;
+
+const isSecureContext = (): boolean => {
+  return window.isSecureContext && (
+    window.location.protocol === 'https:' || 
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  );
+};
+
+let serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
+let retryCount = 0;
+
+const registerWithRetry = async (): Promise<ServiceWorkerRegistration> => {
+  try {
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+      scope: '/__/auth',
+      type: 'module',
+      updateViaCache: 'none'
+    });
+    return registration;
+  } catch (error) {
+    if (retryCount < MAX_RETRIES) {
+      retryCount++;
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return registerWithRetry();
+    }
+    throw error;
+  }
+};
+
+export const registerAuthServiceWorker = async (): Promise<ServiceWorkerRegistrationResult> => {
+  if (!('serviceWorker' in navigator)) {
+    return {
+      success: false,
+      isSecure: false,
+      supportsServiceWorker: false,
+      error: 'Service workers are not supported in this browser'
+    };
+  }
+
+  if (!isSecureContext()) {
+    return {
+      success: false,
+      isSecure: false,
+      supportsServiceWorker: true,
+      error: 'Secure context required for authentication'
+    };
+  }
+
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map(registration => registration.unregister()));
+
+    serviceWorkerRegistration = await registerWithRetry();
+
+    const activationPromise = new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Service worker activation timeout'));
+      }, SW_TIMEOUT);
+
+      if (serviceWorkerRegistration?.active) {
+        clearTimeout(timeout);
+        resolve();
+        return;
+      }
+
+      serviceWorkerRegistration?.addEventListener('activate', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+    });
+
+    await activationPromise;
+
+    return {
+      success: true,
+      isSecure: isSecureContext(),
+      supportsServiceWorker: true
+    };
+
+  } catch (error) {
+    console.error('Service worker registration failed:', error);
+    return {
+      success: false,
+      isSecure: isSecureContext(),
+      supportsServiceWorker: true,
+      error: error instanceof Error ? error.message : 'Service worker registration failed'
+    };
+  }
+};
+
+export const initAuthServiceWorker = async (): Promise<boolean> => {
+  const result = await registerAuthServiceWorker();
+  
+  window.dispatchEvent(new CustomEvent('firebase-auth-worker-status', { 
+    detail: result 
+  }));
+
+  if (!result.success) {
+    console.warn('Auth service worker initialization failed:', result.error);
+    return false;
+  }
+
+  // Initialize Firestore persistence after successful service worker registration
+  try {
+    const settings: FirestoreSettings = {
+      cacheSizeBytes: 50000000, // 50 MB
+    };
+    
+    await enableIndexedDbPersistence(db);
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to enable persistence:', error);
+    return false;
+  }
+};
+
+function handleServiceWorkerMessage(event: MessageEvent<AuthServiceWorkerMessage>) {
+  const { type, status, ok, fallbackToRedirect, error, secure } = event.data;
+
+  const dispatch = (eventName: string, detail: any) => {
+    window.dispatchEvent(new CustomEvent(eventName, { detail }));
+  };
+
+  switch (type) {
+    case 'FIREBASE_SERVICE_WORKER_READY':
+      console.debug('Firebase auth service worker ready');
+      dispatch('firebase-auth-worker-ready', { secure });
+      break;
+      
+    case 'FIREBASE_AUTH_POPUP_READY':
+      console.debug('Firebase auth popup ready');
+      dispatch('firebase-auth-popup-ready', { secure });
+      break;
+      
+    case 'FIREBASE_AUTH_POPUP_ERROR':
+      if (fallbackToRedirect && import.meta.env.VITE_AUTH_POPUP_FALLBACK === 'true') {
+        console.warn('Popup authentication failed, falling back to redirect method');
+      }
+      dispatch('firebase-auth-error', { error, fallbackToRedirect });
+      break;
+      
+    case 'AUTH_RESPONSE':
+      if (!ok) {
+        console.error('Authentication response error:', status);
+        dispatch('firebase-auth-error', { status, error });
+      } else {
+        dispatch('firebase-auth-success', { status });
+      }
+      break;
+      
+    case 'SECURE_CONTEXT_CHECK':
+      if (!secure) {
+        console.warn('Authentication requires a secure context (HTTPS)');
+        dispatch('firebase-auth-security', { secure: false });
+      }
+      break;
+  }
+}
+
+navigator.serviceWorker?.addEventListener('message', handleServiceWorkerMessage);
+
+export default initAuthServiceWorker;
+
+==========================================================================================
+FILE: src/firebase/firebase-messaging-sw.ts
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/firebase/firebase-messaging-sw.ts
+MOD:  2025-12-30 13:42:07
+SIZE: 2245 bytes
+==========================================================================================
+// File: /src/firebase/firebase-messaging-sw.ts
+// Description: Firebase service worker configuration for handling background messages and notifications
+// Author: GitHub Copilot
+// Created: 2024-02-17
+
+/// <reference lib="webworker" />
+
+import { initializeApp } from 'firebase/app';
+import { getMessaging, onBackgroundMessage, MessagePayload } from 'firebase/messaging/sw';
+import { firebaseConfig } from '../config/firebase';
+
+declare const self: ServiceWorkerGlobalScope;
+
+// Initialize Firebase in the service worker
+const app = initializeApp(firebaseConfig);
+const messaging = getMessaging(app);
+
+// Handle background messages
+onBackgroundMessage(messaging, (payload: MessagePayload) => {
+  console.log('[Firebase Messaging SW] Received background message:', payload);
+
+  // Customize notification here
+  const notificationTitle = payload.notification?.title || 'New Message';
+  const notificationOptions: NotificationOptions = {
+    body: payload.notification?.body,
+    icon: '/images/logo.svg',
+    badge: '/images/logo.svg',
+    tag: payload.collapseKey || 'default',
+    data: payload.data,
+    requireInteraction: true,
+    silent: false
+  };
+
+  return self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  
+  // Add custom click handling here
+  const clickAction = event.notification.data?.clickAction || '/';
+  
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((windowClients) => {
+        // If a window client is already open, focus it
+        for (const client of windowClients) {
+          if (client.url === clickAction && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Otherwise open a new window
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(clickAction);
+        }
+      })
+  );
+});
+
+// Handle service worker activation
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    Promise.all([
+      // Take control of all pages immediately
+      self.clients.claim(),
+      // Optional: Clean up old caches here if needed
+    ])
+  );
+});
+
+==========================================================================================
+FILE: src/firebase/messaging-utils.ts
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/firebase/messaging-utils.ts
+MOD:  2025-12-29 12:32:13
+SIZE: 1816 bytes
+==========================================================================================
+// File: /src/firebase/messaging-utils.ts
+// Description: Firebase messaging utilities with proper TypeScript support and error handling
+// Author: GitHub Copilot
+// Created: 2024-02-17
+
+import { getToken, getMessaging } from 'firebase/messaging';
+import { app } from './config';
+
+const VAPID_KEY = 'YOUR_VAPID_KEY_HERE'; // TODO: Replace with actual VAPID key
+
+export interface ServiceWorkerRegistrationResult {
+  success: boolean;
+  token?: string;
+  error?: string;
+}
+
+export async function registerMessagingWorker(): Promise<ServiceWorkerRegistrationResult> {
+  if (!window.isSecureContext) {
+    return {
+      success: false,
+      error: 'Service Worker registration requires a secure context (HTTPS or localhost)'
+    };
+  }
+
+  if (!('serviceWorker' in navigator)) {
+    return {
+      success: false,
+      error: 'Service Worker is not supported in this browser'
+    };
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+      scope: '/',
+      type: 'module'
+    });
+
+    const messaging = getMessaging(app);
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration
+    });
+
+    if (!token) {
+      return {
+        success: false,
+        error: 'Failed to get messaging token'
+      };
+    }
+
+    return {
+      success: true,
+      token
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to register service worker'
+    };
+  }
+}
+
+export async function unregisterMessagingWorker(): Promise<void> {
+  if ('serviceWorker' in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (const registration of registrations) {
+      await registration.unregister();
+    }
+  }
+}
+
+==========================================================================================
+FILE: src/services/firestore.ts
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/services/firestore.ts
+MOD:  2025-12-29 12:32:13
+SIZE: 573 bytes
+==========================================================================================
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { firestore } from '../config/firebase';
+
+export async function getData(collectionName: string, docId: string) {
+  const docRef = doc(firestore, collectionName, docId);
+  const docSnap = await getDoc(docRef);
+  return docSnap.exists() ? docSnap.data() : null;
+}
+
+export async function setData(collectionName: string, docId: string, data: any) {
+  const docRef = doc(firestore, collectionName, docId);
+  await setDoc(docRef, data, { merge: true });
+  return true;
+}
+
+// ...other helper functions as needed...
+
+==========================================================================================
+FILE: src/services/auth-service.ts
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/services/auth-service.ts
+MOD:  2025-12-30 13:42:07
+SIZE: 426 bytes
+==========================================================================================
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { auth } from '../config/firebase';
+
+export const signInWithGoogle = async () => {
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
+  } catch (error) {
+    console.error('Google sign-in error:', error);
+    throw new Error('Failed to sign in with Google');
+  }
+};
+
+==========================================================================================
+FILE: src/components/organisms/AuthForm.tsx
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/components/organisms/AuthForm.tsx
+MOD:  2025-12-29 12:32:13
+SIZE: 1902 bytes
+==========================================================================================
+import React from 'react';
+import styled from 'styled-components';
+import FormGroup from '../molecules/FormGroup';
+import Button from '../common/Button';
+
+interface AuthFormProps {
+  onSubmit: (values: { [key: string]: string }) => void;
+  formFields: Array<{
+    name: string;
+    type: string;
+    label: string;
+    placeholder: string;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    error?: boolean;
+  }>;
+  initialValues: { [key: string]: string };
+  submitButtonText: string;
+  errorMessage?: string;
+  isLoading?: boolean;
+}
+
+const AuthForm: React.FC<AuthFormProps> = ({
+  onSubmit,
+  formFields,
+  initialValues,
+  submitButtonText,
+  errorMessage,
+  isLoading
+}) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const values = formFields.reduce((acc, field) => {
+      acc[field.name] = field.value;
+      return acc;
+    }, {} as { [key: string]: string });
+    onSubmit(values);
+  };
+
+  return (
+    <FormContainer onSubmit={handleSubmit}>
+      {formFields.map((field, index) => (
+        <FormGroup
+          key={index}
+          label={field.label}
+          inputs={[{
+            placeholder: field.placeholder,
+            value: field.value,
+            onChange: field.onChange,
+            error: field.error
+          }]}
+        />
+      ))}
+      {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
+      <Button type="submit" disabled={isLoading}>
+        {isLoading ? 'Loading...' : submitButtonText}
+      </Button>
+    </FormContainer>
+  );
+};
+
+const FormContainer = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 400px;
+`;
+
+const ErrorMessage = styled.div`
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 10px 0;
+  font-size: 0.9rem;
+`;
+
+export default AuthForm;
+
+==========================================================================================
+FILE: src/components/auth/SignUp.css
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/components/auth/SignUp.css
+MOD:  2025-12-29 12:32:13
+SIZE: 709 bytes
+==========================================================================================
+.signup-container {
+  max-width: 400px;
+  margin: 2rem auto;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.error-alert {
+  background: #ffebee;
+  color: #c62828;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+}
+
+form div {
+  margin-bottom: 1rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+button {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.7;
+}
+
+==========================================================================================
+FILE: src/components/auth/Login.css
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/components/auth/Login.css
+MOD:  2025-12-29 12:32:13
+SIZE: 2778 bytes
+==========================================================================================
+.login-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+.login-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-form h2 {
+    text-align: center;
+    color: #2C3E50;
+    margin-bottom: 1.5rem;
+    font-size: 1.75rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-group input::placeholder {
+    color: #a0aec0;
+}
+
+.login-button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.login-button:hover {
+    background-color: #4338ca;
+}
+
+.login-button:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.error-message {
+    background-color: #fee2e2;
+    color: #dc2626;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+.login-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.875rem;
+}
+
+.login-footer p {
+    margin-bottom: 0.5rem;
+    color: #4a5568;
+}
+
+.login-footer a {
+    color: #4f46e5;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.login-footer a:hover {
+    text-decoration: underline;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.divider span {
+    padding: 0 10px;
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.google-button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: white;
+    color: #333;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background-color 0.2s ease;
+}
+
+.google-button:hover {
+    background-color: #f8fafc;
+}
+
+.google-button img {
+    width: 18px;
+    height: 18px;
+}
+
+@media (max-width: 480px) {
+    .login-form {
+        padding: 1.5rem;
+    }
+}
+
+==========================================================================================
+FILE: src/components/auth/AuthErrorDialog.tsx
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/components/auth/AuthErrorDialog.tsx
+MOD:  2025-12-29 12:32:13
+SIZE: 2262 bytes
+==========================================================================================
+import React from 'react';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
+import { Theme } from '../../theme';
+import styled from 'styled-components';
+
+interface AuthError {
+  message: string;
+  retry?: boolean;
+}
+
+interface AuthErrorDialogProps {
+  open: boolean;
+  error: AuthError | null;
+  onClose: () => void;
+  onRetry?: () => Promise<void>;
+}
+
+const AuthErrorDialog: React.FC<AuthErrorDialogProps> = ({
+  open,
+  error,
+  onClose,
+  onRetry
+}): JSX.Element | null => {
+  if (!error) return null;
+
+  return (
+    <StyledDialog
+      open={open}
+      onClose={onClose}
+      aria-labelledby="auth-error-dialog-title"
+    >
+      <DialogTitle id="auth-error-dialog-title">
+        Authentication Error
+        <CloseIconButton
+          aria-label="close"
+          onClick={onClose}
+        >
+          <CloseIcon />
+        </CloseIconButton>
+      </DialogTitle>
+      <DialogContent>
+        <DialogContentText>{error.message}</DialogContentText>
+      </DialogContent>
+      <StyledDialogActions>
+        <Button onClick={onClose} color="primary">
+          Close
+        </Button>
+        {error.retry && onRetry && (
+          <Button 
+            onClick={onRetry} 
+            color="primary" 
+            variant="contained" 
+            autoFocus
+          >
+            Try Again
+          </Button>
+        )}
+      </StyledDialogActions>
+    </StyledDialog>
+  );
+};
+
+interface StyledProps {
+  theme: Theme;
+}
+
+const StyledDialog = styled(Dialog)`
+  .MuiPaper-root {
+    padding: ${({ theme }: StyledProps) => theme.spacing.md};
+  }
+`;
+
+const CloseIconButton = styled(IconButton)`
+  position: absolute;
+  right: ${({ theme }: StyledProps) => theme.spacing.sm};
+  top: ${({ theme }: StyledProps) => theme.spacing.sm};
+`;
+
+const StyledDialogActions = styled(DialogActions)`
+  padding: ${({ theme }: StyledProps) => theme.spacing.md} 0 0;
+`;
+
+export default AuthErrorDialog;
+
+==========================================================================================
+FILE: src/components/auth/auth.css
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/components/auth/auth.css
+MOD:  2025-12-29 12:32:13
+SIZE: 2028 bytes
+==========================================================================================
+.auth-container {
+  max-width: 400px;
+  margin: 2rem auto;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: #fff;
+}
+
+.auth-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.auth-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  background-color: #fee2e2;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.auth-error-dismiss {
+  background: none;
+  border: none;
+  color: #dc2626;
+  cursor: pointer;
+  padding: 0.25rem;
+  margin-left: 0.5rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.auth-error-dismiss:hover {
+  opacity: 1;
+}
+
+.google-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.2s, border-color 0.2s;
+  gap: 0.5rem;
+}
+
+.google-button:hover:not(:disabled) {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.google-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.auth-divider {
+  position: relative;
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: calc(50% - 3rem);
+  height: 1px;
+  background-color: #e5e7eb;
+}
+
+.auth-divider::before {
+  left: 0;
+}
+
+.auth-divider::after {
+  right: 0;
+}
+
+.auth-divider span {
+  background-color: #fff;
+  padding: 0 1rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.btn.btn-secondary {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #f3f4f6;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.btn.btn-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+==========================================================================================
+FILE: src/server/routes/studentRoutes.js
+ABS:  /home/evopimp/Geaux-Dev/GA-MVP/src/server/routes/studentRoutes.js
+MOD:  2025-12-29 12:32:13
+SIZE: 1950 bytes
+==========================================================================================
+const express = require('express');
+const router = express.Router();
+
+// ...existing code...
+
+router.post('/students', async (req, res) => {
+  try {
+    const { name } = req.body;
+    // Here you would typically create a new student in your database
+    // This is a mock response
+    const newStudent = {
+      id: Date.now(),
+      name,
+      createdAt: new Date()
+    };
+    res.status(201).json(newStudent);
+  } catch (error) {
+    res.status(500).json({ error: `Failed to create student profile: ${error.message}` });
+  }
+});
+
+router.get('/students/:student_id', async (req, res) => {
+  try {
+    const { student_id } = req.params;
+    // Here you would typically fetch the student from your database
+    // This is a mock response
+    const student = {
+      id: student_id,
+      name: 'John Doe',
+      createdAt: new Date()
+    };
+    res.status(200).json(student);
+  } catch (error) {
+    res.status(500).json({ error: `Failed to get student profile: ${error.message}` });
+  }
+});
+
+router.put('/students/:student_id', async (req, res) => {
+  try {
+    const { student_id } = req.params;
+    const { name } = req.body;
+    // Here you would typically update the student in your database
+    // This is a mock response
+    const updatedStudent = {
+      id: student_id,
+      name,
+      createdAt: new Date()
+    };
+    res.status(200).json(updatedStudent);
+  } catch (error) {
+    res.status(500).json({ error: `Failed to update student profile: ${error.message}` });
+  }
+});
+
+router.delete('/students/:student_id', async (req, res) => {
+  try {
+    const { student_id } = req.params;
+    // Here you would typically delete the student from your database
+    // This is a mock response
+    res.status(200).json({ detail: `Student ${student_id} deleted successfully` });
+  } catch (error) {
+    res.status(500).json({ error: `Failed to delete student profile: ${error.message}` });
+  }
+});
+
+// ...existing code...
+
+module.exports = router;
