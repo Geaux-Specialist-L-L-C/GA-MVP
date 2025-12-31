@@ -157,6 +157,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     resolveRedirect();
   }, []);
 
+  useEffect(() => {
+    console.info('[AuthProvider] active auth uid', currentUser?.uid ?? null);
+  }, [currentUser]);
+
   const clearError = () => setError(null);
 
   const isPopupCancelled = (authError: unknown): boolean => {

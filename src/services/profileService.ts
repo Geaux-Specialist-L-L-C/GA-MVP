@@ -36,12 +36,16 @@ export const createParentProfile = async (parentData: Partial<Parent>): Promise<
   try {
     if (!parentData.uid) throw new Error('User ID is required');
     
+    const now = new Date().toISOString();
     const parentRef = doc(firestore, 'parents', parentData.uid);
     await setDoc(parentRef, {
-      ...parentData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      students: []
+      uid: parentData.uid,
+      email: parentData.email ?? '',
+      displayName: parentData.displayName ?? '',
+      students: [],
+      createdAt: now,
+      updatedAt: now,
+      ...(parentData.phone ? { phone: parentData.phone } : {})
     });
     
     console.log('✅ Parent profile created successfully:', parentData.uid);
@@ -159,24 +163,25 @@ export const getStudentsByIds = async (ids: string[]): Promise<Student[]> => {
 export const addStudentProfile = async (parentId: string, studentData: {
   name: string;
   grade: string;
-  parentId: string;
   hasTakenAssessment: boolean;
 }) => {
   try {
     console.log('📝 Adding student profile for parent:', parentId);
+    const now = new Date().toISOString();
     
     // Add the student to the students collection
     const studentRef = await addDoc(collection(firestore, 'students'), {
       ...studentData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      parentId,
+      createdAt: now,
+      updatedAt: now
     });
 
     // Update the parent's students array
     const parentRef = doc(firestore, 'parents', parentId);
     await updateDoc(parentRef, {
       students: arrayUnion(studentRef.id),
-      updatedAt: new Date().toISOString()
+      updatedAt: now
     });
 
     invalidateParentCache(parentId);

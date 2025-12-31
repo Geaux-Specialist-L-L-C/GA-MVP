@@ -7,7 +7,6 @@ import { useAuth } from '../../../contexts/AuthContext';
 interface NewStudent {
   name: string;
   grade: string;
-  parentId: string;
   hasTakenAssessment: boolean;
 }
 
@@ -41,7 +40,6 @@ const CreateStudent: React.FC = () => {
       const newStudent: NewStudent = { 
         name: studentName.trim(), 
         grade: grade.trim(), 
-        parentId: currentUser.uid,
         hasTakenAssessment: false
       };
 
