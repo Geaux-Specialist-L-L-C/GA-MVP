@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react-hooks';
+import { renderHook } from '@testing-library/react';
 import { useTaskWebSocket } from '../useTaskWebSocket';
 import websocketService from '../../services/websocketService';
 import type { TaskStatus } from '../../types/task';
