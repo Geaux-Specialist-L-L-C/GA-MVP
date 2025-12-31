@@ -85,7 +85,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
-        "firebase-messaging-sw": resolve(__dirname, "public/firebase-messaging-sw.js"),
       },
       output: {
         manualChunks: {
