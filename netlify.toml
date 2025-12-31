@@ -1,2 +1,3 @@
 [build.environment]
+# Prevent Netlify from checking out git submodules.
 GIT_SUBMODULE_STRATEGY = "none"
