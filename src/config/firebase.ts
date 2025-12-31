@@ -105,6 +105,8 @@ export const authInit = (async () => {
 })();
 export const firestore = getFirestore(app);
 
+console.info('[firebase] projectId', firebaseConfig.projectId ?? 'unknown');
+
 if (import.meta.env.DEV) {
   console.debug('[firebase] app name', app.name);
   console.debug('[firebase] auth instance', auth.app.name);
