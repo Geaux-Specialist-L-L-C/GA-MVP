@@ -103,7 +103,7 @@ const App: React.FC = (): JSX.Element => {
                 <Route path="/todos" element={<Todos />} />
                 
                 {/* Protected Routes */}
-                <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+                <Route path="/dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
                 <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
                 <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
                 <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
