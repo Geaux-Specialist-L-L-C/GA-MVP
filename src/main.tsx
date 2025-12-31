@@ -16,6 +16,19 @@ if (import.meta.env.DEV) {
     cspMeta.remove();
     console.info('[CSP] Removed Content-Security-Policy meta tag in DEV for HMR.');
   }
+
+  const metas = [
+    'Cross-Origin-Embedder-Policy',
+    'Cross-Origin-Opener-Policy',
+    'Cross-Origin-Resource-Policy'
+  ];
+  metas.forEach((name) => {
+    const el = document.querySelector(`meta[http-equiv="${name}"]`);
+    if (el) {
+      el.remove();
+      console.warn(`[DEV] Removed ${name} meta tag for Firebase auth compatibility.`);
+    }
+  });
 }
 
 // Configure future flags for React Router v7

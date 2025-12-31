@@ -39,11 +39,12 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }): JSX.Element =>
 
   // If not authenticated, redirect to login with current location
   if (!currentUser) {
+    const from = `${location.pathname}${location.search || ''}${location.hash || ''}`;
     return (
       <Navigate 
         to="/login" 
         state={{ 
-          from: location
+          from
         }} 
         replace 
       />

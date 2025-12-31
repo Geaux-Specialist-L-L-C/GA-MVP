@@ -60,16 +60,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let isMounted = true;
     let unsubscribe = () => undefined;
     let hasResolved = false;
+    let authReadyTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    const initAuth = async () => {
+    const initAuth = () => {
       if (isDev) {
-        console.debug('[AuthProvider] awaiting authInit');
+        console.debug('[AuthProvider] starting authInit');
       }
-      try {
-        await authInit;
-      } catch (authError) {
+      // Do not block auth readiness on persistence; Firebase can still report auth state.
+      void authInit.catch((authError) => {
         console.warn('[AuthProvider] authInit failed (continuing):', authError);
-      }
+      });
 
       if (!isMounted) return;
       if (isDev) {
@@ -78,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       unsubscribe = onAuthStateChanged(
         auth,
         (user) => {
+          console.log('[AuthProvider] onAuthStateChanged fired uid=', user?.uid ?? null);
           if (isDev) {
             console.debug('[AuthProvider] onAuthStateChanged', {
               userUid: user?.uid ?? null,
@@ -91,6 +92,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             hasResolved = true;
             setLoading(false);
             setIsAuthReady(true);
+            if (authReadyTimeout) {
+              clearTimeout(authReadyTimeout);
+              authReadyTimeout = null;
+            }
           }
         },
         (authError) => {
@@ -100,9 +105,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             hasResolved = true;
             setLoading(false);
             setIsAuthReady(true);
+            if (authReadyTimeout) {
+              clearTimeout(authReadyTimeout);
+              authReadyTimeout = null;
+            }
           }
         }
       );
+
+      if (isDev) {
+        authReadyTimeout = setTimeout(() => {
+          if (!hasResolved && isMounted) {
+            console.error('[AuthProvider] auth readiness timeout: forcing ready state');
+            hasResolved = true;
+            setIsAuthReady(true);
+            setLoading(false);
+          }
+        }, 8000);
+      }
     };
 
     initAuth();
@@ -110,6 +130,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       isMounted = false;
       unsubscribe();
+      if (authReadyTimeout) {
+        clearTimeout(authReadyTimeout);
+      }
     };
   }, [isDev]);
 

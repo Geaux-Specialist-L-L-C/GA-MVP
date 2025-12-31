@@ -124,6 +124,18 @@ const LoginForm: React.FC = (): JSX.Element => {
       e.preventDefault();
       handleLogin();
     }}>
+      {(localError || authError) && (
+        <ErrorMessage role="alert">
+          <span>{localError || authError}</span>
+          <CloseButton
+            type="button"
+            aria-label="Dismiss error"
+            onClick={handleDismissError}
+          >
+            ×
+          </CloseButton>
+        </ErrorMessage>
+      )}
       <FormGroup
         label="Email"
         inputs={[{
