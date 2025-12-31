@@ -96,7 +96,12 @@ const StudentDashboard: React.FC = () => {
       } catch (err) {
         logDebug('Dashboard load error', err);
         const message = err instanceof Error ? err.message : 'Failed to load student data';
-        setError(message);
+        if (message.toLowerCase().includes('not found')) {
+          setNeedsSetup(true);
+          setStudentData(null);
+        } else {
+          setError(message);
+        }
       } finally {
         setLoading(false);
       }

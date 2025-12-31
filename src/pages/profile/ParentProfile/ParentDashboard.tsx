@@ -5,13 +5,14 @@ import LearningStyleInsights from '../components/LearningStyleInsights';
 import CurriculumApproval from './dashboard/components/CurriculumApproval';
 import styled from 'styled-components';
 import { useAuth } from "../../../contexts/AuthContext";
-import { getParentProfile } from '../../../services/profileService';
-import { Parent, Student } from '../../../types/auth';
+import { getParentProfile, getStudentsByIds } from '../../../services/profileService';
+import { Parent } from '../../../types/auth';
+import { Student as StudentProfile } from '../../../types/profiles';
 import { useNavigate } from 'react-router-dom';
 
 interface ParentProfile extends Omit<Parent, 'students'> {
   name: string;
-  students: Student[];
+  students: StudentProfile[];
   createdAt: string;
   updatedAt: string;
 }
@@ -22,34 +23,33 @@ const ParentDashboard: React.FC = () => {
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const { currentUser: user, loginWithGoogle } = useAuth();
   const [error, setError] = useState<string>("");
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const [studentsError, setStudentsError] = useState<string>('');
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
       if (user) {
+        setStudentsLoading(true);
+        setStudentsError('');
         try {
           const profile = await getParentProfile(user.uid);
           if (profile) {
+            const students = await getStudentsByIds(profile.students || []);
             setParentProfile({
               ...profile,
               name: profile.displayName,
               id: profile.id || user.uid,
-              students: profile.students.map((student: string) => ({
-                id: student,
-                name: '',
-                age: 0,
-                grade: '',
-                parentId: profile.id || user.uid,
-                hasTakenAssessment: false,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-              })) || [],
+              students: students || [],
               createdAt: profile.createdAt || new Date().toISOString(),
               updatedAt: profile.updatedAt || new Date().toISOString()
             });
           }
         } catch (error) {
           console.error("Error fetching profile:", error);
+          setStudentsError('Unable to load student profiles. Please try again.');
+        } finally {
+          setStudentsLoading(false);
         }
       }
     };
@@ -92,10 +92,17 @@ const ParentDashboard: React.FC = () => {
         <>
           <StudentManagement>
             <h2>Student Profiles</h2>
-            <AddStudentButton>➕ Add Student</AddStudentButton>
+            <AddStudentButton onClick={() => navigate('/create-student')}>➕ Add Student</AddStudentButton>
             
             <StudentList>
-              {parentProfile?.students?.map((student) => (
+              {studentsLoading && <StatusMessage>Loading student profiles...</StatusMessage>}
+              {!studentsLoading && studentsError && (
+                <StatusMessage role="alert">{studentsError}</StatusMessage>
+              )}
+              {!studentsLoading && !studentsError && parentProfile?.students?.length === 0 && (
+                <StatusMessage>No students yet. Add your first student to get started.</StatusMessage>
+              )}
+              {!studentsLoading && !studentsError && parentProfile?.students?.map((student) => (
                 <StudentCard key={student.id} onClick={() => handleProfileSwitch(student.id)}>
                   <h3>{student.name}</h3>
                   <p>Grade: {student.grade}</p>
@@ -181,6 +188,15 @@ const StudentList = styled.div`
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
+`;
+
+const StatusMessage = styled.div`
+  grid-column: 1 / -1;
+  padding: 1rem;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #475569;
+  text-align: center;
 `;
 
 const StudentCard = styled.div`

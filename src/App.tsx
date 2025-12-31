@@ -21,6 +21,7 @@ const SignUp = React.lazy(() => import('./components/auth/SignUp'));
 const LearningStyles = React.lazy(() => import('./pages/LearningStyles'));
 const Curriculum = React.lazy(() => import('./pages/Curriculum'));
 const ParentDashboard = React.lazy(() => import('./pages/profile/ParentProfile/ParentDashboard'));
+const CreateStudent = React.lazy(() => import('./pages/profile/ParentProfile/CreateStudent'));
 const StudentDashboard = React.lazy(() => import('./pages/profile/StudentProfile/StudentDashboard'));
 const StudentProfile = React.lazy(() => import('./pages/profile/StudentProfile/StudentProfile'));
 const LearningPlan = React.lazy(() => import('./pages/LearningPlan'));
@@ -105,6 +106,7 @@ const App: React.FC = (): JSX.Element => {
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
                 <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
+                <Route path="/create-student" element={<PrivateRoute><CreateStudent /></PrivateRoute>} />
                 <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
                 <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
                 <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />

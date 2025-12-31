@@ -1,9 +1,25 @@
-import { doc, getDoc, setDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, addDoc, arrayUnion } from 'firebase/firestore';
 import { firestore } from '../config/firebase';
 import { Parent, Student, LearningStyle } from "../types/profiles";
 
 // Cache for storing profiles
 const profileCache = new Map();
+
+export const invalidateProfileCache = (key?: string) => {
+  if (!key) {
+    profileCache.clear();
+    return;
+  }
+  profileCache.delete(key);
+};
+
+export const invalidateParentCache = (parentId: string) => {
+  invalidateProfileCache(`parent_${parentId}`);
+};
+
+export const invalidateStudentCache = (studentId: string) => {
+  invalidateProfileCache(`student_${studentId}`);
+};
 
 // Helper to check online status
 const isOnline = () => navigator.onLine;
@@ -108,6 +124,37 @@ export const getStudentProfile = async (studentId: string): Promise<Student> => 
   }
 };
 
+export const getStudentsByIds = async (ids: string[]): Promise<Student[]> => {
+  if (!ids.length) {
+    return [];
+  }
+
+  const students = await Promise.all(
+    ids.map(async (studentId) => {
+      const cacheKey = `student_${studentId}`;
+      if (profileCache.has(cacheKey)) {
+        return profileCache.get(cacheKey) as Student;
+      }
+
+      const studentRef = doc(firestore, 'students', studentId);
+      const studentDoc = await getDoc(studentRef);
+      if (!studentDoc.exists()) {
+        return null;
+      }
+
+      const studentData = studentDoc.data() as Student;
+      const studentProfile = {
+        ...studentData,
+        id: studentData.id || studentId
+      };
+      profileCache.set(cacheKey, studentProfile);
+      return studentProfile;
+    })
+  );
+
+  return students.filter((student): student is Student => Boolean(student));
+};
+
 // ✅ Add Student Profile
 export const addStudentProfile = async (parentId: string, studentData: {
   name: string;
@@ -127,15 +174,12 @@ export const addStudentProfile = async (parentId: string, studentData: {
 
     // Update the parent's students array
     const parentRef = doc(firestore, 'parents', parentId);
-    const parentDoc = await getDoc(parentRef);
+    await updateDoc(parentRef, {
+      students: arrayUnion(studentRef.id),
+      updatedAt: new Date().toISOString()
+    });
 
-    if (parentDoc.exists()) {
-      const currentStudents = parentDoc.data().students || [];
-      await updateDoc(parentRef, {
-        students: [...currentStudents, studentRef.id],
-        updatedAt: new Date().toISOString()
-      });
-    }
+    invalidateParentCache(parentId);
 
     console.log('✅ Student profile added successfully:', studentRef.id);
     return studentRef.id;
