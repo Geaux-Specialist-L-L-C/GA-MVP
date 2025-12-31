@@ -62,15 +62,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let hasResolved = false;
     let authReadyTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    const initAuth = async () => {
+    const initAuth = () => {
       if (isDev) {
-        console.debug('[AuthProvider] awaiting authInit');
+        console.debug('[AuthProvider] starting authInit');
       }
-      try {
-        await authInit;
-      } catch (authError) {
+      // Do not block auth readiness on persistence; Firebase can still report auth state.
+      void authInit.catch((authError) => {
         console.warn('[AuthProvider] authInit failed (continuing):', authError);
-      }
+      });
 
       if (!isMounted) return;
       if (isDev) {

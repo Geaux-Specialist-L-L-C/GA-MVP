@@ -129,11 +129,14 @@ export default defineConfig({
       `.${TAILNET_DOMAIN}`,
     ],
 
-    headers: {
-      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
-      "Cross-Origin-Embedder-Policy": "credentialless",
-      "Content-Security-Policy": csp,
-    },
+    headers:
+      process.env.NODE_ENV === "development"
+        ? {}
+        : {
+            "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+            "Cross-Origin-Embedder-Policy": "credentialless",
+            "Content-Security-Policy": csp,
+          },
 
     proxy: {
       "/api": {
