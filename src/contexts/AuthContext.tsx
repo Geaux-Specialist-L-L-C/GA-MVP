@@ -113,16 +113,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       );
 
-      if (isDev) {
-        authReadyTimeout = setTimeout(() => {
-          if (!hasResolved && isMounted) {
-            console.error('[AuthProvider] auth readiness timeout: forcing ready state');
-            hasResolved = true;
-            setIsAuthReady(true);
-            setLoading(false);
-          }
-        }, 8000);
-      }
+      authReadyTimeout = setTimeout(() => {
+        if (!hasResolved) {
+          console.error('[AuthProvider] auth readiness timeout: forcing ready state');
+          hasResolved = true;
+          setIsAuthReady(true);
+          setLoading(false);
+        }
+      }, 2000);
     };
 
     initAuth();
