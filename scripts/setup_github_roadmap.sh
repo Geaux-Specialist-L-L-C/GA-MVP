@@ -6,12 +6,17 @@ print_plan() {
 Execution plan:
 1) Verify gh auth + repo remote
 2) Ensure labels + milestones
-3) Create project (if allowed), issues, and attach
+3) Ensure Project (Projects V2) best-effort (no GraphQL)
+4) Create/update roadmap issues
+5) Add issues to the project (best-effort)
 PLAN
 }
 
 print_plan
 
+########################################
+# Preconditions
+########################################
 if ! command -v gh >/dev/null 2>&1; then
   echo "Error: gh CLI is not installed." >&2
   exit 1
@@ -19,15 +24,15 @@ fi
 
 gh auth status
 
-repo_url=$(git remote get-url origin 2>/dev/null || true)
-if [[ -z "${repo_url:-}" ]]; then
+repo_url="$(git remote get-url origin 2>/dev/null || true)"
+if [[ -z "${repo_url}" ]]; then
   echo "Error: git remote 'origin' is not set. Unable to detect repo owner/name." >&2
   exit 1
 fi
 
 extract_owner_repo() {
   local url="$1"
-  url=${url%.git}
+  url="${url%.git}"
   if [[ "$url" =~ ^git@github.com:([^/]+)/(.+)$ ]]; then
     echo "${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
     return 0
@@ -39,7 +44,8 @@ extract_owner_repo() {
   return 1
 }
 
-if ! repo_full_name=$(extract_owner_repo "$repo_url"); then
+repo_full_name="$(extract_owner_repo "$repo_url" || true)"
+if [[ -z "${repo_full_name}" ]]; then
   echo "Error: Unable to parse repo from remote URL: $repo_url" >&2
   exit 1
 fi
@@ -53,9 +59,12 @@ fi
 echo "Detected repo: $repo_full_name"
 export GH_REPO="$repo_full_name"
 
-# ---------------------------
+org_name="${repo_full_name%%/*}"
+repo_name="${repo_full_name##*/}"
+
+########################################
 # Labels
-# ---------------------------
+########################################
 labels=(
   "area:auth"
   "area:parent-dashboard"
@@ -116,19 +125,15 @@ declare -A label_desc=(
   ["status:blocked"]="Work blocked"
 )
 
-label_exists() {
-  local name="$1"
-  local found=""
-  found=$(gh label list --limit 500 --json name --jq ".[] | select(.name == \"$name\") | .name" | head -n 1 || true)
-  [[ -n "$found" ]]
-}
-
 ensure_label() {
   local name="$1"
-  if label_exists "$name"; then
+  # list -> grep (more compatible than jq filters across gh versions)
+  if gh label list --json name -q '.[].name' 2>/dev/null | grep -Fxq "$name"; then
     return 0
   fi
-  gh label create "$name" --color "${label_colors[$name]}" --description "${label_desc[$name]}"
+  gh label create "$name" \
+    --color "${label_colors[$name]}" \
+    --description "${label_desc[$name]}" >/dev/null
 }
 
 echo "Ensuring labels..."
@@ -136,9 +141,9 @@ for label in "${labels[@]}"; do
   ensure_label "$label"
 done
 
-# ---------------------------
+########################################
 # Milestones
-# ---------------------------
+########################################
 milestones=(
   "Phase 1 Foundation"
   "Phase 2 Parent + Student Dashboards"
@@ -148,20 +153,14 @@ milestones=(
   "Phase 6 Deployment + Monitoring Hardening"
 )
 
-milestone_exists() {
-  local title="$1"
-  local found=""
-  found=$(gh api "repos/$repo_full_name/milestones?state=all&per_page=100" --paginate \
-    --jq ".[] | select(.title == \"$title\") | .title" | head -n 1 || true)
-  [[ -n "$found" ]]
-}
-
 ensure_milestone() {
   local title="$1"
-  if milestone_exists "$title"; then
+  if gh api "repos/$repo_full_name/milestones" --paginate -q '.[].title' 2>/dev/null | grep -Fxq "$title"; then
     return 0
   fi
-  gh api --method POST "repos/$repo_full_name/milestones" -f title="$title" -f state="open" >/dev/null
+  gh api --method POST "repos/$repo_full_name/milestones" \
+    -f title="$title" \
+    -f state="open" >/dev/null
 }
 
 echo "Ensuring milestones..."
@@ -169,132 +168,55 @@ for ms in "${milestones[@]}"; do
   ensure_milestone "$ms"
 done
 
-# ---------------------------
-# Project (ProjectV2)
-# ---------------------------
+########################################
+# Project (Projects V2) best-effort
+# NOTE: we avoid GraphQL entirely for compatibility.
+########################################
 project_title="GA-MVP Roadmap"
-project_id=""
+project_number=""
 project_url=""
+projects_supported="false"
 
-get_org_id() {
-  gh api graphql -f query='query($org:String!){organization(login:$org){id}}' -f org="$1" --jq '.data.organization.id'
-}
-
-get_project_by_title() {
-  gh api graphql -f query='query($org:String!){organization(login:$org){projectsV2(first:100){nodes{id title url}}}}' \
-    -f org="$1" --jq ".data.organization.projectsV2.nodes[] | select(.title == \"$project_title\") | [.id, .url] | @tsv"
-}
-
-create_project() {
-  gh api graphql -f query='mutation($org:ID!, $title:String!){createProjectV2(input:{ownerId:$org, title:$title}){projectV2{id url}}}' \
-    -f org="$1" -f title="$project_title" --jq '.data.createProjectV2.projectV2 | [.id, .url] | @tsv'
-}
-
-ensure_project_fields() {
-  local project="$1"
-
-  local fields_json
-  fields_json=$(gh api graphql \
-    -f query='query($id:ID!){node(id:$id){... on ProjectV2{fields(first:100){nodes{... on ProjectV2FieldCommon{name id dataType}}}}}}' \
-    -f id="$project")
-
-  field_exists() {
-    local name="$1"
-    echo "$fields_json" | python3 -c '
-import json,sys
-name=sys.argv[1]
-data=json.load(sys.stdin)
-fields=data["data"]["node"]["fields"]["nodes"]
-print(any((f.get("name")==name) for f in fields))
-' "$name"
-  }
-
-  create_single_select_field() {
-    local name="$1"
-    shift
-    local options=()
-    for opt in "$@"; do
-      options+=("{name:\"$opt\"}")
-    done
-    local opts
-    opts="$(IFS=,; echo "${options[*]}")"
-
-    # IMPORTANT: Escape $id in GraphQL so bash doesn't expand it under set -u
-    local gql
-    gql="mutation(\$id:ID!, \$name:String!){createProjectV2Field(input:{projectId:\$id, name:\$name, dataType:SINGLE_SELECT, singleSelectOptions:[${opts}]}){projectV2Field{id}}}"
-
-    gh api graphql -f query="$gql" -f id="$project" -f name="$name" >/dev/null
-  }
-
-  create_text_field() {
-    local name="$1"
-    gh api graphql \
-      -f query='mutation($id:ID!, $name:String!){createProjectV2Field(input:{projectId:$id, name:$name, dataType:TEXT}){projectV2Field{id}}}' \
-      -f id="$project" -f name="$name" >/dev/null
-  }
-
-  create_date_field() {
-    local name="$1"
-    gh api graphql \
-      -f query='mutation($id:ID!, $name:String!){createProjectV2Field(input:{projectId:$id, name:$name, dataType:DATE}){projectV2Field{id}}}' \
-      -f id="$project" -f name="$name" >/dev/null
-  }
-
-  if [[ "$(field_exists "Status")" != "True" ]]; then
-    create_single_select_field "Status" "Todo" "In Progress" "Blocked" "Done"
-  fi
-  if [[ "$(field_exists "Priority")" != "True" ]]; then
-    create_single_select_field "Priority" "P0" "P1" "P2"
-  fi
-  if [[ "$(field_exists "Area")" != "True" ]]; then
-    create_single_select_field "Area" "Auth" "Parent Dashboard" "Student Dashboard" "Assessment" "Backend" "Vertex AI" "CrewAI" "Firestore" "Deployment" "Docs"
-  fi
-  if [[ "$(field_exists "Effort")" != "True" ]]; then
-    create_single_select_field "Effort" "S" "M" "L"
-  fi
-  if [[ "$(field_exists "Target Date")" != "True" ]]; then
-    create_date_field "Target Date"
-  fi
-  if [[ "$(field_exists "Sprint")" != "True" ]]; then
-    create_text_field "Sprint"
-  fi
-}
-
-ensure_project_views() {
-  local project="$1"
-  set +e
-  gh api graphql -f query='mutation($id:ID!, $name:String!){createProjectV2View(input:{projectId:$id, name:$name, layout:BOARD}){projectV2View{id}}}' \
-    -f id="$project" -f name="Board by Status" >/dev/null
-  gh api graphql -f query='mutation($id:ID!, $name:String!){createProjectV2View(input:{projectId:$id, name:$name, layout:TABLE}){projectV2View{id}}}' \
-    -f id="$project" -f name="Table by Area" >/dev/null
-  set -e
-}
-
-echo "Ensuring project..."
-org_name=${repo_full_name%%/*}
-
-project_info=$(get_project_by_title "$org_name" || true)
-if [[ -n "${project_info:-}" ]]; then
-  project_id=$(cut -f1 <<<"$project_info")
-  project_url=$(cut -f2 <<<"$project_info")
+if gh project list --owner "$org_name" >/dev/null 2>&1; then
+  projects_supported="true"
 else
-  org_id=$(get_org_id "$org_name")
-  if project_info=$(create_project "$org_id" 2>/dev/null); then
-    project_id=$(cut -f1 <<<"$project_info")
-    project_url=$(cut -f2 <<<"$project_info")
-  else
-    echo "Warning: Unable to create project. You may not have permissions." >&2
+  echo "Warning: gh cannot access Projects for org '$org_name' (missing access). Skipping project setup." >&2
+fi
+
+get_project_number_by_title() {
+  local out
+  out="$(gh project list --owner "$org_name" --limit 100 2>/dev/null || true)"
+  # Expect first column to be number; match the title anywhere on the line.
+  echo "$out" | awk -v t="$project_title" '$0 ~ t {print $1; exit}'
+}
+
+ensure_project() {
+  echo "Ensuring project..."
+  project_number="$(get_project_number_by_title)"
+
+  if [[ -z "${project_number}" ]]; then
+    echo "Project not found. Creating: ${project_title}"
+    # Create is best-effort; org policies may block it.
+    gh project create --owner "$org_name" --title "$project_title" >/dev/null 2>&1 || true
+    project_number="$(get_project_number_by_title)"
   fi
+
+  if [[ -n "${project_number}" ]]; then
+    project_url="https://github.com/orgs/${org_name}/projects/${project_number}"
+    echo "Project number: ${project_number}"
+    echo "Project URL: ${project_url}"
+  else
+    echo "Warning: Unable to create or detect project. Skipping project fields/attachments." >&2
+  fi
+}
+
+if [[ "${projects_supported}" == "true" ]]; then
+  ensure_project
 fi
 
-if [[ -n "${project_id:-}" ]]; then
-  ensure_project_fields "$project_id"
-  ensure_project_views "$project_id"
-fi
-
-# ---------------------------
+########################################
 # Issues
-# ---------------------------
+########################################
 issue_body_template() {
   cat <<'BODY'
 ## Context
@@ -314,45 +236,90 @@ Describe the business goal and any background context.
 BODY
 }
 
+# Create issue via gh issue create (no --json; older gh compatibility)
+# Parse the created URL to get the issue number.
+create_issue_and_get_number() {
+  local title="$1"
+  local milestone="$2"
+  local area_label="$3"
+  local priority_label="$4"
+  local body="$5"
+
+  local out url number
+
+  out="$(gh issue create \
+    --title "$title" \
+    --body "$body" \
+    --milestone "$milestone" \
+    --label "$area_label" \
+    --label "$priority_label" \
+    --label "type:feature" 2>/dev/null || true)"
+
+  # gh usually prints the URL; grab the last URL-ish token
+  url="$(echo "$out" | grep -Eo 'https://github\.com/[^ ]+/issues/[0-9]+' | tail -n1 || true)"
+  if [[ -z "${url}" ]]; then
+    # Fallback: if output is just a URL on a line
+    url="$(echo "$out" | tail -n1 | tr -d '\r' || true)"
+  fi
+
+  if [[ "${url}" =~ /issues/([0-9]+)$ ]]; then
+    number="${BASH_REMATCH[1]}"
+    echo "$number"
+    return 0
+  fi
+
+  echo ""
+  return 0
+}
+
 create_or_update_issue() {
   local title="$1"
   local milestone="$2"
-  local labels_csv="$3"
+  local area_label="$3"
   local priority_label="$4"
 
   local existing=""
-  existing=$(gh issue list --search "in:title \"$title\"" --state all --json number,title --jq ".[] | select(.title == \"$title\") | .number" | head -n 1 || true)
+  existing="$(gh issue list \
+    --search "in:title \"$title\"" \
+    --state all \
+    --json number,title \
+    -q ".[] | select(.title == \"$title\") | .number" 2>/dev/null || true)"
 
-  if [[ -n "${existing:-}" ]]; then
-    gh issue edit "$existing" --milestone "$milestone" --add-label "$labels_csv" --add-label "$priority_label" >/dev/null
+  if [[ -n "${existing}" ]]; then
+    gh issue edit "$existing" \
+      --milestone "$milestone" \
+      --add-label "$area_label" \
+      --add-label "$priority_label" \
+      --add-label "type:feature" >/dev/null
     echo "$existing"
     return 0
   fi
 
-  local body
-  body=$(issue_body_template)
-  gh issue create \
-    --title "$title" \
-    --body "$body" \
-    --milestone "$milestone" \
-    --label "$labels_csv" \
-    --label "$priority_label" \
-    --label "type:feature" \
-    --json number --jq '.number'
+  local body issue_number
+  body="$(issue_body_template)"
+  issue_number="$(create_issue_and_get_number "$title" "$milestone" "$area_label" "$priority_label" "$body")"
+
+  if [[ -z "${issue_number}" ]]; then
+    echo "Error: Failed to create issue for title: $title" >&2
+    exit 1
+  fi
+
+  echo "$issue_number"
 }
 
-issues=()
+issues_meta=()     # number<TAB>title<TAB>milestone<TAB>area_label<TAB>priority_label
+issue_numbers=()
 
 create_issue_and_store() {
   local title="$1"
   local milestone="$2"
   local area_label="$3"
-  local priority="$4"
+  local priority_label="$4"
 
-  local labels="$area_label"
   local issue_number
-  issue_number=$(create_or_update_issue "$title" "$milestone" "$labels" "$priority")
-  issues+=("$issue_number:$title:$milestone:$area_label:$priority")
+  issue_number="$(create_or_update_issue "$title" "$milestone" "$area_label" "$priority_label")"
+  issues_meta+=("${issue_number}"$'\t'"${title}"$'\t'"${milestone}"$'\t'"${area_label}"$'\t'"${priority_label}")
+  issue_numbers+=("$issue_number")
 }
 
 create_issue_and_store "ParentDashboard: Add Student button wired to addStudentProfile + UI modal" "Phase 2 Parent + Student Dashboards" "area:parent-dashboard" "priority:p1"
@@ -376,98 +343,21 @@ create_issue_and_store "Netlify: lock node version + build checks" "Phase 6 Depl
 create_issue_and_store "CI: GitHub Actions build/typecheck" "Phase 6 Deployment + Monitoring Hardening" "area:deployment" "priority:p2"
 create_issue_and_store "Logging: structured backend logs + error tracking hooks" "Phase 6 Deployment + Monitoring Hardening" "area:backend" "priority:p2"
 
-# ---------------------------
-# Add issues to ProjectV2 (if available)
-# ---------------------------
-if [[ -n "${project_id:-}" ]]; then
-  echo "Adding issues to project..."
-
-  fields_json=$(gh api graphql \
-    -f query='query($id:ID!){node(id:$id){... on ProjectV2{fields(first:100){nodes{... on ProjectV2FieldCommon{name id dataType}}}}}}' \
-    -f id="$project_id")
-
-  field_id() {
-    local name="$1"
-    echo "$fields_json" | python3 -c '
-import json,sys
-name=sys.argv[1]
-data=json.load(sys.stdin)
-fields=data["data"]["node"]["fields"]["nodes"]
-print(next((f.get("id","") for f in fields if f.get("name")==name), ""))
-' "$name"
-  }
-
-  status_field=$(field_id "Status")
-  priority_field=$(field_id "Priority")
-  area_field=$(field_id "Area")
-  effort_field=$(field_id "Effort")
-
-  get_single_select_option_id() {
-    local fid="$1"
-    local option_name="$2"
-    gh api graphql \
-      -f query='query($id:ID!){node(id:$id){... on ProjectV2SingleSelectField{options{id name}}}}' \
-      -f id="$fid" --jq ".data.node.options[] | select(.name==\"$option_name\") | .id" | head -n 1
-  }
-
-  status_todo=$(get_single_select_option_id "$status_field" "Todo")
-
-  repo_name="${repo_full_name##*/}"
-
-  for issue_entry in "${issues[@]}"; do
-    IFS=':' read -r issue_number title milestone area_label priority_label <<<"$issue_entry"
-
-    issue_node_id=$(gh api graphql \
-      -f query='query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){issue(number:$number){id}}}' \
-      -f owner="$org_name" -f repo="$repo_name" -f number="$issue_number" --jq '.data.repository.issue.id')
-
-    item_id=$(gh api graphql \
-      -f query='mutation($project:ID!,$content:ID!){addProjectV2ItemById(input:{projectId:$project, contentId:$content}){item{id}}}' \
-      -f project="$project_id" -f content="$issue_node_id" --jq '.data.addProjectV2ItemById.item.id')
-
-    gh api graphql \
-      -f query='mutation($project:ID!,$item:ID!,$field:ID!,$value:String!){updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:{singleSelectOptionId:$value}}){projectV2Item{id}}}' \
-      -f project="$project_id" -f item="$item_id" -f field="$status_field" -f value="$status_todo" >/dev/null
-
-    case "$priority_label" in
-      priority:p0) priority_value="P0" ;;
-      priority:p1) priority_value="P1" ;;
-      *) priority_value="P2" ;;
-    esac
-
-    priority_option=$(get_single_select_option_id "$priority_field" "$priority_value")
-    if [[ -n "${priority_option:-}" ]]; then
-      gh api graphql \
-        -f query='mutation($project:ID!,$item:ID!,$field:ID!,$value:String!){updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:{singleSelectOptionId:$value}}){projectV2Item{id}}}' \
-        -f project="$project_id" -f item="$item_id" -f field="$priority_field" -f value="$priority_option" >/dev/null
-    fi
-
-    area_value="${area_label#area:}"
-    area_value=${area_value//-/ }
-    area_value=$(python3 - <<PY
-import string
-val = "$area_value"
-print(string.capwords(val))
-PY
-)
-
-    area_option=$(get_single_select_option_id "$area_field" "$area_value")
-    if [[ -n "${area_option:-}" ]]; then
-      gh api graphql \
-        -f query='mutation($project:ID!,$item:ID!,$field:ID!,$value:String!){updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:{singleSelectOptionId:$value}}){projectV2Item{id}}}' \
-        -f project="$project_id" -f item="$item_id" -f field="$area_field" -f value="$area_option" >/dev/null
-    fi
-
-    effort_option=$(get_single_select_option_id "$effort_field" "M")
-    if [[ -n "${effort_option:-}" ]]; then
-      gh api graphql \
-        -f query='mutation($project:ID!,$item:ID!,$field:ID!,$value:String!){updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:{singleSelectOptionId:$value}}){projectV2Item{id}}}' \
-        -f project="$project_id" -f item="$item_id" -f field="$effort_field" -f value="$effort_option" >/dev/null
-    fi
+########################################
+# Add issues to Project V2 (best-effort)
+########################################
+if [[ "${projects_supported}" == "true" && -n "${project_number}" ]]; then
+  echo "Adding issues to project (best-effort)..."
+  for meta in "${issues_meta[@]}"; do
+    IFS=$'\t' read -r issue_number title milestone area_label priority_label <<<"$meta"
+    issue_url="https://github.com/${repo_full_name}/issues/${issue_number}"
+    gh project item-add "${project_number}" --owner "$org_name" --url "${issue_url}" >/dev/null 2>&1 || true
   done
 fi
 
 cat <<SUMMARY
+
+✅ Roadmap bootstrap complete.
 
 Milestones:
 $(printf '%s\n' "${milestones[@]}")
@@ -475,9 +365,11 @@ $(printf '%s\n' "${milestones[@]}")
 Labels:
 $(printf '%s\n' "${labels[@]}")
 
-Project URL:
-${project_url:-"(not created)"}
+Project:
+Title: ${project_title}
+Number: ${project_number:-"(skipped/not created)"}
+URL: ${project_url:-"(skipped/not created)"}
 
-Issues:
-$(printf '%s\n' "${issues[@]}")
+Issues (numbers):
+$(printf '%s\n' "${issue_numbers[@]}")
 SUMMARY
