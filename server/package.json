@@ -1,0 +1,32 @@
+{
+  "name": "ga-mvp-assessment-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@google-cloud/vertexai": "^1.7.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.5.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.7",
+    "@types/supertest": "^2.0.16",
+    "supertest": "^6.3.4",
+    "tsx": "^4.7.2",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}
