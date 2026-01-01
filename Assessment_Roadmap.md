@@ -1,7 +1,17 @@
 # Assessment Roadmap
-Next Steps: Cloud Run Node/Express Backend + Vertex AI for Learning Style Assessment
+Status (Jan 1, 2026): ✅ Implemented in `ga-assessment-service` under `/server` (Issue #138).
 
-This file is the “tomorrow plan” to connect the student assessment chat UI to a secure backend, call Vertex AI, and persist results into Firestore.
+This file documents the assessment backend plan that has now been completed. Use it as a reference for setup, deployment, and follow-up wiring.
+
+## Completed Today (Jan 1, 2026)
+- Cloud Run-friendly TypeScript/Express service scaffolded in `/server`
+- Firebase ID token auth middleware + ownership checks (401/403/404 cases)
+- Endpoints:
+  - `POST /api/learning-style/assess`
+  - `POST /api/assessment/chat`
+- Firestore updates to `students/{studentId}` and best-effort writes to `assessments`
+- Vertex AI provider with stub fallback
+- Minimal tests for `/healthz` and missing-auth assessment request
 
 ---
 

@@ -22,6 +22,7 @@ Geaux Academy is a parent-led, student-focused learning platform:
 - Firebase Admin SDK for verifying Firebase ID tokens
 - Firestore for data persistence
 - Vertex AI (Gemini on Vertex) for Learning Style Assessment inference
+- Service name: ga-assessment-service
 - Optional future services:
   - CrewAI pipeline service for curriculum generation and validation
   - Background job runner (Cloud Tasks / PubSub) for async workloads
@@ -35,11 +36,14 @@ Geaux Academy is a parent-led, student-focused learning platform:
 - ✅ Parent Dashboard loads for authenticated users
 - ✅ Parent can create a student (Firestore permissions resolved)
 - ✅ Student Dashboard loads and begins the assessment chat UI
+- ✅ ParentDashboard shows student cards with Firestore-backed name/grade data
+- ✅ StudentDashboard handles missing/invalid student IDs with setup CTAs and tests
+- ✅ ga-assessment-service scaffold in `/server` with auth, ownership checks, and baseline tests
 
 ### In Progress
-- ⏳ Tie assessment chat to backend endpoint
-- ⏳ Persist learning style results to Firestore
-- ⏳ Display results and next steps in Student Dashboard
+- ⏳ Wire assessment chat to `/api/learning-style/assess`
+- ⏳ Display assessment results and next steps in Student Dashboard
+- ⏳ Surface assessment status + learning style in Parent Dashboard
 - ⏳ Connect “Generate Curriculum” flow (CrewAI) after assessment completion
 
 ---
@@ -168,7 +172,7 @@ src/
 ├── utils/
 └── types/
 
-server/                      # Node/Express backend (to add)
+server/                      # ga-assessment-service backend (Cloud Run)
 ├── src/
 │   ├── index.ts
 │   ├── routes/

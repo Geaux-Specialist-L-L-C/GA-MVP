@@ -39,11 +39,11 @@ Deliverable:
 - Parent can create student and reach student dashboard reliably.
 
 ### Phase 2: Assessment Backend and Persistence
-- [ ] Node/Express backend scaffold in `/server`
-- [ ] Firebase Admin token verification middleware
-- [ ] Vertex AI integration wrapper (Gemini on Vertex)
-- [ ] POST /api/learning-style/assess endpoint
-- [ ] Save results to Firestore students/{studentId}
+- [x] Node/Express backend scaffold in `/server` (ga-assessment-service)
+- [x] Firebase Admin token verification middleware
+- [x] Vertex AI integration wrapper (Gemini on Vertex)
+- [x] POST /api/learning-style/assess endpoint
+- [x] Save results to Firestore students/{studentId}
 - [ ] Assessment results UI (student view + parent view)
 
 Deliverable:
