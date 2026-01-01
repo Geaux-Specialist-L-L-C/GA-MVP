@@ -1,0 +1,939 @@
+GA-MVP | Issue #137 Codex Context Bundle
+Generated: 2026-01-01 03:24:16
+Repo root: /home/evopimp/Geaux-Dev/GA-MVP
+
+Intent:
+Provide ONLY the most relevant routing + StudentDashboard + profileService context so Codex can implement:
+"StudentDashboard: Handle missing student profile gracefully + setup CTA"
+
+===============================================================================
+CODEx TASK PROMPT (Issue #137)
+
+You are working in repo: Geaux-Specialist-L-L-C/GA-MVP.
+
+Goal: Fix GitHub issue #137:
+"StudentDashboard: Handle missing student profile gracefully + setup CTA"
+
+Key constraints:
+- StudentDashboard must NOT crash if:
+  - route param studentId is missing/undefined
+  - Firestore student doc doesn't exist
+  - getStudentProfile throws
+- Show clear, friendly setup state with CTAs:
+  - Primary: Back to Parent Dashboard (use actual route from App.tsx if available)
+  - Secondary: Add Student (ParentDashboard uses navigate('/create-student'), so prefer that)
+  - Retry button for transient errors
+- Preserve TypeScript correctness and existing styling approach.
+- If tests exist in this repo, add a small test for the missing-student scenario (mock getStudentProfile).
+
+Detected route/path hints (from App.tsx scan):
+- *
+- /
+- /about
+- /assessment/:studentId
+- /contact
+- /create-student
+- /curriculum
+- /dashboard
+- /features
+- /learning-plan
+- /learning-style-chat/:studentId
+- /learning-styles
+- /login
+- /parent-dashboard
+- /signup
+- /student-dashboard/:id
+- /student-profile/:id
+- /test-chat
+- /todos
+- <<contains:create-student>>
+- <<contains:login>>
+- <<contains:parent-dashboard>>
+- <<contains:signup>>
+- <<contains:student-dashboard>>
+
+Primary file to update:
+- /home/evopimp/Geaux-Dev/GA-MVP/src/pages/profile/StudentProfile/StudentDashboard.tsx
+
+Secondary references:
+- src/services/profileService.ts (getStudentProfile)
+- src/App.tsx (routing)
+- ParentDashboard.tsx and CreateStudent.tsx (CTA destinations)
+
+Deliverable:
+- Implement robust missing-student handling.
+- Provide a short verification checklist in the final response (steps + expected behavior).
+
+
+===============================================================================
+
+### App.tsx (route-related lines only)
+PATH: src/App.tsx
+-------------------------------------------------------------------------------
+   2: import { Routes, Route, useLocation } from 'react-router-dom';
+   6: import PrivateRoute from './components/PrivateRoute';
+   7: import AuthRoute from './components/auth/AuthRoute';
+  19: const Login = React.lazy(() => import('./pages/Login'));
+  20: const SignUp = React.lazy(() => import('./components/auth/SignUp'));
+  23: const ParentDashboard = React.lazy(() => import('./pages/profile/ParentProfile/ParentDashboard'));
+  24: const CreateStudent = React.lazy(() => import('./pages/profile/ParentProfile/CreateStudent'));
+  25: const StudentDashboard = React.lazy(() => import('./pages/profile/StudentProfile/StudentDashboard'));
+  26: const StudentProfile = React.lazy(() => import('./pages/profile/StudentProfile/StudentProfile'));
+  28: const TakeAssessment = React.lazy(() => import('./pages/TakeAssessment'));
+  32: const NotFound = React.lazy(() => import('./pages/NotFound'));
+  48:       <div>route: {location.pathname}</div>
+  93:             <Routes>
+  94:               <Route element={<Layout />}>
+  95:                 {/* Public Routes */}
+  96:                 <Route path="/" element={<Home />} />
+  97:                 <Route path="/about" element={<About />} />
+  98:                 <Route path="/contact" element={<Contact />} />
+  99:                 <Route path="/features" element={<Features />} />
+ 100:                 <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
+ 101:                 <Route path="/signup" element={<AuthRoute><SignUp /></AuthRoute>} />
+ 102:                 <Route path="/learning-styles" element={<LearningStyles />} />
+ 103:                 <Route path="/curriculum" element={<Curriculum />} />
+ 104:                 <Route path="/todos" element={<Todos />} />
+ 106:                 {/* Protected Routes */}
+ 107:                 <Route path="/dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
+ 108:                 <Route path="/parent-dashboard" element={<PrivateRoute><ParentDashboard /></PrivateRoute>} />
+ 109:                 <Route path="/create-student" element={<PrivateRoute><CreateStudent /></PrivateRoute>} />
+ 110:                 <Route path="/student-dashboard/:id" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+ 111:                 <Route path="/student-profile/:id" element={<PrivateRoute><StudentProfile /></PrivateRoute>} />
+ 112:                 <Route path="/learning-plan" element={<PrivateRoute><LearningPlan /></PrivateRoute>} />
+ 113:                 <Route path="/assessment/:studentId" element={<PrivateRoute><TakeAssessment /></PrivateRoute>} />
+ 114:                 <Route path="/learning-style-chat/:studentId" element={<PrivateRoute><LearningStyleChat /></PrivateRoute>} />
+ 115:                 <Route path="/test-chat" element={<PrivateRoute><TestChat /></PrivateRoute>} />
+ 116:                 <Route path="*" element={<NotFound />} />
+ 117:               </Route>
+ 118:             </Routes>
+
+
+### StudentDashboard.tsx (full file)
+PATH: src/pages/profile/StudentProfile/StudentDashboard.tsx
+-------------------------------------------------------------------------------
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { motion as m } from 'framer-motion';
+import styled from 'styled-components';
+import { useAuth } from '../../../contexts/AuthContext';
+import { getStudentProfile } from '../../../services/profileService';
+import { Student } from '../../../types/auth';
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
+import LearningStyleChat from '../../../components/chat/LearningStyleChat';
+
+interface StudentData extends Student {
+  recentActivities: Array<{
+    id?: string;
+    type: string;
+    name: string;
+    date: string;
+  }>;
+  progress: Array<{
+    type: string;
+    value: number;
+  }>;
+}
+
+const StudentDashboard: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const [studentData, setStudentData] = useState<StudentData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
+
+  const isDevEnvironment =
+    typeof window !== 'undefined' && window.location.hostname === 'localhost';
+
+  const logDebug = (...args: unknown[]) => {
+    if (isDevEnvironment) {
+      console.debug(...args);
+    }
+  };
+
+  const fetchWithTimeout = async <T,>(promise: Promise<T>, timeoutMs: number) => {
+    let timeoutId: number | undefined;
+    const timeoutPromise = new Promise<T>((_, reject) => {
+      timeoutId = window.setTimeout(() => {
+        reject(new Error('Timed out loading dashboard data'));
+      }, timeoutMs);
+    });
+
+    return Promise.race([promise, timeoutPromise]).finally(() => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    });
+  };
+
+  const handleRetry = () => {
+    setLoading(true);
+    setError('');
+    setNeedsSetup(false);
+    setReloadToken((value) => value + 1);
+  };
+
+  const hasAuth = Boolean(currentUser);
+  const parentDashboardPath = hasAuth ? '/parent-dashboard' : '/login';
+  const parentDashboardFallback = hasAuth ? '/dashboard' : '/login';
+  const parentDashboardLabel = hasAuth ? 'Back to Parent Dashboard' : 'Go to Login';
+
+  const handleBackToParentDashboard = () => {
+    try {
+      navigate(parentDashboardPath);
+    } catch (navigationError) {
+      console.error('Failed to navigate to parent dashboard:', navigationError);
+      navigate(parentDashboardFallback);
+    }
+  };
+
+  const handleAddStudent = () => {
+    navigate('/create-student');
+  };
+
+  useEffect(() => {
+    const fetchStudentData = async () => {
+      const studentId = id?.trim();
+      setError('');
+      setNeedsSetup(false);
+
+      if (!studentId) {
+        setStudentData(null);
+        setNeedsSetup(true);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        logDebug('Dashboard load start', studentId);
+        const data = await fetchWithTimeout(getStudentProfile(studentId), 8000);
+        if (data) {
+          setStudentData({
+            ...data,
+            id: data.id || studentId,
+            recentActivities: [],
+            progress: []
+          } as StudentData);
+          logDebug('Dashboard load success', { data });
+        } else {
+          setStudentData(null);
+          setNeedsSetup(true);
+          logDebug('Dashboard load success', { data: null });
+        }
+      } catch (err) {
+        logDebug('Dashboard load error', err);
+        const message = err instanceof Error ? err.message : 'Failed to load student data';
+        if (message.toLowerCase().includes('not found')) {
+          setNeedsSetup(true);
+          setStudentData(null);
+        } else {
+          setError(message);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentData();
+  }, [id, reloadToken]);
+
+  if (loading) {
+    return (
+      <StyledLoadingContainer>
+        <LoadingSpinner />
+      </StyledLoadingContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <StyledErrorContainer>
+        <p>{error}</p>
+        <StyledActionGroup>
+          <StyledPrimaryButton type="button" onClick={handleBackToParentDashboard}>
+            {parentDashboardLabel}
+          </StyledPrimaryButton>
+          <StyledTertiaryButton type="button" onClick={handleRetry}>
+            Retry
+          </StyledTertiaryButton>
+        </StyledActionGroup>
+      </StyledErrorContainer>
+    );
+  }
+
+  if (needsSetup || !studentData) {
+    return (
+      <StyledSetupContainer>
+        <StyledSetupCard>
+          <h2>Student profile not found</h2>
+          <p>This dashboard needs a student profile before it can load.</p>
+          <StyledActionGroup>
+            <StyledPrimaryButton type="button" onClick={handleBackToParentDashboard}>
+              {parentDashboardLabel}
+            </StyledPrimaryButton>
+            {hasAuth && (
+              <StyledSecondaryButton type="button" onClick={handleAddStudent}>
+                Add Student
+              </StyledSecondaryButton>
+            )}
+            <StyledTertiaryButton type="button" onClick={handleRetry}>
+              Retry
+            </StyledTertiaryButton>
+          </StyledActionGroup>
+        </StyledSetupCard>
+      </StyledSetupContainer>
+    );
+  }
+
+  return (
+    <m.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <StyledHeader>
+        <StyledHeaderLeft>
+          <h1>Welcome, {studentData?.name}!</h1>
+          <p>Grade {studentData?.grade}</p>
+        </StyledHeaderLeft>
+      </StyledHeader>
+
+      <DashboardGrid>
+        <MainSection>
+          {!studentData?.hasTakenAssessment && (
+            <AssessmentSection>
+              <h2>Learning Style Assessment</h2>
+              <p>Take your learning style assessment to get personalized recommendations.</p>
+              <LearningStyleChat studentId={studentData.id ?? id} />
+            </AssessmentSection>
+          )}
+
+          {studentData?.hasTakenAssessment && studentData.learningStyle && (
+            <LearningStyleSection>
+              <h2>Your Learning Style: {studentData.learningStyle}</h2>
+              <p>Based on your assessment, we've customized your learning experience.</p>
+            </LearningStyleSection>
+          )}
+
+          <ProgressSection>
+            <h2>Recent Progress</h2>
+            {/* Add progress visualization here */}
+          </ProgressSection>
+        </MainSection>
+      </DashboardGrid>
+    </m.div>
+  );
+};
+
+const StyledLoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+`;
+
+const StyledErrorContainer = styled.div`
+  text-align: center;
+  color: red;
+  padding: 2rem;
+  display: grid;
+  gap: 1rem;
+`;
+
+const StyledSetupContainer = styled.div`
+  text-align: center;
+  padding: 2rem;
+  display: grid;
+  place-items: center;
+`;
+
+const StyledSetupCard = styled.div`
+  max-width: 480px;
+  width: 100%;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 16px;
+  padding: 2rem;
+  display: grid;
+  gap: 0.75rem;
+  color: #9a3412;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+`;
+
+const StyledActionGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+`;
+
+const StyledPrimaryButton = styled.button`
+  width: 100%;
+  max-width: 260px;
+  padding: 0.6rem 1.5rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--primary-color);
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+
+  &:hover {
+    background: var(--primary-dark);
+  }
+`;
+
+const StyledSecondaryButton = styled.button`
+  width: 100%;
+  max-width: 260px;
+  padding: 0.55rem 1.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--primary-color);
+  background: #fff;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-weight: 600;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.08);
+  }
+`;
+
+const StyledTertiaryButton = styled.button`
+  width: 100%;
+  max-width: 260px;
+  padding: 0.55rem 1.4rem;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 600;
+`;
+
+const StyledHeader = styled(m.header)`
+  margin-bottom: 2rem;
+`;
+
+const StyledHeaderLeft = styled.div`
+  h1 {
+    margin: 0;
+    color: var(--primary-color);
+  }
+  p {
+    margin: 0.5rem 0 0;
+    color: var(--text-secondary);
+  }
+`;
+
+const DashboardGrid = styled.div`
+  display: grid;
+  gap: 2rem;
+`;
+
+const MainSection = styled.div`
+  display: grid;
+  gap: 2rem;
+`;
+
+const AssessmentSection = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
+const LearningStyleSection = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
+const ProgressSection = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
+export default StudentDashboard;
+
+
+### profileService.ts (extracted relevant functions)
+PATH: src/services/profileService.ts
+-------------------------------------------------------------------------------
+// ---- getStudentProfile ----
+export const getStudentProfile = async (studentId: string): Promise<Student> => {
+  try {
+    // Check cache first
+    if (profileCache.has(`student_${studentId}`)) {
+      const cachedStudent = profileCache.get(`student_${studentId}`) as Student;
+      if (!cachedStudent.id) {
+        const normalizedStudent = { ...cachedStudent, id: studentId };
+        profileCache.set(`student_${studentId}`, normalizedStudent);
+        return normalizedStudent;
+      }
+      return cachedStudent;
+    }
+
+    const studentRef = doc(firestore, "students", studentId);
+    const studentDoc = await getDoc(studentRef);
+
+    if (!studentDoc.exists()) {
+      throw new Error("Student profile not found");
+    }
+
+    const studentData = studentDoc.data() as Omit<Student, 'id'>;
+    const studentProfile = { ...studentData, id: studentDoc.id } as Student;
+    // Cache the result
+    profileCache.set(`student_${studentId}`, studentProfile);
+    return studentProfile;
+  } catch (error) {
+    if (!isOnline()) {
+      console.warn('Offline: Using cached data if available');
+      return profileCache.get(`student_${studentId}`) || null;
+    }
+    throw error;
+  }
+}
+
+// ---- getStudentsByIds ----
+export const getStudentsByIds = async (ids: string[]): Promise<Student[]> => {
+  if (!ids.length) {
+    return [];
+  }
+
+  const students = await Promise.all(
+    ids.map(async (studentId) => {
+      const cacheKey = `student_${studentId}`;
+      if (profileCache.has(cacheKey)) {
+        const cachedStudent = profileCache.get(cacheKey) as Student;
+        if (!cachedStudent.id) {
+          const normalizedStudent = { ...cachedStudent, id: studentId };
+          profileCache.set(cacheKey, normalizedStudent);
+          return normalizedStudent;
+        }
+        return cachedStudent;
+      }
+
+      const studentRef = doc(firestore, 'students', studentId);
+      const studentDoc = await getDoc(studentRef);
+      if (!studentDoc.exists()) {
+        console.warn(`Student document not found for id: ${studentId}`);
+        return null;
+      }
+
+      const studentData = studentDoc.data() as Student;
+      const studentProfile = {
+        ...studentData,
+        id: studentDoc.id
+      };
+      profileCache.set(cacheKey, studentProfile);
+      return studentProfile;
+    })
+  );
+
+  return students.filter((student): student is Student => Boolean(student));
+}
+
+// ---- invalidateStudentCache ----
+export const invalidateStudentCache = (studentId: string) => {
+  invalidateProfileCache(`student_${studentId}`);
+}
+
+// ---- invalidateProfileCache ----
+export const invalidateProfileCache = (key?: string) => {
+  if (!key) {
+    profileCache.clear();
+    return;
+  }
+  profileCache.delete(key);
+}
+
+
+### ParentDashboard.tsx (navigation + route usage excerpts)
+PATH: src/pages/profile/ParentProfile/ParentDashboard.tsx
+-------------------------------------------------------------------------------
+  28:   const navigate = useNavigate();
+  50:           setStudentsError('Unable to load student profiles. Please try again.');
+  69:   const handleProfileSwitch = (studentId?: string) => {
+  75:     navigate(`/student-dashboard/${studentId}`);
+  98:             <h2>Student Profiles</h2>
+  99:             <AddStudentButton onClick={() => navigate('/create-student')}>➕ Add Student</AddStudentButton>
+ 102:               {studentsLoading && <StatusMessage>Loading student profiles...</StatusMessage>}
+ 110:                 <StudentCardTile key={student.id} onClick={() => handleProfileSwitch(student.id)}>
+
+
+### CreateStudent.tsx (creation + navigation excerpts)
+PATH: src/pages/profile/ParentProfile/CreateStudent.tsx
+-------------------------------------------------------------------------------
+   4: import { addStudentProfile } from '../../../services/profileService';
+   7: interface NewStudent {
+   9:   grade: string;
+  13: const CreateStudent: React.FC = () => {
+  14:   const [studentName, setStudentName] = useState<string>('');
+  15:   const [grade, setGrade] = useState<string>('');
+  16:   const [error, setError] = useState<string>('');
+  17:   const [loading, setLoading] = useState<boolean>(false);
+  19:   const navigate = useNavigate();
+  24:       setError('Please sign in to add a student.');
+  27:     if (!studentName.trim()) {
+  28:       setError('Student name is required.');
+  31:     if (!grade.trim()) {
+  32:       setError('Grade level is required.');
+  36:     setLoading(true);
+  37:     setError('');
+  40:       const newStudent: NewStudent = { 
+  41:         name: studentName.trim(), 
+  42:         grade: grade.trim(), 
+  46:       await addStudentProfile(currentUser.uid, newStudent);
+  47:       setStudentName('');
+  48:       setGrade('');
+  49:       navigate('/dashboard');
+  51:       setError('Failed to create student profile. Please try again.');
+  52:       console.error('Error creating student:', err);
+  54:       setLoading(false);
+  60:       <h2>Add a New Student</h2>
+  66:             Student Name:
+  69:               value={studentName}
+  70:               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStudentName(e.target.value)}
+  71:               placeholder="Enter student's name"
+  79:             Grade Level:
+  81:               value={grade} 
+  82:               onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGrade(e.target.value)}
+  85:               <option value="">Select Grade</option>
+  89:                   Grade {i + 1}
+ 177: export default CreateStudent;
+
+
+### AuthContext.tsx (top excerpt)
+PATH: src/contexts/AuthContext.tsx
+-------------------------------------------------------------------------------
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import {
+  createUserWithEmailAndPassword,
+  getRedirectResult,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  User,
+  UserCredential
+} from 'firebase/auth';
+import { auth, authInit } from '../config/firebase';
+import { firebaseService } from '../services/firebaseService';
+import type { AuthContextType } from '../types/auth';
+
+export type AuthContextProps = AuthContextType;
+
+export const AuthContext = createContext<AuthContextProps>({
+  currentUser: null,
+  user: null,
+  loading: true,
+  isLoading: true,
+  isAuthReady: false,
+  error: null,
+  login: async () => {
+    throw new Error('AuthProvider not initialized');
+  },
+  loginWithGoogle: async () => {
+    throw new Error('AuthProvider not initialized');
+  },
+  signup: async () => {
+    throw new Error('AuthProvider not initialized');
+  },
+  logout: async () => {
+    throw new Error('AuthProvider not initialized');
+  },
+  clearError: () => undefined
+});
+
+export const useAuth = () => useContext(AuthContext);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const redirectHandledRef = useRef(false);
+  const isDev =
+    typeof window !== 'undefined' && window.location.hostname === 'localhost';
+
+  useEffect(() => {
+    if (isDev) {
+      console.debug('[AuthProvider] mount');
+    }
+    return () => {
+      if (isDev) {
+        console.debug('[AuthProvider] unmount');
+      }
+    };
+  }, [isDev]);
+
+  useEffect(() => {
+    let isMounted = true;
+    let unsubscribe = () => undefined;
+    let hasResolved = false;
+    let authReadyTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const initAuth = () => {
+      if (isDev) {
+        console.debug('[AuthProvider] starting authInit');
+      }
+      // Do not block auth readiness on persistence; Firebase can still report auth state.
+      void authInit.catch((authError) => {
+        console.warn('[AuthProvider] authInit failed (continuing):', authError);
+      });
+
+      if (!isMounted) return;
+      if (isDev) {
+        console.debug('[AuthProvider] subscribing onAuthStateChanged');
+      }
+      unsubscribe = onAuthStateChanged(
+        auth,
+        (user) => {
+          console.log('[AuthProvider] onAuthStateChanged fired uid=', user?.uid ?? null);
+          if (isDev) {
+            console.debug('[AuthProvider] onAuthStateChanged', {
+              userUid: user?.uid ?? null,
+              currentUserUid: auth.currentUser?.uid ?? null,
+              persistenceManager: (auth as { persistenceManager?: unknown }).persistenceManager
+            });
+          }
+          setCurrentUser(user);
+          setError(null);
+          if (!hasResolved) {
+            hasResolved = true;
+            setLoading(false);
+            setIsAuthReady(true);
+            if (authReadyTimeout) {
+              clearTimeout(authReadyTimeout);
+              authReadyTimeout = null;
+            }
+          }
+        },
+        (authError) => {
+          console.error('Auth state change error:', authError);
+          setError(authError instanceof Error ? authError.message : 'Failed to determine auth state');
+          if (!hasResolved) {
+            hasResolved = true;
+            setLoading(false);
+            setIsAuthReady(true);
+            if (authReadyTimeout) {
+              clearTimeout(authReadyTimeout);
+              authReadyTimeout = null;
+            }
+          }
+        }
+      );
+
+      authReadyTimeout = setTimeout(() => {
+        if (!hasResolved) {
+          console.error('[AuthProvider] auth readiness timeout: forcing ready state');
+          hasResolved = true;
+          setIsAuthReady(true);
+          setLoading(false);
+        }
+      }, 2000);
+    };
+
+    initAuth();
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+      if (authReadyTimeout) {
+        clearTimeout(authReadyTimeout);
+      }
+    };
+  }, [isDev]);
+
+  useEffect(() => {
+    if (redirectHandledRef.current) {
+      return;
+    }
+    redirectHandledRef.current = true;
+
+    const resolveRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        console.log('getRedirectResult result=', result);
+      } catch (redirectError) {
+        console.error('getRedirectResult error:', redirectError);
+        setError(
+          redirectError instanceof Error
+            ? redirectError.message
+            : 'Failed to complete redirect sign-in'
+        );
+      }
+    };
+
+    resolveRedirect();
+  }, []);
+
+  useEffect(() => {
+    console.info('[AuthProvider] active auth uid', currentUser?.uid ?? null);
+  }, [currentUser]);
+
+  const clearError = () => setError(null);
+
+  const isPopupCancelled = (authError: unknown): boolean => {
+    const firebaseError = authError as { code?: string };
+    return firebaseError.code === 'auth/popup-closed-by-user';
+  };
+
+  const runWithAuthState = async <T,>(
+    action: () => Promise<T>,
+    fallbackMessage: string
+  ): Promise<T> => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await action();
+    } catch (authError) {
+      if (isPopupCancelled(authError)) {
+        return null as T;
+      }
+      const message =
+        authError instanceof Error ? authError.message : fallbackMessage;
+      setError(message);
+      throw authError instanceof Error ? authError : new Error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const login = (email: string, password: string): Promise<UserCredential> =>
+    runWithAuthState(async () => {
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      setCurrentUser(credential.user);
+      return credential;
+    }, 'Failed to log in');
+
+  const signup = (email: string, password: string): Promise<UserCredential> =>
+    runWithAuthState(async () => {
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      setCurrentUser(credential.user);
+      return credential;
+    }, 'Failed to sign up');
+
+  const loginWithGoogle = (): Promise<User | null> =>
+    runWithAuthState(async () => {
+      const user = await firebaseService.signInWithGoogle();
+      if (user) {
+        setCurrentUser(user);
+      }
+      return user;
+    }, 'Failed to sign in with Google');
+
+  const logout = (): Promise<void> =>
+    runWithAuthState(async () => {
+      await firebaseService.signOut();
+    }, 'Failed to log out');
+
+
+<<TRUNCATED: showing first 220 of 242 lines>>
+
+
+### Login.tsx (top excerpt)
+PATH: src/pages/Login.tsx
+-------------------------------------------------------------------------------
+import React from 'react';
+import { Link } from 'react-router-dom';
+import styled from 'styled-components';
+import LoginForm from '../components/auth/LoginForm';
+
+const Login: React.FC = () => {
+  return (
+    <LoginContainer>
+      <LoginContent className="glass-card">
+        <LoginCopy>
+          <span className="badge">Welcome back</span>
+          <h1>Continue your learning journey.</h1>
+          <p>Access your personalized dashboard, progress insights, and learning plan.</p>
+          <InfoList>
+            <li>Secure, one-tap Google sign in</li>
+            <li>Instant access to your assessment results</li>
+            <li>Personalized learning plan updates</li>
+          </InfoList>
+        </LoginCopy>
+
+        <LoginBox>
+          <Title>Sign in</Title>
+          <LoginForm />
+          <SignUpPrompt>
+            Don't have an account? <StyledLink to="/signup">Sign up</StyledLink>
+          </SignUpPrompt>
+        </LoginBox>
+      </LoginContent>
+    </LoginContainer>
+  );
+};
+
+const LoginContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 80px);
+  padding: 20px;
+`;
+
+const LoginContent = styled.div`
+  width: 100%;
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 2rem;
+  padding: 2rem;
+`;
+
+const LoginCopy = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  p {
+    color: var(--text-secondary);
+  }
+`;
+
+const InfoList = styled.ul`
+  display: grid;
+  gap: 0.5rem;
+  padding-left: 1.2rem;
+  color: var(--text-secondary);
+`;
+
+const LoginBox = styled.div`
+  width: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid var(--border-color);
+`;
+
+const Title = styled.h1`
+  text-align: left;
+  color: var(--text-primary);
+  margin-bottom: 2rem;
+`;
+
+const SignUpPrompt = styled.p`
+  text-align: center;
+  margin-top: 1rem;
+  color: #666;
+`;
+
+const StyledLink = styled(Link)`
+  color: var(--primary-color);
+  text-decoration: none;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+export default Login;
+
