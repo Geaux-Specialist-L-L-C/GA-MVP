@@ -1,0 +1,662 @@
+GA-MVP | Issue #138 Server Scaffold Bundle
+Generated: 2026-01-01 04:17:48
+Repo root: /home/evopimp/Geaux-Dev/GA-MVP
+
+Files included:
+- server/.env.example
+- server/Dockerfile
+- server/README.md
+- server/package.json
+- server/src/__tests__/app.test.ts
+- server/src/app.ts
+- server/src/index.ts
+- server/src/middleware/auth.ts
+- server/src/routes/assessment.ts
+- server/src/services/firestore.ts
+- server/src/services/vertex.ts
+- server/src/types.ts
+- server/tsconfig.json
+- server/vitest.config.ts
+
+===============================================================================
+
+### server/.env.example
+PATH: /home/evopimp/Geaux-Dev/GA-MVP/server/.env.example
+-------------------------------------------------------------------------------
+PORT=8080
+GOOGLE_CLOUD_PROJECT=
+VERTEX_REGION=us-central1
+VERTEX_MODEL=gemini-1.5-flash
+# For local development with Firebase Admin SDK
+# GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+
+===============================================================================
+
+### server/Dockerfile
+PATH: /home/evopimp/Geaux-Dev/GA-MVP/server/Dockerfile
+-------------------------------------------------------------------------------
+FROM node:20-slim
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm install --omit=dev
+
+COPY tsconfig.json ./
+COPY src ./src
+
+RUN npm install --include=dev \
+  && npm run build \
+  && npm prune --omit=dev
+
+ENV NODE_ENV=production
+ENV PORT=8080
+
+CMD ["node", "dist/index.js"]
+
+===============================================================================
+
+### server/README.md
+PATH: /home/evopimp/Geaux-Dev/GA-MVP/server/README.md
+-------------------------------------------------------------------------------
+# Assessment Service (Cloud Run)
+
+TypeScript/Express service for the learning-style assessment chat endpoint.
+
+## Local development
+
+```bash
+npm install
+npm run dev
+```
+
+Create a `.env` file (see `.env.example`) if you want to point at Vertex AI or Firebase credentials locally.
+
+### Example request
+
+```bash
+curl -X POST http://localhost:8080/api/learning-style/assess \
+  -H "Authorization: Bearer <FIREBASE_ID_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parentId": "parent_123",
+    "studentId": "student_456",
+    "messages": [
+      { "role": "user", "content": "My child likes pictures and videos." }
+    ]
+  }'
+```
+
+## Cloud Run deploy
+
+```bash
+gcloud run deploy ga-assessment-service \
+  --source . \
+  --region us-central1 \
+  --set-env-vars "GOOGLE_CLOUD_PROJECT=YOUR_PROJECT,VERTEX_REGION=us-central1,VERTEX_MODEL=gemini-1.5-flash" \
+  --allow-unauthenticated=false
+```
+
+### Required environment variables
+
+- `GOOGLE_CLOUD_PROJECT`
+- `VERTEX_REGION` (or `VERTEX_LOCATION`)
+- `VERTEX_MODEL` (defaults to `gemini-1.5-flash`)
+
+### Auth notes
+
+Cloud Run uses Application Default Credentials (ADC) from the service account attached to the service. For local development, set `GOOGLE_APPLICATION_CREDENTIALS` to a service account JSON file.
+
+===============================================================================
+
+### server/package.json
+PATH: /home/evopimp/Geaux-Dev/GA-MVP/server/package.json
+-------------------------------------------------------------------------------
+{
+  "name": "ga-mvp-assessment-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@google-cloud/vertexai": "^1.7.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.5.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.7",
+    "@types/supertest": "^2.0.16",
+    "supertest": "^6.3.4",
+    "tsx": "^4.7.2",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}
+
+===============================================================================
+
+### server/src/__tests__/app.test.ts
+PATH: /home/evopimp/Geaux-Dev/GA-MVP/server/src/__tests__/app.test.ts
+-------------------------------------------------------------------------------
+import request from 'supertest';
+import { describe, expect, it } from 'vitest';
+import app from '../app.js';
+
+describe('assessment service', () => {
+  it('returns ok for healthz', async () => {
+    const response = await request(app).get('/healthz');
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true });
+  });
+
+  it('returns 401 when auth header is missing', async () => {
+    const response = await request(app)
+      .post('/api/learning-style/assess')
+      .send({ parentId: 'parent', studentId: 'student', messages: [] });
+
+    expect(response.status).toBe(401);
+  });
+});
+
+===============================================================================
+
+### server/src/app.ts
+PATH: /home/evopimp/Geaux-Dev/GA-MVP/server/src/app.ts
+-------------------------------------------------------------------------------
+import cors from 'cors';
+import express from 'express';
+import assessmentRouter from './routes/assessment.js';
+
+const app = express();
+
+app.use(cors());
+app.use(express.json({ limit: '1mb' }));
+
+app.get('/healthz', (_req, res) => {
+  res.status(200).json({ ok: true });
+});
+
+app.use('/api', assessmentRouter);
+
+export default app;
+
+===============================================================================
+
+### server/src/index.ts
+PATH: /home/evopimp/Geaux-Dev/GA-MVP/server/src/index.ts
+-------------------------------------------------------------------------------
+import app from './app.js';
+
+const port = process.env.PORT ? Number(process.env.PORT) : 8080;
+
+app.listen(port, () => {
+  console.log(`Assessment service listening on port ${port}`);
+});
+
+===============================================================================
+
+### server/src/middleware/auth.ts
+PATH: /home/evopimp/Geaux-Dev/GA-MVP/server/src/middleware/auth.ts
+-------------------------------------------------------------------------------
+import type { NextFunction, Response } from 'express';
+import { auth } from '../services/firestore.js';
+import type { AuthenticatedRequest } from '../types.js';
+
+export const authenticate = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Missing Authorization header' });
+  }
+
+  const token = header.replace('Bearer ', '').trim();
+  if (!token) {
+    return res.status(401).json({ error: 'Missing token' });
+  }
+
+  try {
+    const decoded = await auth.verifyIdToken(token);
+    req.user = { uid: decoded.uid };
+    return next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
+===============================================================================
+
+### server/src/routes/assessment.ts
+PATH: /home/evopimp/Geaux-Dev/GA-MVP/server/src/routes/assessment.ts
+-------------------------------------------------------------------------------
+import { Router, type Response } from 'express';
+import { z } from 'zod';
+import { authenticate } from '../middleware/auth.js';
+import { db } from '../services/firestore.js';
+import { getAssessmentProvider } from '../services/vertex.js';
+import type { AssessmentResult, AuthenticatedRequest, LearningStyle } from '../types.js';
+
+const router = Router();
+
+const messageSchema = z.object({
+  role: z.enum(['system', 'user', 'assistant']),
+  content: z.string().min(1)
+});
+
+const requestSchema = z.object({
+  parentId: z.string().min(1),
+  studentId: z.string().min(1),
+  messages: z.array(messageSchema)
+});
+
+const allowedStyles: LearningStyle[] = [
+  'Visual',
+  'Auditory',
+  'Read/Write',
+  'Kinesthetic',
+  'Multimodal'
+];
+
+const fallbackResult = (model: string): AssessmentResult => ({
+  learningStyle: 'Multimodal',
+  confidence: 0.5,
+  explanation:
+    'We could not confidently determine a single learning style, so a blended approach is recommended.',
+  nextSteps: [
+    'Mix visuals, discussion, and hands-on activities.',
+    'Ask the student which format feels easiest today.',
+    'Adjust study methods based on what keeps them engaged.'
+  ],
+  model,
+  createdAt: new Date().toISOString()
+});
+
+const normalizeAssessment = (input: unknown, model: string): AssessmentResult => {
+  const base = fallbackResult(model);
+  let parsed: Record<string, unknown> | null = null;
+
+  if (typeof input === 'string') {
+    const trimmed = input.trim();
+    try {
+      parsed = JSON.parse(trimmed) as Record<string, unknown>;
+    } catch (error) {
+      const start = trimmed.indexOf('{');
+      const end = trimmed.lastIndexOf('}');
+      if (start >= 0 && end > start) {
+        try {
+          parsed = JSON.parse(trimmed.slice(start, end + 1)) as Record<string, unknown>;
+        } catch (innerError) {
+          parsed = null;
+        }
+      }
+    }
+  } else if (typeof input === 'object' && input !== null) {
+    parsed = input as Record<string, unknown>;
+  }
+
+  if (!parsed) {
+    return base;
+  }
+
+  const style = allowedStyles.includes(parsed.learningStyle as LearningStyle)
+    ? (parsed.learningStyle as LearningStyle)
+    : base.learningStyle;
+  const confidence =
+    typeof parsed.confidence === 'number' && parsed.confidence >= 0 && parsed.confidence <= 1
+      ? parsed.confidence
+      : base.confidence;
+  const explanation = typeof parsed.explanation === 'string' ? parsed.explanation : base.explanation;
+  const nextSteps = Array.isArray(parsed.nextSteps)
+    ? parsed.nextSteps.filter((step) => typeof step === 'string')
+    : base.nextSteps;
+
+  const trimmedSteps =
+    nextSteps.length >= 3 && nextSteps.length <= 6 ? nextSteps : base.nextSteps;
+
+  return {
+    learningStyle: style,
+    confidence,
+    explanation,
+    nextSteps: trimmedSteps,
+    model,
+    createdAt: new Date().toISOString()
+  };
+};
+
+const handleAssessment = async (req: AuthenticatedRequest, res: Response) => {
+  const parseResult = requestSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ error: 'Invalid request body' });
+  }
+
+  const { parentId, studentId, messages } = parseResult.data;
+
+  if (!req.user || req.user.uid !== parentId) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const studentRef = db.collection('students').doc(studentId);
+  const studentSnap = await studentRef.get();
+
+  if (!studentSnap.exists) {
+    return res.status(404).json({ error: 'Student not found' });
+  }
+
+  const studentData = studentSnap.data();
+  if (studentData?.parentId !== parentId) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const provider = getAssessmentProvider();
+  const providerResult = await provider.generateAssessment(messages);
+  const normalized = normalizeAssessment(providerResult.raw, providerResult.model);
+
+  await studentRef.update({
+    learningStyle: normalized.learningStyle,
+    hasTakenAssessment: true,
+    assessmentStatus: 'completed',
+    updatedAt: new Date().toISOString()
+  });
+
+  try {
+    await db.collection('assessments').add({
+      parentId,
+      studentId,
+      messages,
+      result: normalized,
+      createdAt: new Date().toISOString(),
+      model: normalized.model
+    });
+  } catch (error) {
+    // TODO: add structured logging for failed assessment history writes
+  }
+
+  return res.status(200).json(normalized);
+};
+
+router.post('/assessment/chat', authenticate, handleAssessment);
+router.post('/learning-style/assess', authenticate, handleAssessment);
+
+export default router;
+
+===============================================================================
+
+### server/src/services/firestore.ts
+PATH: /home/evopimp/Geaux-Dev/GA-MVP/server/src/services/firestore.ts
+-------------------------------------------------------------------------------
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
+
+const app = getApps().length > 0 ? getApps()[0] : initializeApp();
+
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+
+===============================================================================
+
+### server/src/services/vertex.ts
+PATH: /home/evopimp/Geaux-Dev/GA-MVP/server/src/services/vertex.ts
+-------------------------------------------------------------------------------
+import { VertexAI } from '@google-cloud/vertexai';
+import type { Message } from '../types.js';
+
+export interface ProviderResult {
+  raw: unknown;
+  model: string;
+}
+
+export interface AssessmentProvider {
+  generateAssessment(messages: Message[]): Promise<ProviderResult>;
+}
+
+const DEFAULT_MODEL = 'gemini-1.5-flash';
+
+const getVertexConfig = () => {
+  const project = process.env.GOOGLE_CLOUD_PROJECT;
+  const location = process.env.VERTEX_REGION ?? process.env.VERTEX_LOCATION;
+  if (!project || !location) {
+    return null;
+  }
+  return {
+    project,
+    location,
+    model: process.env.VERTEX_MODEL ?? DEFAULT_MODEL
+  };
+};
+
+class VertexAssessmentProvider implements AssessmentProvider {
+  private client: VertexAI;
+  private modelName: string;
+
+  constructor(project: string, location: string, modelName: string) {
+    this.client = new VertexAI({ project, location });
+    this.modelName = modelName;
+  }
+
+  async generateAssessment(messages: Message[]): Promise<ProviderResult> {
+    const model = this.client.getGenerativeModel({ model: this.modelName });
+    const prompt = buildPrompt(messages);
+    const response = await model.generateContent({
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: prompt }]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 512
+      }
+    });
+
+    const text = response.response.candidates
+      ?.flatMap((candidate) => candidate.content.parts ?? [])
+      .map((part) => ('text' in part ? part.text : ''))
+      .join('')
+      .trim();
+
+    return {
+      raw: text ?? '',
+      model: this.modelName
+    };
+  }
+}
+
+class StubAssessmentProvider implements AssessmentProvider {
+  async generateAssessment(messages: Message[]): Promise<ProviderResult> {
+    const combined = messages.map((message) => message.content).join(' ').toLowerCase();
+    const style = pickStyle(combined);
+    const stub = {
+      learningStyle: style,
+      confidence: 0.62,
+      explanation:
+        'Based on the chat so far, this is a best-effort guess of how the student seems to learn.',
+      nextSteps: nextStepsForStyle(style),
+      model: 'stub'
+    };
+
+    return {
+      raw: stub,
+      model: 'stub'
+    };
+  }
+}
+
+const pickStyle = (text: string) => {
+  if (text.includes('visual') || text.includes('see') || text.includes('diagram')) {
+    return 'Visual';
+  }
+  if (text.includes('listen') || text.includes('auditory') || text.includes('hear')) {
+    return 'Auditory';
+  }
+  if (text.includes('read') || text.includes('write') || text.includes('notes')) {
+    return 'Read/Write';
+  }
+  if (text.includes('hands') || text.includes('kinesthetic') || text.includes('build')) {
+    return 'Kinesthetic';
+  }
+  return 'Multimodal';
+};
+
+const nextStepsForStyle = (style: string) => {
+  const base = {
+    Visual: [
+      'Use diagrams or pictures when introducing new ideas.',
+      'Summarize lessons with charts or color-coded notes.',
+      'Try short videos before homework sessions.'
+    ],
+    Auditory: [
+      'Discuss key ideas out loud before writing answers.',
+      'Use audiobooks or read assignments together.',
+      'Encourage short verbal summaries after each lesson.'
+    ],
+    'Read/Write': [
+      'Provide written checklists for study sessions.',
+      'Encourage rewriting notes in their own words.',
+      'Use flashcards with concise text prompts.'
+    ],
+    Kinesthetic: [
+      'Add hands-on activities or experiments when possible.',
+      'Take short movement breaks between study blocks.',
+      'Use manipulatives or real-world examples.'
+    ],
+    Multimodal: [
+      'Mix visuals, discussion, and hands-on practice.',
+      'Rotate study formats to keep engagement high.',
+      'Let the student choose the format that feels easiest.'
+    ]
+  } as const;
+
+  return base[style as keyof typeof base] ?? base.Multimodal;
+};
+
+const buildPrompt = (messages: Message[]) => {
+  const transcript = messages
+    .map((message) => `${message.role.toUpperCase()}: ${message.content}`)
+    .join('\n');
+
+  return [
+    'You are an assistant that must return STRICT JSON only.',
+    'Analyze the conversation and output JSON with exactly these keys:',
+    'learningStyle, confidence, explanation, nextSteps, model, createdAt.',
+    'learningStyle must be one of ["Visual","Auditory","Read/Write","Kinesthetic","Multimodal"].',
+    'confidence is a number from 0 to 1.',
+    'explanation is a short parent-friendly string.',
+    'nextSteps is an array of 3-6 short suggestions.',
+    'model should be the model name you used.',
+    'createdAt must be an ISO timestamp.',
+    'Conversation transcript:',
+    transcript
+  ].join('\n');
+};
+
+export const getAssessmentProvider = (): AssessmentProvider => {
+  const config = getVertexConfig();
+  if (!config) {
+    return new StubAssessmentProvider();
+  }
+
+  return new VertexAssessmentProvider(config.project, config.location, config.model);
+};
+
+===============================================================================
+
+### server/src/types.ts
+PATH: /home/evopimp/Geaux-Dev/GA-MVP/server/src/types.ts
+-------------------------------------------------------------------------------
+import type { Request } from 'express';
+
+export type MessageRole = 'system' | 'user' | 'assistant';
+
+export interface Message {
+  role: MessageRole;
+  content: string;
+}
+
+export interface AssessmentRequestBody {
+  parentId: string;
+  studentId: string;
+  messages: Message[];
+}
+
+export type LearningStyle =
+  | 'Visual'
+  | 'Auditory'
+  | 'Read/Write'
+  | 'Kinesthetic'
+  | 'Multimodal';
+
+export interface AssessmentResult {
+  learningStyle: LearningStyle;
+  confidence: number;
+  explanation: string;
+  nextSteps: string[];
+  model: string;
+  createdAt: string;
+}
+
+export interface AuthenticatedUser {
+  uid: string;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user?: AuthenticatedUser;
+}
+
+===============================================================================
+
+### server/tsconfig.json
+PATH: /home/evopimp/Geaux-Dev/GA-MVP/server/tsconfig.json
+-------------------------------------------------------------------------------
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "rootDir": "src",
+    "outDir": "dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
+
+===============================================================================
+
+### server/vitest.config.ts
+PATH: /home/evopimp/Geaux-Dev/GA-MVP/server/vitest.config.ts
+-------------------------------------------------------------------------------
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    environment: 'node',
+    include: ['src/__tests__/**/*.test.ts']
+  }
+});
+
+===============================================================================
+
+Summary:
+- Included: 14
+- Skipped/Missing/Errors: 0
