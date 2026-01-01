@@ -143,13 +143,14 @@ export const getStudentsByIds = async (ids: string[]): Promise<Student[]> => {
       const studentRef = doc(firestore, 'students', studentId);
       const studentDoc = await getDoc(studentRef);
       if (!studentDoc.exists()) {
+        console.warn(`Student document not found for id: ${studentId}`);
         return null;
       }
 
       const studentData = studentDoc.data() as Student;
       const studentProfile = {
         ...studentData,
-        id: studentData.id || studentId
+        id: studentDoc.id
       };
       profileCache.set(cacheKey, studentProfile);
       return studentProfile;
