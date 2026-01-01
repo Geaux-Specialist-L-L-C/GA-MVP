@@ -2,17 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion as m } from 'framer-motion';
 import styled from 'styled-components';
-import { FaGraduationCap, FaChartLine, FaBook } from 'react-icons/fa';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getStudentProfile } from '../../../services/profileService';
 import { Student } from '../../../types/auth';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import LearningStyleChat from '../../../components/chat/LearningStyleChat';
-import { DefaultTheme } from 'styled-components';
-
-interface ThemeProps {
-  theme: DefaultTheme;
-}
 
 interface StudentData extends Student {
   recentActivities: Array<{
@@ -37,8 +31,11 @@ const StudentDashboard: React.FC = () => {
   const [needsSetup, setNeedsSetup] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
 
+  const isDevEnvironment =
+    typeof window !== 'undefined' && window.location.hostname === 'localhost';
+
   const logDebug = (...args: unknown[]) => {
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment) {
       console.debug(...args);
     }
   };
@@ -65,14 +62,33 @@ const StudentDashboard: React.FC = () => {
     setReloadToken((value) => value + 1);
   };
 
+  const hasAuth = Boolean(currentUser);
+  const parentDashboardPath = hasAuth ? '/parent-dashboard' : '/login';
+  const parentDashboardFallback = hasAuth ? '/dashboard' : '/login';
+  const parentDashboardLabel = hasAuth ? 'Back to Parent Dashboard' : 'Go to Login';
+
+  const handleBackToParentDashboard = () => {
+    try {
+      navigate(parentDashboardPath);
+    } catch (navigationError) {
+      console.error('Failed to navigate to parent dashboard:', navigationError);
+      navigate(parentDashboardFallback);
+    }
+  };
+
+  const handleAddStudent = () => {
+    navigate('/create-student');
+  };
+
   useEffect(() => {
     const fetchStudentData = async () => {
-      const studentId = id ?? currentUser?.uid;
+      const studentId = id?.trim();
       setError('');
       setNeedsSetup(false);
 
       if (!studentId) {
-        setError('Student ID not found');
+        setStudentData(null);
+        setNeedsSetup(true);
         setLoading(false);
         return;
       }
@@ -108,7 +124,7 @@ const StudentDashboard: React.FC = () => {
     };
 
     fetchStudentData();
-  }, [currentUser?.uid, id, reloadToken]);
+  }, [id, reloadToken]);
 
   if (loading) {
     return (
@@ -122,17 +138,38 @@ const StudentDashboard: React.FC = () => {
     return (
       <StyledErrorContainer>
         <p>{error}</p>
-        <StyledRetryButton type="button" onClick={handleRetry}>Retry</StyledRetryButton>
+        <StyledActionGroup>
+          <StyledPrimaryButton type="button" onClick={handleBackToParentDashboard}>
+            {parentDashboardLabel}
+          </StyledPrimaryButton>
+          <StyledTertiaryButton type="button" onClick={handleRetry}>
+            Retry
+          </StyledTertiaryButton>
+        </StyledActionGroup>
       </StyledErrorContainer>
     );
   }
 
-  if (needsSetup) {
+  if (needsSetup || !studentData) {
     return (
       <StyledSetupContainer>
-        <h2>Finish setting up your dashboard</h2>
-        <p>No student profile was found yet. Complete your setup to start tracking progress.</p>
-        <StyledRetryButton type="button" onClick={handleRetry}>Retry</StyledRetryButton>
+        <StyledSetupCard>
+          <h2>Student profile not found</h2>
+          <p>This dashboard needs a student profile before it can load.</p>
+          <StyledActionGroup>
+            <StyledPrimaryButton type="button" onClick={handleBackToParentDashboard}>
+              {parentDashboardLabel}
+            </StyledPrimaryButton>
+            {hasAuth && (
+              <StyledSecondaryButton type="button" onClick={handleAddStudent}>
+                Add Student
+              </StyledSecondaryButton>
+            )}
+            <StyledTertiaryButton type="button" onClick={handleRetry}>
+              Retry
+            </StyledTertiaryButton>
+          </StyledActionGroup>
+        </StyledSetupCard>
       </StyledSetupContainer>
     );
   }
@@ -156,7 +193,7 @@ const StudentDashboard: React.FC = () => {
             <AssessmentSection>
               <h2>Learning Style Assessment</h2>
               <p>Take your learning style assessment to get personalized recommendations.</p>
-              <LearningStyleChat />
+              <LearningStyleChat studentId={studentData.id ?? id} />
             </AssessmentSection>
           )}
 
@@ -177,12 +214,6 @@ const StudentDashboard: React.FC = () => {
   );
 };
 
-const DashboardContainer = styled(m.div)`
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-`;
-
 const StyledLoadingContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -201,16 +232,33 @@ const StyledErrorContainer = styled.div`
 const StyledSetupContainer = styled.div`
   text-align: center;
   padding: 2rem;
+  display: grid;
+  place-items: center;
+`;
+
+const StyledSetupCard = styled.div`
+  max-width: 480px;
+  width: 100%;
   background: #fff7ed;
   border: 1px solid #fdba74;
-  border-radius: 12px;
+  border-radius: 16px;
+  padding: 2rem;
   display: grid;
   gap: 0.75rem;
   color: #9a3412;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
 `;
 
-const StyledRetryButton = styled.button`
-  margin: 0 auto;
+const StyledActionGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+`;
+
+const StyledPrimaryButton = styled.button`
+  width: 100%;
+  max-width: 260px;
   padding: 0.6rem 1.5rem;
   border-radius: 999px;
   border: none;
@@ -222,6 +270,34 @@ const StyledRetryButton = styled.button`
   &:hover {
     background: var(--primary-dark);
   }
+`;
+
+const StyledSecondaryButton = styled.button`
+  width: 100%;
+  max-width: 260px;
+  padding: 0.55rem 1.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--primary-color);
+  background: #fff;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-weight: 600;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.08);
+  }
+`;
+
+const StyledTertiaryButton = styled.button`
+  width: 100%;
+  max-width: 260px;
+  padding: 0.55rem 1.4rem;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 600;
 `;
 
 const StyledHeader = styled(m.header)`
