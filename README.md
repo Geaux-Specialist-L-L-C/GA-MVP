@@ -49,8 +49,94 @@ For detailed security guidelines, see [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE
 
 ## Documentation
 - [Development Guide](./DEVELOPMENT_GUIDE.md) - Detailed setup, architecture, and development roadmap
+- [Development Plan](./Developmentplan.md) - Phased roadmap and delivery milestones
+- [Assessment Roadmap](./Assessment_Roadmap.md) - Assessment backend and deployment checklist
 - [Component Structure](./src/components/README.md) - UI component documentation
 - [API Documentation](./backend/README.md) - Backend API reference
+
+> Additional roadmap notes live in the Development Plan and Assessment Roadmap linked above.
+
+## Status / Progress
+- ✅ Issue #135 (ParentDashboard real student data)
+  - ParentDashboard now renders student cards using Firestore student documents for name/grade.
+- ✅ Issue #136 (ParentDashboard profile fetch consistency)
+  - Student profiles are resolved via `getParentProfile(user.uid)` → `getStudentsByIds(profile.students || [])` with safe fallbacks.
+- ✅ Issue #137 (StudentDashboard robustness)
+  - StudentDashboard handles missing/invalid student IDs and missing docs, with setup CTAs and test coverage.
+- ✅ Issue #138 (Backend assessment service scaffold)
+  - Added the ga-assessment-service in `/server` with auth, ownership checks, endpoints, and baseline tests.
+
+## What we finished today (Jan 1, 2026)
+- ParentDashboard improvements (Issues #135, #136)
+  - Student cards now show real names/grades from Firestore with safe fallbacks and stable navigation.
+  - Student profiles are fetched via `getParentProfile(user.uid)` → `getStudentsByIds(profile.students || [])`.
+- StudentDashboard robustness (Issue #137)
+  - Setup CTA UI for missing/invalid student IDs: Back to Parent Dashboard/Login, Add Student (authed only), Retry.
+  - Added test coverage for missing parameter/setup UI and CTA navigation.
+  - AuthContext dev logging updated to avoid Jest `import.meta` issues.
+- Backend service scaffold (Issue #138)
+  - New Cloud Run-ready TypeScript/Express service in `/server` with Firebase ID token auth middleware.
+  - Ownership checks for parent/student; 401 missing/invalid auth, 403 mismatch, 404 missing student.
+  - Endpoints: `/api/learning-style/assess` and `/api/assessment/chat`.
+  - Firestore student doc updates: `learningStyle`, `hasTakenAssessment=true`, `assessmentStatus='completed'`.
+  - Best-effort writes to `assessments` collection.
+  - Vertex AI provider when env vars present, stub provider fallback otherwise.
+  - Minimal vitest + supertest coverage for `/healthz` and missing-auth assessment request.
+
+### Today’s Changes (files)
+**A) ParentDashboard + students**
+- `src/pages/profile/ParentProfile/ParentDashboard.tsx`
+- `src/services/profileService.ts`
+
+**B) StudentDashboard + tests**
+- `src/contexts/AuthContext.tsx`
+- `src/pages/profile/StudentProfile/StudentDashboard.tsx`
+- `src/pages/__tests__/StudentDashboard.test.tsx`
+
+**C) Backend service scaffold**
+- `server/.env.example`
+- `server/Dockerfile`
+- `server/README.md`
+- `server/package.json`
+- `server/tsconfig.json`
+- `server/vitest.config.ts`
+- `server/src/index.ts`
+- `server/src/app.ts`
+- `server/src/middleware/auth.ts`
+- `server/src/routes/assessment.ts`
+- `server/src/services/firestore.ts`
+- `server/src/services/vertex.ts`
+- `server/src/types.ts`
+- `server/src/__tests__/app.test.ts`
+
+## Backend: ga-assessment-service
+**Location:** `/server`
+
+**Local run**
+```bash
+cd server
+npm install
+npm run dev
+```
+
+**Cloud Run deploy (high level)**
+```bash
+gcloud run deploy ga-assessment-service \
+  --source . \
+  --region $VERTEX_REGION \
+  --project $GOOGLE_CLOUD_PROJECT \
+  --set-env-vars FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID,VERTEX_REGION=$VERTEX_REGION,VERTEX_MODEL=$VERTEX_MODEL
+```
+
+**Endpoints + auth expectations**
+- `POST /api/learning-style/assess` (requires `Authorization: Bearer <Firebase ID token>`)
+- `POST /api/assessment/chat` (requires `Authorization: Bearer <Firebase ID token>`)
+- Missing/invalid token → 401
+- Student ownership mismatch → 403
+- Missing student doc → 404
+
+## Next up
+- Next roadmap issue: #139
 
 ## Scripts
 ```bash
