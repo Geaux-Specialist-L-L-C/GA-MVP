@@ -43,7 +43,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const redirectHandledRef = useRef(false);
-  const isDev = import.meta.env.DEV;
+  const isDev =
+    typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
   useEffect(() => {
     if (isDev) {
