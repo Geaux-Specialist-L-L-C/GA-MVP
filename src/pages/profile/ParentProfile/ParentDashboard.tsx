@@ -66,7 +66,11 @@ const ParentDashboard: React.FC = () => {
     }
   };
 
-  const handleProfileSwitch = (studentId: string) => {
+  const handleProfileSwitch = (studentId?: string) => {
+    if (!studentId) {
+      console.warn('Student ID is missing, unable to navigate to student dashboard.');
+      return;
+    }
     setSelectedStudent(studentId);
     navigate(`/student-dashboard/${studentId}`);
   };
@@ -103,12 +107,12 @@ const ParentDashboard: React.FC = () => {
                 <StatusMessage>No students yet. Add your first student to get started.</StatusMessage>
               )}
               {!studentsLoading && !studentsError && parentProfile?.students?.map((student) => (
-                <StudentCard key={student.id} onClick={() => handleProfileSwitch(student.id)}>
-                  <h3>{student.name}</h3>
-                  <p>Grade: {student.grade}</p>
+                <StudentCardTile key={student.id} onClick={() => handleProfileSwitch(student.id)}>
+                  <h3>{student.name || 'Unnamed student'}</h3>
+                  <p>Grade: {student.grade || 'Not provided'}</p>
                   <p>Assessment: {student.hasTakenAssessment ? 'Completed' : 'Pending'}</p>
                   <ViewProfileButton>View Profile</ViewProfileButton>
-                </StudentCard>
+                </StudentCardTile>
               ))}
             </StudentList>
           </StudentManagement>
@@ -199,7 +203,7 @@ const StatusMessage = styled.div`
   text-align: center;
 `;
 
-const StudentCard = styled.div`
+const StudentCardTile = styled.div`
   background: #f8fafc;
   padding: 1rem;
   border-radius: 4px;
