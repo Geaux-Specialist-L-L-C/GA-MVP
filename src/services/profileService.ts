@@ -105,7 +105,13 @@ export const getStudentProfile = async (studentId: string): Promise<Student> => 
   try {
     // Check cache first
     if (profileCache.has(`student_${studentId}`)) {
-      return profileCache.get(`student_${studentId}`);
+      const cachedStudent = profileCache.get(`student_${studentId}`) as Student;
+      if (!cachedStudent.id) {
+        const normalizedStudent = { ...cachedStudent, id: studentId };
+        profileCache.set(`student_${studentId}`, normalizedStudent);
+        return normalizedStudent;
+      }
+      return cachedStudent;
     }
 
     const studentRef = doc(firestore, "students", studentId);
@@ -115,10 +121,11 @@ export const getStudentProfile = async (studentId: string): Promise<Student> => 
       throw new Error("Student profile not found");
     }
 
-    const studentData = studentDoc.data() as Student;
+    const studentData = studentDoc.data() as Omit<Student, 'id'>;
+    const studentProfile = { ...studentData, id: studentDoc.id } as Student;
     // Cache the result
-    profileCache.set(`student_${studentId}`, studentData);
-    return studentData;
+    profileCache.set(`student_${studentId}`, studentProfile);
+    return studentProfile;
   } catch (error) {
     if (!isOnline()) {
       console.warn('Offline: Using cached data if available');
@@ -137,7 +144,13 @@ export const getStudentsByIds = async (ids: string[]): Promise<Student[]> => {
     ids.map(async (studentId) => {
       const cacheKey = `student_${studentId}`;
       if (profileCache.has(cacheKey)) {
-        return profileCache.get(cacheKey) as Student;
+        const cachedStudent = profileCache.get(cacheKey) as Student;
+        if (!cachedStudent.id) {
+          const normalizedStudent = { ...cachedStudent, id: studentId };
+          profileCache.set(cacheKey, normalizedStudent);
+          return normalizedStudent;
+        }
+        return cachedStudent;
       }
 
       const studentRef = doc(firestore, 'students', studentId);

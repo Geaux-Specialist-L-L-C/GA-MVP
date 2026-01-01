@@ -108,8 +108,8 @@ const ParentDashboard: React.FC = () => {
               )}
               {!studentsLoading && !studentsError && parentProfile?.students?.map((student) => (
                 <StudentCardTile key={student.id} onClick={() => handleProfileSwitch(student.id)}>
-                  <h3>{student.name || 'Unnamed student'}</h3>
-                  <p>Grade: {student.grade || 'Not provided'}</p>
+                  <h3>{student.name || 'Unnamed Student'}</h3>
+                  <p>Grade: {student.grade || 'Unknown grade'}</p>
                   <p>Assessment: {student.hasTakenAssessment ? 'Completed' : 'Pending'}</p>
                   <ViewProfileButton>View Profile</ViewProfileButton>
                 </StudentCardTile>
