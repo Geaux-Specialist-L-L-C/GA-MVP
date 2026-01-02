@@ -160,12 +160,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     console.info('[AuthProvider] active auth uid', currentUser?.uid ?? null);
-    if (isDev && currentUser) {
-      currentUser.getIdToken(true).then((t) => {
-        console.log('DEV ID TOKEN:', t);
-      });
-    }
-  }, [currentUser]);
+    if (!isDev || !currentUser) return;
+
+    currentUser.getIdToken(true).then((t) => {
+      console.log('DEV_FIREBASE_ID_TOKEN:', t);
+    });
+  }, [currentUser, isDev]);
 
   const clearError = () => setError(null);
 

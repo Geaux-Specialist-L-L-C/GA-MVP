@@ -47,6 +47,9 @@ export const firebaseConfig = {
 // Ensure single app instance
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+if (import.meta.env.DEV) {
+  (window as { gaAuth?: typeof auth }).gaAuth = auth;
+}
 const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
   Promise.race([
     promise,

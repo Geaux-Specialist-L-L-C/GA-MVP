@@ -22,6 +22,11 @@ export const authenticate = async (
     req.user = { uid: decoded.uid };
     return next();
   } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.info(
+        '[ga-assessment-service] verifyIdToken failed; check FIREBASE_PROJECT_ID vs token aud'
+      );
+    }
     return res.status(401).json({ error: 'Invalid token' });
   }
 };

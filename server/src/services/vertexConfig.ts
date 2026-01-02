@@ -7,7 +7,7 @@ export interface VertexConfig {
   timeoutMs: number;
 }
 
-const DEFAULT_MODEL = 'gemini-1.5-flash';
+const DEFAULT_MODEL = 'gemini-2.0-flash-001';
 const DEFAULT_TEMPERATURE = 0.2;
 const DEFAULT_MAX_OUTPUT_TOKENS = 512;
 const DEFAULT_TIMEOUT_MS = 20000;
@@ -44,10 +44,11 @@ export const getVertexConfig = (): VertexConfig | null => {
     return cachedConfig;
   }
 
-  const project = process.env.GOOGLE_CLOUD_PROJECT;
-  const location = process.env.VERTEX_REGION ?? process.env.VERTEX_LOCATION;
+  const project = process.env.GOOGLE_CLOUD_PROJECT?.trim();
+  const location = (process.env.VERTEX_REGION ?? process.env.VERTEX_LOCATION)?.trim();
+  const model = (process.env.VERTEX_MODEL ?? DEFAULT_MODEL).trim();
 
-  if (!project || !location) {
+  if (!project || !location || !model) {
     cachedConfig = null;
     logConfigOnce(cachedConfig);
     return cachedConfig;
@@ -56,7 +57,7 @@ export const getVertexConfig = (): VertexConfig | null => {
   cachedConfig = {
     project,
     location,
-    model: process.env.VERTEX_MODEL ?? DEFAULT_MODEL,
+    model,
     temperature: parseNumber(process.env.VERTEX_TEMPERATURE, DEFAULT_TEMPERATURE),
     maxOutputTokens: parseNumber(process.env.VERTEX_MAX_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS),
     timeoutMs: parseNumber(process.env.VERTEX_TIMEOUT_MS, DEFAULT_TIMEOUT_MS)
