@@ -59,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let isMounted = true;
-    let unsubscribe = () => undefined;
+    let unsubscribe = () => {};
     let hasResolved = false;
     let authReadyTimeout: ReturnType<typeof setTimeout> | null = null;
 
