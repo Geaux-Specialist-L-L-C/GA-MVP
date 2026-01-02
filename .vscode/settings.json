@@ -75,5 +75,6 @@
             "instructions": "Ensure Firestore security rules enforce RBAC. No public read/write access unless explicitly required."
         }
     ],
-    "github-actions.workflows.pinned.workflows": []
+    "github-actions.workflows.pinned.workflows": [],
+    "python.terminal.useEnvFile": true
 }
