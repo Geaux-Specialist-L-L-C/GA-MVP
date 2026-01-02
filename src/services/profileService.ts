@@ -135,6 +135,35 @@ export const getStudentProfile = async (studentId: string): Promise<Student> => 
   }
 };
 
+export const updateStudentAssessmentTone = async (
+  studentId: string,
+  assessmentTone: string
+): Promise<void> => {
+  if (!isOnline()) {
+    throw handleOfflineError('update assessment tone');
+  }
+
+  const studentRef = doc(firestore, 'students', studentId);
+  try {
+    await updateDoc(studentRef, {
+      assessmentTone,
+      updatedAt: new Date().toISOString()
+    });
+
+    const cachedData = profileCache.get(`student_${studentId}`);
+    if (cachedData) {
+      profileCache.set(`student_${studentId}`, {
+        ...cachedData,
+        assessmentTone,
+        updatedAt: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('Error updating assessment tone:', error);
+    throw new Error('Failed to update assessment tone');
+  }
+};
+
 export const getStudentsByIds = async (ids: string[]): Promise<Student[]> => {
   if (!ids.length) {
     return [];

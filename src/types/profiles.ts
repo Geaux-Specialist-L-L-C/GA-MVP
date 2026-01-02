@@ -19,6 +19,7 @@ export interface Student {
     parentId: string;
     name: string;
     grade: string;
+    assessmentTone?: string;
     learningStyle?: LearningStyle;
     hasTakenAssessment: boolean;
     assessmentStatus?: string;

@@ -1,5 +1,6 @@
 import { VertexAI } from '@google-cloud/vertexai';
 import type { Message } from '../types.js';
+import { questionBank } from './questionBank.js';
 import { getVertexConfig } from './vertexConfig.js';
 import type { VertexConfig } from './vertexConfig.js';
 
@@ -172,6 +173,15 @@ const buildPrompt = (messages: Message[]) => {
     .map((message) => `${message.role.toUpperCase()}: ${message.content}`)
     .join('\n');
 
+  const questionBankText = questionBank
+    .map((item) => {
+      const options = item.options
+        .map((option) => `- [${option.modality}] ${option.text}`)
+        .join('\n');
+      return `${item.gradeBand} | ${item.id}\n${item.prompt}\n${options}`;
+    })
+    .join('\n\n');
+
   return [
     'Return STRICT JSON only. Do not include markdown fences, prose, or commentary.',
     'Use exactly this JSON shape and allowed values:',
@@ -192,6 +202,9 @@ const buildPrompt = (messages: Message[]) => {
     '- nextSteps must be an array of 3-6 concise action items.',
     '- Keep explanation brief and supportive for parents.',
     '- If evidence is insufficient, set decision to needs_more_data and include follow-up questions.',
+    '- Follow-up questions must be selected from the provided question bank.',
+    'Question bank (use as-is, do not rewrite the options):',
+    questionBankText,
     'Conversation transcript:',
     transcript
   ].join('\n');
