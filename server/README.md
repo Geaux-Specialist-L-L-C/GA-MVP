@@ -15,6 +15,13 @@ Create a `.env` file (see `.env.example`) with at least:
 - `GOOGLE_CLOUD_PROJECT`
 Plus any Vertex settings you want to test locally. Dotenv is loaded in dev so the service will read `.env` from the server directory.
 
+## Cloud Run deployment (repeatable)
+
+```bash
+cd server
+npm run deploy:cloudrun
+```
+
 ### Example request
 
 ```bash
@@ -47,6 +54,12 @@ curl -s https://<cloud-run-url>/healthz
 ```
 
 ```bash
+curl -i -X POST https://<cloud-run-url>/api/learning-style/assess \
+  -H "Content-Type: application/json" \
+  -d '{"parentId":"parent_123","studentId":"student_456","messages":[{"role":"user","content":"hello"}]}'
+```
+
+```bash
 curl -X POST https://<cloud-run-url>/api/learning-style/assess \
   -H "Authorization: Bearer <FIREBASE_ID_TOKEN>" \
   -H "Content-Type: application/json" \
@@ -60,11 +73,23 @@ curl -X POST https://<cloud-run-url>/api/learning-style/assess \
 ```
 
 ### IAM + API prerequisites (GCP project: geaux-academy)
-- Enable APIs: Cloud Run, Artifact Registry, Vertex AI, Secret Manager.
+- Enable APIs:
+  - run.googleapis.com
+  - cloudbuild.googleapis.com
+  - artifactregistry.googleapis.com
+  - aiplatform.googleapis.com
+  - firestore.googleapis.com
+  - iamcredentials.googleapis.com
+  - serviceusage.googleapis.com
 - Service account `ga-assessment-runner@geaux-academy.iam.gserviceaccount.com` needs:
   - Vertex AI User (or least-privilege equivalent)
   - Cloud Datastore User (Firestore access)
   - Secret Manager Secret Accessor (if using secrets)
+
+Required IAM roles for runtime service account:
+- `roles/datastore.user`
+- `roles/aiplatform.user` (or `roles/aiplatform.developer` if needed)
+- `roles/serviceusage.serviceUsageConsumer`
 
 ### Required environment variables
 
@@ -82,3 +107,9 @@ Optional Vertex tuning:
 
 Cloud Run uses Application Default Credentials (ADC) from the service account attached to the service. For local development, set `GOOGLE_APPLICATION_CREDENTIALS` to a service account JSON file.
 Ensure `FIREBASE_PROJECT_ID` matches the Firebase project that issued the ID tokens (e.g., `geaux-academy`) to avoid `Invalid token` responses.
+
+### Troubleshooting verifyIdToken failures
+If you see `verifyIdToken failed; check FIREBASE_PROJECT_ID vs token aud`:
+- Confirm token issuer/audience is `geaux-academy`.
+- Confirm Cloud Run env includes `FIREBASE_PROJECT_ID=geaux-academy`.
+- Confirm frontend Firebase config uses the same project.
