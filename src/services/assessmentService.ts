@@ -10,6 +10,10 @@ export interface AssessmentResult {
   nextSteps: string[];
   model: string;
   createdAt: string;
+  decision?: 'final' | 'needs_more_data';
+  missingEvidence?: string[];
+  questions?: string[];
+  evidenceCount?: number;
 }
 
 export interface AssessLearningStyleInput {

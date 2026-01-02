@@ -20,6 +20,8 @@ export type LearningStyle =
   | 'Kinesthetic'
   | 'Multimodal';
 
+export type AssessmentDecision = 'final' | 'needs_more_data';
+
 export interface AssessmentResult {
   learningStyle: LearningStyle;
   confidence: number;
@@ -27,6 +29,10 @@ export interface AssessmentResult {
   nextSteps: string[];
   model: string;
   createdAt: string;
+  decision?: AssessmentDecision;
+  missingEvidence?: string[];
+  questions?: string[];
+  evidenceCount?: number;
 }
 
 export interface AuthenticatedUser {

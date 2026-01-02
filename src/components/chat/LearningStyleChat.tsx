@@ -47,7 +47,26 @@ const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
     learningStyle: string;
     explanation: string;
     nextSteps: string[];
+    decision?: 'final' | 'needs_more_data';
+    questions?: string[];
+    missingEvidence?: string[];
   }) => {
+    if (result.decision === 'needs_more_data') {
+      const questions = (result.questions ?? [])
+        .map((question) => `- ${question}`)
+        .join('\n');
+      const missing = (result.missingEvidence ?? [])
+        .map((item) => `- ${item}`)
+        .join('\n');
+      return [
+        'I need a little more detail before I can lock in a learning style.',
+        missing ? `What’s missing:\n${missing}` : '',
+        questions ? `Try answering these:\n${questions}` : ''
+      ]
+        .filter(Boolean)
+        .join('\n');
+    }
+
     const steps = result.nextSteps.map((step) => `- ${step}`).join('\n');
     return [
       `Based on your answers, your learning style is ${result.learningStyle}.`,

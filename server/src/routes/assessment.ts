@@ -3,7 +3,13 @@ import { z } from 'zod';
 import { authenticate } from '../middleware/auth.js';
 import { db } from '../services/firestore.js';
 import { getAssessmentProvider } from '../services/vertex.js';
-import type { AssessmentResult, AuthenticatedRequest, LearningStyle } from '../types.js';
+import type {
+  AssessmentDecision,
+  AssessmentResult,
+  AuthenticatedRequest,
+  LearningStyle,
+  Message
+} from '../types.js';
 
 const router = Router();
 
@@ -25,6 +31,8 @@ const allowedStyles: LearningStyle[] = [
   'Kinesthetic',
   'Multimodal'
 ];
+
+const MIN_EVIDENCE = 4;
 
 const fallbackResult = (model: string): AssessmentResult => ({
   learningStyle: 'Multimodal',
@@ -92,6 +100,52 @@ const normalizeAssessment = (input: unknown, model: string): AssessmentResult =>
   };
 };
 
+const lowSignalTokens = new Set([
+  'maybe',
+  'idk',
+  "i don't know",
+  'dont know',
+  'ok',
+  'okay',
+  'yes',
+  'no',
+  'k',
+  'nah',
+  'sure',
+  'fine',
+  'idc',
+  'n/a'
+]);
+
+const isLowSignal = (content: string): boolean => {
+  const normalized = content.trim().toLowerCase();
+  if (!normalized) return true;
+  const noPunct = normalized.replace(/[^\w\s]/g, '').trim();
+  if (!noPunct) return true;
+  if (lowSignalTokens.has(noPunct)) return true;
+  if (noPunct.length < 6) return true;
+  const wordCount = noPunct.split(/\s+/).filter(Boolean).length;
+  return wordCount < 3;
+};
+
+const countEvidence = (messages: Message[]): number =>
+  messages.filter((message) => {
+    if (message.role !== 'user') return false;
+    const normalized = message.content.trim();
+    if (!normalized) return false;
+    if (isLowSignal(normalized)) return false;
+    const wordCount = normalized.split(/\s+/).filter(Boolean).length;
+    return normalized.length >= 12 || wordCount >= 3;
+  }).length;
+
+const followUpQuestions = () => [
+  'When learning something new, do you prefer pictures/videos, listening, reading, or hands-on practice?',
+  'Tell me about a time school felt easy. What were you doing?',
+  'Do you remember better after writing notes, talking about it, or building/trying it?'
+];
+
+const missingEvidenceMessage = () => [`Need at least ${MIN_EVIDENCE} detailed responses.`];
+
 export const handleAssessment = async (req: AuthenticatedRequest, res: Response) => {
   const parseResult = requestSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -99,6 +153,9 @@ export const handleAssessment = async (req: AuthenticatedRequest, res: Response)
   }
 
   const { parentId, studentId, messages } = parseResult.data;
+  const evidenceCount = countEvidence(messages);
+  const decision: AssessmentDecision =
+    evidenceCount < MIN_EVIDENCE ? 'needs_more_data' : 'final';
 
   if (!req.user || req.user.uid !== parentId) {
     return res.status(403).json({ error: 'Forbidden' });
@@ -125,31 +182,61 @@ export const handleAssessment = async (req: AuthenticatedRequest, res: Response)
   }
 
   const normalized = normalizeAssessment(providerResult.raw, providerResult.model);
+  const responsePayload: AssessmentResult = {
+    ...normalized,
+    decision,
+    evidenceCount
+  };
 
-  await studentRef.update({
-    learningStyle: normalized.learningStyle,
-    hasTakenAssessment: true,
-    assessmentStatus: 'completed',
-    updatedAt: new Date().toISOString()
-  });
+  if (decision === 'needs_more_data') {
+    responsePayload.confidence = Math.min(responsePayload.confidence, 0.4);
+    responsePayload.missingEvidence = missingEvidenceMessage();
+    responsePayload.questions = followUpQuestions();
+
+    const existingStatus = studentData?.assessmentStatus;
+    const existingStyle = studentData?.learningStyle;
+    if (!(existingStatus === 'completed' && existingStyle)) {
+      await studentRef.update({
+        assessmentStatus: 'in_progress',
+        updatedAt: new Date().toISOString()
+      });
+    }
+  } else {
+    const existingStatus = studentData?.assessmentStatus;
+    const existingStyle = studentData?.learningStyle;
+    if (existingStatus === 'completed' && existingStyle && normalized.confidence < 0.55) {
+      responsePayload.learningStyle = existingStyle as LearningStyle;
+    } else {
+      await studentRef.update({
+        learningStyle: responsePayload.learningStyle,
+        hasTakenAssessment: true,
+        assessmentStatus: 'completed',
+        updatedAt: new Date().toISOString()
+      });
+    }
+  }
 
   try {
     await db.collection('assessments').add({
       parentId,
       studentId,
       messages,
-      result: normalized,
+      result: responsePayload,
       createdAt: new Date().toISOString(),
-      model: normalized.model
+      model: normalized.model,
+      decision,
+      evidenceCount
     });
   } catch (error) {
     // TODO: add structured logging for failed assessment history writes
   }
 
-  return res.status(200).json(normalized);
+  return res.status(200).json(responsePayload);
 };
 
 router.post('/assessment/chat', authenticate, handleAssessment);
 router.post('/learning-style/assess', authenticate, handleAssessment);
 
 export default router;
+
+export { countEvidence, isLowSignal };

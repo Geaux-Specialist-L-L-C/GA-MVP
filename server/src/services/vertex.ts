@@ -181,13 +181,17 @@ const buildPrompt = (messages: Message[]) => {
     '  "explanation": "short parent-friendly string",',
     '  "nextSteps": ["3-6 actionable bullet strings"],',
     '  "model": "<model name>",',
-    '  "createdAt": "<ISO 8601 timestamp>"',
+    '  "createdAt": "<ISO 8601 timestamp>",',
+    '  "decision": "final|needs_more_data",',
+    '  "missingEvidence": ["short reasons if needs_more_data"],',
+    '  "questions": ["1-3 follow-up questions if needs_more_data"]',
     '}',
     'Rules:',
     '- Respond with JSON only (no markdown, no preamble).',
     '- learningStyle must be exactly one of: Visual, Auditory, Read/Write, Kinesthetic, Multimodal.',
     '- nextSteps must be an array of 3-6 concise action items.',
     '- Keep explanation brief and supportive for parents.',
+    '- If evidence is insufficient, set decision to needs_more_data and include follow-up questions.',
     'Conversation transcript:',
     transcript
   ].join('\n');
