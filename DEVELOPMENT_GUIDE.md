@@ -35,16 +35,25 @@ Geaux Academy is a parent-led, student-focused learning platform:
 - ✅ Firebase Auth (email/password) login works
 - ✅ Parent Dashboard loads for authenticated users
 - ✅ Parent can create a student (Firestore permissions resolved)
-- ✅ Student Dashboard loads and begins the assessment chat UI
-- ✅ ParentDashboard shows student cards with Firestore-backed name/grade data
-- ✅ StudentDashboard handles missing/invalid student IDs with setup CTAs and tests
-- ✅ ga-assessment-service scaffold in `/server` with auth, ownership checks, and baseline tests
+- ✅ ParentDashboard shows student cards with Firestore-backed name/grade data (Issues #135, #136 closed)
+- ✅ Student Dashboard loads, begins the assessment chat UI, and handles missing/invalid student IDs with setup CTAs and tests (Issue #137 closed)
+- ✅ ga-assessment-service scaffold in `/server` with auth, ownership checks, and baseline tests (Issue #138 closed)
 
 ### In Progress
 - ⏳ Wire assessment chat to `/api/learning-style/assess`
 - ⏳ Display assessment results and next steps in Student Dashboard
 - ⏳ Surface assessment status + learning style in Parent Dashboard
 - ⏳ Connect “Generate Curriculum” flow (CrewAI) after assessment completion
+
+---
+
+## Recent Changes (Jan 1, 2026)
+- ParentDashboard now renders real student names/grades from Firestore with consistent `getParentProfile` → `getStudentsByIds` fetch path and safe fallbacks (Issues #135, #136).
+- StudentDashboard setup UX handles missing/invalid student IDs with Back/Login/Add Student/Retry CTAs; added test coverage and dev logging fix in AuthContext (Issue #137).
+- Backend ga-assessment-service scaffolded in `/server` with Firebase ID token auth, ownership checks, `/api/learning-style/assess` and `/api/assessment/chat` endpoints, Firestore writes, and baseline vitest + supertest coverage (Issue #138).
+
+## Next Up
+- Next roadmap issue: #139
 
 ---
 

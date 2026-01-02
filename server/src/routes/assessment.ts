@@ -92,7 +92,7 @@ const normalizeAssessment = (input: unknown, model: string): AssessmentResult =>
   };
 };
 
-const handleAssessment = async (req: AuthenticatedRequest, res: Response) => {
+export const handleAssessment = async (req: AuthenticatedRequest, res: Response) => {
   const parseResult = requestSchema.safeParse(req.body);
   if (!parseResult.success) {
     return res.status(400).json({ error: 'Invalid request body' });
@@ -117,7 +117,13 @@ const handleAssessment = async (req: AuthenticatedRequest, res: Response) => {
   }
 
   const provider = getAssessmentProvider();
-  const providerResult = await provider.generateAssessment(messages);
+  let providerResult: { raw: unknown; model: string };
+  try {
+    providerResult = await provider.generateAssessment(messages);
+  } catch (error) {
+    providerResult = { raw: null, model: 'unavailable' };
+  }
+
   const normalized = normalizeAssessment(providerResult.raw, providerResult.model);
 
   await studentRef.update({

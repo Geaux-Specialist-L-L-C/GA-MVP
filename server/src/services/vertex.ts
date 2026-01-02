@@ -1,5 +1,7 @@
 import { VertexAI } from '@google-cloud/vertexai';
 import type { Message } from '../types.js';
+import { getVertexConfig } from './vertexConfig.js';
+import type { VertexConfig } from './vertexConfig.js';
 
 export interface ProviderResult {
   raw: unknown;
@@ -10,56 +12,90 @@ export interface AssessmentProvider {
   generateAssessment(messages: Message[]): Promise<ProviderResult>;
 }
 
-const DEFAULT_MODEL = 'gemini-1.5-flash';
-
-const getVertexConfig = () => {
-  const project = process.env.GOOGLE_CLOUD_PROJECT;
-  const location = process.env.VERTEX_REGION ?? process.env.VERTEX_LOCATION;
-  if (!project || !location) {
-    return null;
-  }
-  return {
-    project,
-    location,
-    model: process.env.VERTEX_MODEL ?? DEFAULT_MODEL
-  };
-};
-
 class VertexAssessmentProvider implements AssessmentProvider {
   private client: VertexAI;
   private modelName: string;
+  private temperature: number;
+  private maxOutputTokens: number;
+  private timeoutMs: number;
 
-  constructor(project: string, location: string, modelName: string) {
-    this.client = new VertexAI({ project, location });
-    this.modelName = modelName;
+  constructor(config: VertexConfig, client?: VertexAI) {
+    this.client = client ?? new VertexAI({ project: config.project, location: config.location });
+    this.modelName = config.model;
+    this.temperature = config.temperature;
+    this.maxOutputTokens = config.maxOutputTokens;
+    this.timeoutMs = config.timeoutMs;
   }
 
   async generateAssessment(messages: Message[]): Promise<ProviderResult> {
     const model = this.client.getGenerativeModel({ model: this.modelName });
     const prompt = buildPrompt(messages);
-    const response = await model.generateContent({
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: prompt }]
+
+    const execute = async () => {
+      const response = await model.generateContent({
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: prompt }]
+          }
+        ],
+        generationConfig: {
+          temperature: this.temperature,
+          maxOutputTokens: this.maxOutputTokens
         }
-      ],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 512
-      }
-    });
+      });
 
-    const text = response.response.candidates
-      ?.flatMap((candidate) => candidate.content.parts ?? [])
-      .map((part) => ('text' in part ? part.text : ''))
-      .join('')
-      .trim();
+      const text = response.response.candidates
+        ?.flatMap((candidate) => candidate.content.parts ?? [])
+        .map((part) => ('text' in part ? part.text : ''))
+        .join('')
+        .trim();
 
-    return {
-      raw: text ?? '',
-      model: this.modelName
+      return {
+        raw: text ?? '',
+        model: this.modelName
+      };
     };
+
+    return this.withRetry(() => this.withTimeout(execute));
+  }
+
+  private async withTimeout<T>(fn: () => Promise<T>): Promise<T> {
+    if (!this.timeoutMs || this.timeoutMs <= 0) {
+      return fn();
+    }
+
+    return new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error('Vertex request timed out'));
+      }, this.timeoutMs);
+
+      fn()
+        .then((result) => {
+          clearTimeout(timer);
+          resolve(result);
+        })
+        .catch((error) => {
+          clearTimeout(timer);
+          reject(error);
+        });
+    });
+  }
+
+  private async withRetry<T>(fn: () => Promise<T>): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+        if (!isRetryableError(error) || attempt === 1) {
+          throw error;
+        }
+        await sleep(200);
+      }
+    }
+    throw lastError;
   }
 }
 
@@ -137,15 +173,21 @@ const buildPrompt = (messages: Message[]) => {
     .join('\n');
 
   return [
-    'You are an assistant that must return STRICT JSON only.',
-    'Analyze the conversation and output JSON with exactly these keys:',
-    'learningStyle, confidence, explanation, nextSteps, model, createdAt.',
-    'learningStyle must be one of ["Visual","Auditory","Read/Write","Kinesthetic","Multimodal"].',
-    'confidence is a number from 0 to 1.',
-    'explanation is a short parent-friendly string.',
-    'nextSteps is an array of 3-6 short suggestions.',
-    'model should be the model name you used.',
-    'createdAt must be an ISO timestamp.',
+    'Return STRICT JSON only. Do not include markdown fences, prose, or commentary.',
+    'Use exactly this JSON shape and allowed values:',
+    '{',
+    '  "learningStyle": "Visual|Auditory|Read/Write|Kinesthetic|Multimodal",',
+    '  "confidence": 0.0-1.0,',
+    '  "explanation": "short parent-friendly string",',
+    '  "nextSteps": ["3-6 actionable bullet strings"],',
+    '  "model": "<model name>",',
+    '  "createdAt": "<ISO 8601 timestamp>"',
+    '}',
+    'Rules:',
+    '- Respond with JSON only (no markdown, no preamble).',
+    '- learningStyle must be exactly one of: Visual, Auditory, Read/Write, Kinesthetic, Multimodal.',
+    '- nextSteps must be an array of 3-6 concise action items.',
+    '- Keep explanation brief and supportive for parents.',
     'Conversation transcript:',
     transcript
   ].join('\n');
@@ -157,5 +199,24 @@ export const getAssessmentProvider = (): AssessmentProvider => {
     return new StubAssessmentProvider();
   }
 
-  return new VertexAssessmentProvider(config.project, config.location, config.model);
+  return new VertexAssessmentProvider(config);
 };
+
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+const isRetryableError = (error: unknown) => {
+  const maybeError = error as { code?: unknown; status?: unknown; message?: unknown };
+  const code = maybeError?.code ?? maybeError?.status;
+  if (code === 429 || code === 503) {
+    return true;
+  }
+
+  const message =
+    typeof maybeError?.message === 'string' ? maybeError.message.toLowerCase() : undefined;
+  return message?.includes('timeout') || message?.includes('deadline') || false;
+};
+
+export { buildPrompt };

@@ -1,5 +1,7 @@
 # Development Plan
 
+Status (Jan 1, 2026): Issues #135–#138 completed. Next roadmap issue: #139. See README.md for daily notes.
+
 ## Project Overview
 Geaux Academy provides personalized learning for K-12 students through a parent-led workflow:
 1) Parent creates a Student Profile.
