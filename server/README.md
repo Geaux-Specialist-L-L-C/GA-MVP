@@ -5,11 +5,15 @@ TypeScript/Express service for the learning-style assessment chat endpoint.
 ## Local development
 
 ```bash
+cd server
 npm install
 npm run dev
 ```
 
-Create a `.env` file (see `.env.example`) if you want to point at Vertex AI or Firebase credentials locally.
+Create a `.env` file (see `.env.example`) with at least:
+- `FIREBASE_PROJECT_ID`
+- `GOOGLE_CLOUD_PROJECT`
+Plus any Vertex settings you want to test locally. Dotenv is loaded in dev so the service will read `.env` from the server directory.
 
 ### Example request
 
@@ -32,9 +36,35 @@ curl -X POST http://localhost:8080/api/learning-style/assess \
 gcloud run deploy ga-assessment-service \
   --source . \
   --region us-central1 \
-  --set-env-vars "GOOGLE_CLOUD_PROJECT=YOUR_PROJECT,FIREBASE_PROJECT_ID=YOUR_PROJECT,VERTEX_REGION=us-central1,VERTEX_MODEL=gemini-2.0-flash-001" \
+  --service-account ga-assessment-runner@geaux-academy.iam.gserviceaccount.com \
+  --set-env-vars "GOOGLE_CLOUD_PROJECT=geaux-academy,FIREBASE_PROJECT_ID=geaux-academy,VERTEX_REGION=us-central1,VERTEX_MODEL=gemini-2.0-flash-001" \
   --allow-unauthenticated=false
 ```
+
+### Verification
+```bash
+curl -s https://<cloud-run-url>/healthz
+```
+
+```bash
+curl -X POST https://<cloud-run-url>/api/learning-style/assess \
+  -H "Authorization: Bearer <FIREBASE_ID_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parentId": "parent_123",
+    "studentId": "student_456",
+    "messages": [
+      { "role": "user", "content": "My child learns best with pictures." }
+    ]
+  }'
+```
+
+### IAM + API prerequisites (GCP project: geaux-academy)
+- Enable APIs: Cloud Run, Artifact Registry, Vertex AI, Secret Manager.
+- Service account `ga-assessment-runner@geaux-academy.iam.gserviceaccount.com` needs:
+  - Vertex AI User (or least-privilege equivalent)
+  - Cloud Datastore User (Firestore access)
+  - Secret Manager Secret Accessor (if using secrets)
 
 ### Required environment variables
 
