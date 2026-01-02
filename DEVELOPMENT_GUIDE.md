@@ -240,6 +240,11 @@ VITE_FIREBASE_APP_ID
 VITE_FIREBASE_MEASUREMENT_ID
 ```
 
+Optional assessment API base (overrides relative `/api` calls):
+```
+VITE_ASSESSMENT_API_BASE
+```
+
 ### Backend (Cloud Run + Vertex AI)
 Use Secret Manager for sensitive values.
 

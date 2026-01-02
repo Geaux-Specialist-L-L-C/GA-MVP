@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { CheshireService } from '../../services/cheshireService';
+import { assessLearningStyle, checkAssessmentHealth } from '../../services/assessmentService';
 import { useAuth } from '../../contexts/AuthContext';
 
 const TestChat: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<string>('Checking connection...');
   const [testMessage, setTestMessage] = useState<string>('');
+  const [studentId, setStudentId] = useState<string>('');
   const [response, setResponse] = useState<string>('');
   const [error, setError] = useState<string>('');
   const { currentUser } = useAuth();
@@ -16,37 +17,40 @@ const TestChat: React.FC = () => {
 
   const checkConnection = async () => {
     try {
-      const isConnected = await CheshireService.checkConnection();
+      const isConnected = await checkAssessmentHealth();
       setConnectionStatus(isConnected ? 'Connected ✅' : 'Not connected ❌');
     } catch (error) {
       setConnectionStatus('Connection failed ❌');
-      setError(CheshireService.getErrorMessage(error));
+      setError(error instanceof Error ? error.message : 'Connection failed');
     }
   };
 
   const handleTestMessage = async () => {
     if (!testMessage.trim() || !currentUser?.uid) return;
+    if (!studentId.trim()) {
+      setError('Student ID is required.');
+      return;
+    }
 
     try {
       setError('');
-      const result = await CheshireService.sendChatMessage(
-        testMessage,
-        currentUser.uid,
-        'test'
-      );
-      setResponse(result.data);
-      if (result.memories?.length) {
-        console.log('Memories received:', result.memories);
-      }
+      const token = await currentUser.getIdToken(true);
+      const result = await assessLearningStyle({
+        parentId: currentUser.uid,
+        studentId,
+        token,
+        messages: [{ role: 'user', content: testMessage }]
+      });
+      setResponse(JSON.stringify(result, null, 2));
     } catch (error) {
-      setError(CheshireService.getErrorMessage(error));
+      setError(error instanceof Error ? error.message : 'Assessment failed.');
     }
   };
 
   return (
     <TestContainer>
       <TestCard>
-        <h2>Cheshire Service Test</h2>
+        <h2>Assessment Service Test</h2>
         
         <StatusSection>
           <h3>Connection Status:</h3>
@@ -60,6 +64,11 @@ const TestChat: React.FC = () => {
 
         <TestSection>
           <h3>Send Test Message:</h3>
+          <TestInput
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
+            placeholder="Student ID..."
+          />
           <TestInput
             value={testMessage}
             onChange={(e) => setTestMessage(e.target.value)}

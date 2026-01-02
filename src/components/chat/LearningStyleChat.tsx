@@ -3,38 +3,13 @@ import styled from 'styled-components';
 import { FaPaperPlane } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import Message from '../Message';
-import { saveLearningStyle, updateStudentAssessmentStatus } from '../../services/profileService';
-import { CheshireService } from '../../services/cheshireService';
-import { LearningStyle } from '../../types/profiles';
+import { assessLearningStyle, checkAssessmentHealth } from '../../services/assessmentService';
 import Button from '../common/Button';
-
-type ValidLearningStyle = 'visual' | 'auditory' | 'kinesthetic' | 'reading/writing';
 
 interface ChatMessage {
   text: string;
   sender: 'user' | 'bot';
 }
-
-interface CheshireResponse {
-  data: string;
-  memories?: Array<{
-    metadata?: {
-      learning_style?: string;
-    };
-  }>;
-}
-
-interface CheshireError {
-  code?: string;
-  message: string;
-}
-
-const isValidLearningStyle = (style: string): style is ValidLearningStyle => {
-  return ['visual', 'auditory', 'kinesthetic', 'reading/writing'].includes(style);
-};
-
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
 
 const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -64,41 +39,22 @@ const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
   }, []);
 
   const checkApiConnection = async (): Promise<void> => {
-    const isConnected = await CheshireService.checkConnection();
+    const isConnected = await checkAssessmentHealth();
     setConnectionError(!isConnected);
   };
 
-  const retryWithDelay = async (fn: () => Promise<void>, maxRetries = 3, delay = 1000): Promise<void> => {
-    try {
-      return await fn();
-    } catch (error) {
-      if (maxRetries > 0) {
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return retryWithDelay(fn, maxRetries - 1, delay);
-      }
-      throw error;
-    }
-  };
-
-  const handleResponse = async (response: CheshireResponse): Promise<void> => {
-    const rawLearningStyle = response?.memories?.find(m => m.metadata?.learning_style)?.metadata?.learning_style;
-    if (rawLearningStyle && isValidLearningStyle(rawLearningStyle) && studentId) {
-      const learningStyle: LearningStyle = {
-        type: rawLearningStyle,
-        strengths: [],
-        recommendations: []
-      };
-      try {
-        await saveLearningStyle(studentId, learningStyle);
-        await updateStudentAssessmentStatus(studentId, "completed");
-      } catch (error) {
-        console.error('Error saving learning style:', error);
-        setMessages(prev => [...prev, { 
-          text: "There was an error saving your learning style. Please try again.", 
-          sender: "bot" 
-        }]);
-      }
-    }
+  const formatAssessmentResponse = (result: {
+    learningStyle: string;
+    explanation: string;
+    nextSteps: string[];
+  }) => {
+    const steps = result.nextSteps.map((step) => `- ${step}`).join('\n');
+    return [
+      `Based on your answers, your learning style is ${result.learningStyle}.`,
+      result.explanation,
+      'Next steps:',
+      steps
+    ].join('\n');
   };
 
   const sendMessage = async (): Promise<void> => {
@@ -109,23 +65,44 @@ const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
     setMessages(prev => [...prev, { text: userMessage, sender: 'user' }]);
 
     try {
-      setLoading(true);
-      const response = await CheshireService.sendChatMessage(
-        userMessage,
-        currentUser?.uid || 'anonymous',
-        studentId || 'default'
-      );
-
-      if (response) {
-        setMessages(prev => [...prev, { text: response.data, sender: 'bot' }]);
-        await handleResponse(response);
+      if (!currentUser) {
+        setMessages((prev) => [
+          ...prev,
+          { text: 'Please sign in to continue the assessment.', sender: 'bot' }
+        ]);
+        return;
       }
-      
+      if (!studentId) {
+        setMessages((prev) => [
+          ...prev,
+          { text: 'Missing student information. Please try again.', sender: 'bot' }
+        ]);
+        return;
+      }
+
+      setLoading(true);
+      const token = await currentUser.getIdToken(true);
+      const apiMessages = [...messages, { text: userMessage, sender: 'user' }].map((msg) => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.text
+      }));
+
+      const result = await assessLearningStyle({
+        parentId: currentUser.uid,
+        studentId,
+        messages: apiMessages,
+        token
+      });
+
+      setMessages((prev) => [
+        ...prev,
+        { text: formatAssessmentResponse(result), sender: 'bot' }
+      ]);
       setConnectionError(false);
     } catch (error: unknown) {
       console.error('Error sending message:', error);
-      const errorMessage = CheshireService.getErrorMessage(error as CheshireError);
-      setMessages(prev => [...prev, { text: errorMessage, sender: 'bot' }]);
+      const message = getFriendlyErrorMessage(error);
+      setMessages((prev) => [...prev, { text: message, sender: 'bot' }]);
       setConnectionError(true);
       await checkApiConnection();
     } finally {
@@ -138,9 +115,7 @@ const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
       <ChatHeader>
         🎓 Learning Style Assessment
         {connectionError && (
-          <ConnectionError>
-            ⚠️ Connection Error - Check if the chat service is running
-          </ConnectionError>
+          <ConnectionError>⚠️ Connection Error - Check if the assessment service is running</ConnectionError>
         )}
       </ChatHeader>
       <ChatBody>
@@ -203,3 +178,17 @@ const ChatInput = styled.input`
 `;
 
 export default LearningStyleChat;
+
+const getFriendlyErrorMessage = (error: unknown) => {
+  const status = (error as { status?: number }).status;
+  if (status === 401) {
+    return 'Please sign in again to continue your assessment.';
+  }
+  if (status === 403) {
+    return 'You do not have access to this student.';
+  }
+  if (status === 404) {
+    return 'We could not find that student record. Please try again.';
+  }
+  return error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+};

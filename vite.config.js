@@ -139,36 +139,15 @@ export default defineConfig({
 
     proxy: {
       "/api": {
-        target: process.env.VITE_AZURE_ENDPOINT,
+        target: process.env.VITE_ASSESSMENT_API_BASE || "http://localhost:8080",
         changeOrigin: true,
         secure: false,
         ws: true,
       },
-      "/auth": {
-        target: process.env.VITE_CHESHIRE_API_URL || "https://cheshire.geaux.app",
+      "/healthz": {
+        target: process.env.VITE_ASSESSMENT_API_BASE || "http://localhost:8080",
         changeOrigin: true,
-        secure: true,
-        rewrite: (p) => p.replace(/^\/auth/, "/auth"),
-        configure: (proxy) => {
-          proxy.on("error", (err) => {
-            console.error("Proxy error:", err);
-          });
-          proxy.on("proxyReq", (proxyReq, req) => {
-            console.log("Proxying request:", req.method, req.url);
-            proxyReq.setHeader("Cookie", "Global=Auth");
-          });
-        },
-      },
-      "/message": {
-        target: process.env.VITE_CHESHIRE_API_URL || "https://cheshire.geaux.app",
-        changeOrigin: true,
-        secure: true,
-        rewrite: (p) => p.replace(/^\/message/, "/message"),
-        configure: (proxy) => {
-          proxy.on("proxyReq", (proxyReq) => {
-            proxyReq.setHeader("Cookie", "Global=Auth");
-          });
-        },
+        secure: false,
       },
       "/__/auth/*": {
         target: "https://localhost:3001",
