@@ -1,0 +1,8 @@
+steps:
+  - call: ScenarioGeneratorAgent
+  - call: ResponseEvaluatorAgent
+  - call: ConsistencyCheckerAgent
+  - if: session_status != "complete"
+    then:
+      - loop: back to ScenarioGeneratorAgent
+  - call: PreferenceSynthesizerAgent

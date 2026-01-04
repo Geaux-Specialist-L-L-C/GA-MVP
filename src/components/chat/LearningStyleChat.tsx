@@ -151,6 +151,7 @@ const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
   const [selectedOptions, setSelectedOptions] = useState<QuestionOption[]>([]);
   const [answeredCount, setAnsweredCount] = useState(0);
   const [gradeBand, setGradeBand] = useState<QuestionItem['gradeBand']>('3-5');
+  const [totalQuestions, setTotalQuestions] = useState(30);
   const [studentName, setStudentName] = useState('');
   const [studentGrade, setStudentGrade] = useState('');
   const [tone, setTone] = useState<Tone>('playful');
@@ -163,17 +164,17 @@ const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
   const confettiRef = useRef<ConfettiPiece[]>([]);
   const { currentUser } = useAuth();
 
-  const filteredQuestions = questionBank.filter((question) => question.gradeBand === gradeBand);
-  const totalQuestions = filteredQuestions.length;
   const notSureOption: QuestionOption = { modality: 'NotSure', text: 'Not sure yet.' };
 
-  const initializeAssessment = (questions: QuestionItem[]) => {
+  const initializeAssessment = () => {
     const storedAutoSimplify = getStoredAutoSimplify(studentId);
     setAutoSimplify(storedAutoSimplify);
-    const orderedQuestions = getQuestionOrder(questions, studentId);
+    const questionSet = buildQuestionSet(gradeBand);
+    const orderedQuestions = getQuestionOrder(questionSet, studentId);
     const [firstQuestion, ...rest] = orderedQuestions;
     const nameLabel = studentName.trim();
     const firstPrompt = firstQuestion ? getDisplayPrompt(firstQuestion.prompt, storedAutoSimplify) : '';
+    setTotalQuestions(questionSet.length);
     setQuestionQueue(rest);
     setCurrentQuestion(firstQuestion ?? null);
     setSelectedOptions([]);
@@ -194,7 +195,7 @@ const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
 
   // Initialize chat with assessment start message
   useEffect(() => {
-    initializeAssessment(filteredQuestions);
+    initializeAssessment();
   }, [studentId, gradeBand]);
 
   useEffect(() => {
@@ -398,13 +399,21 @@ const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
         ]);
         setAnsweredCount((count) => count + 1);
       } else {
+        const willContinue = answeredCount + 1 < totalQuestions;
+        const nextQuestion = willContinue ? advanceQuestion() : null;
+        const nextPrompt = nextQuestion ? getDisplayPrompt(nextQuestion.prompt, autoSimplify) : '';
         setMessages((prev) => [
           ...prev,
-          { text: formatAssessmentResponse(result), sender: 'bot' }
+          { text: formatAssessmentResponse(result), sender: 'bot' },
+          ...(nextQuestion ? [{ text: nextPrompt, sender: 'bot' }] : [])
         ]);
         setAnsweredCount((count) => count + 1);
-        setCurrentQuestion(null);
-        triggerCelebration();
+        if (nextQuestion) {
+          setCurrentQuestion(nextQuestion);
+        } else {
+          setCurrentQuestion(null);
+          triggerCelebration();
+        }
       }
       setConnectionError(false);
     } catch (error: unknown) {
@@ -946,4 +955,26 @@ const shuffleQuestions = (questions: QuestionItem[]) => {
     [items[i], items[j]] = [items[j], items[i]];
   }
   return items;
+};
+
+const buildQuestionSet = (gradeBand: QuestionItem['gradeBand']): QuestionItem[] => {
+  const primary = questionBank.filter((q) => q.gradeBand === gradeBand);
+  const secondary = questionBank.filter((q) => q.gradeBand !== gradeBand);
+  const result: QuestionItem[] = [];
+  let idxPrimary = 0;
+  let idxSecondary = 0;
+  while (result.length < 30) {
+    if (idxPrimary < primary.length) {
+      result.push(primary[idxPrimary]);
+      idxPrimary += 1;
+    } else if (secondary.length) {
+      result.push(secondary[idxSecondary % secondary.length]);
+      idxSecondary += 1;
+    } else {
+      // In case the bank is tiny, repeat from start.
+      result.push(primary[idxPrimary % primary.length]);
+      idxPrimary += 1;
+    }
+  }
+  return shuffleQuestions(result);
 };

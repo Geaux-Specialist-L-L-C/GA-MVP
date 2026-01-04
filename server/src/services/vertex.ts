@@ -1,17 +1,12 @@
 import { VertexAI } from '@google-cloud/vertexai';
+import { BeeAIAssessmentProvider } from '../beeai/provider.js';
 import type { Message } from '../types.js';
 import { questionBank } from './questionBank.js';
+import type { AssessmentProvider, ProviderResult } from './providerTypes.js';
 import { getVertexConfig } from './vertexConfig.js';
 import type { VertexConfig } from './vertexConfig.js';
 
-export interface ProviderResult {
-  raw: unknown;
-  model: string;
-}
-
-export interface AssessmentProvider {
-  generateAssessment(messages: Message[]): Promise<ProviderResult>;
-}
+export type { AssessmentProvider, ProviderResult } from './providerTypes.js';
 
 class VertexAssessmentProvider implements AssessmentProvider {
   private client: VertexAI;
@@ -211,12 +206,21 @@ const buildPrompt = (messages: Message[]) => {
 };
 
 export const getAssessmentProvider = (): AssessmentProvider => {
-  const config = getVertexConfig();
-  if (!config) {
-    return new StubAssessmentProvider();
+  const choice = (process.env.ASSESSMENT_PROVIDER ?? '').toLowerCase();
+  if (choice === 'beeai') {
+    console.info('[ga-assessment-service] BeeAI provider enabled.');
+    return new BeeAIAssessmentProvider();
   }
 
-  return new VertexAssessmentProvider(config);
+  const config = getVertexConfig();
+  if (config) {
+    return new VertexAssessmentProvider(config);
+  }
+
+  if (choice === 'stub') {
+    console.info('[ga-assessment-service] Stub provider enabled.');
+  }
+  return new StubAssessmentProvider();
 };
 
 const sleep = (ms: number) =>

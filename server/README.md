@@ -15,6 +15,11 @@ Create a `.env` file (see `.env.example`) with at least:
 - `GOOGLE_CLOUD_PROJECT`
 Plus any Vertex settings you want to test locally. Dotenv is loaded in dev so the service will read `.env` from the server directory.
 
+### Provider selection (Vertex vs BeeAI)
+- `ASSESSMENT_PROVIDER=vertex` (default) uses Vertex AI when configured, otherwise falls back to the stub.
+- `ASSESSMENT_PROVIDER=beeai` enables the BeeAI orchestrator adapter (see `src/beeai/` and `src/beeai/workflows/vark.yaml`).
+- `ASSESSMENT_PROVIDER=stub` forces the built-in stub provider.
+
 ## Cloud Run deployment (repeatable)
 
 ```bash

@@ -1,0 +1,151 @@
+## Geaux Academy VARK Assessment to Curriculum Generation: BeeAI Integration Roadmap
+
+### Objective
+
+Migrate the multi-agent VARK learning style assessment pipeline originally designed with CrewAI to the BeeAI orchestration framework. This pipeline:
+
+* Assesses a student’s preferred learning modalities (Visual, Auditory, Read/Write, Kinesthetic)
+* Stores results in their Firebase profile
+* Acts as the foundation for future curriculum personalization
+
+### Phase 1: BeeAI Orchestration Setup
+
+#### 1. Define Agent Roles in BeeAI (using Python or TypeScript)
+
+* **ScenarioGeneratorAgent** – Generates questions targeting specific modalities
+* **ResponseEvaluatorAgent** – Scores student responses and maps to VARK dimensions
+* **ConsistencyCheckerAgent** – Implements adaptive branching logic
+* **PreferenceSynthesizerAgent** – Aggregates final results into a friendly report and summary JSON
+* **(Optional) TTSAgent / STTAgent** – Voice interface agents wrapping Google Cloud APIs
+
+> Each agent must expose an `execute()` method, operate statelessly, and accept a shared memory object.
+
+#### 2. Define Shared Memory
+
+BeeAI enables multiple agents to share state using memory bindings:
+
+```json
+{
+  "question_history": [],
+  "response_scores": [],
+  "session_status": "active",
+  "focus_modality": null,
+  "final_report": null
+}
+```
+
+Use memory schemas to track cumulative scores, branching logic signals, and session metadata.
+
+#### 3. Design Workflow (YAML or Python)
+
+Use BeeAI’s declarative YAML to define the orchestration logic:
+
+```yaml
+steps:
+  - call: ScenarioGeneratorAgent
+  - call: ResponseEvaluatorAgent
+  - call: ConsistencyCheckerAgent
+  - if: session_status != "complete"
+    then:
+      - loop: back to ScenarioGeneratorAgent
+  - call: PreferenceSynthesizerAgent
+```
+
+This replicates the adaptive loop used in CrewAI.
+
+#### 4. Register Workflow and Agents
+
+* Configure BeeAI with agent registries
+* Enable runtime workflow execution with REST hooks or queue listeners
+
+### Phase 2: Firebase Integration
+
+#### 1. Student Profile Schema
+
+Extend your Firebase user profile structure:
+
+```json
+"vark_profile": {
+  "visual": 2,
+  "auditory": 1,
+  "read_write": 0,
+  "kinesthetic": 3,
+  "summary": "You enjoy learning by doing and seeing things!",
+  "timestamp": "..."
+}
+```
+
+#### 2. Store Result in Firebase
+
+After the PreferenceSynthesizerAgent finishes:
+
+* Write `final_report` into the student document in Firestore
+* Trigger a secondary event for curriculum generation pipeline if needed
+
+### Phase 3: API Gateway and Session Handling
+
+#### 1. Assessment Start
+
+```http
+POST /api/assessment/vark/start
+Response: {
+  "session_id": "...",
+  "question": { ... }
+}
+```
+
+* Initializes BeeAI workflow
+* Stores session state (can use Redis or Firestore)
+
+#### 2. Assessment Progress
+
+```http
+POST /api/assessment/vark/respond
+Payload: {
+  "session_id": "...",
+  "answer": "I want to do a science experiment."
+}
+Response: {
+  "next_question": { ... } | "final_report": { ... }
+}
+```
+
+* Sends response into workflow
+* Advances BeeAI memory state
+* Returns either the next question or final summary
+
+### Phase 4: Speech & Safety Layers
+
+#### 1. TTS and STT Agents
+
+* Wrap Google Cloud Text-to-Speech and Speech-to-Text as BeeAI tools
+* Expose as callable agents for multimodal sessions
+
+#### 2. Moderation Agent
+
+* Integrate content safety filtering after ScenarioGeneratorAgent and PreferenceSynthesizerAgent
+* Apply rules before rendering outputs to children
+
+### Phase 5: Testing and Analytics
+
+* Unit test each agent with mock inputs/outputs
+* Use BeeAI’s OpenTelemetry or built-in tracing to log every step
+* Implement dashboards for admin/teacher review of:
+
+  * Questions asked
+  * Student responses
+  * Confidence scores
+
+### Phase 6: Curriculum Trigger
+
+After final result is stored in Firebase:
+
+* Emit an event (e.g., Pub/Sub or Firestore trigger)
+* Launch the Curriculum Planning Workflow
+
+  * Input: Grade level + VARK profile
+  * Output: Personalized weekly curriculum JSON, saved back to Firebase
+
+---
+
+This roadmap adapts the CrewAI pipeline into BeeAI’s declarative, modular orchestration model and ensures tight integration with Firebase, allowing Geaux Academy to personalize learning experiences from the moment a student account is created.
