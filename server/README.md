@@ -20,6 +20,11 @@ Plus any Vertex settings you want to test locally. Dotenv is loaded in dev so th
 - `ASSESSMENT_PROVIDER=beeai` enables the BeeAI orchestrator adapter (see `src/beeai/` and `src/beeai/workflows/vark.yaml`).
 - `ASSESSMENT_PROVIDER=stub` forces the built-in stub provider.
 
+BeeAI config:
+- `BEEAI_API_KEY` (required for BeeAI)
+- `BEEAI_API_URL` (optional; defaults to `https://api.beeai.dev`)
+- `BEEAI_WORKFLOW_ID` (preferred) or `BEEAI_WORKFLOW_PATH` for a local YAML workflow id/path
+
 ## Cloud Run deployment (repeatable)
 
 ```bash

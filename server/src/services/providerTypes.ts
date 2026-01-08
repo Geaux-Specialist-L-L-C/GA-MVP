@@ -6,5 +6,11 @@ export interface ProviderResult {
 }
 
 export interface AssessmentProvider {
-  generateAssessment(messages: Message[]): Promise<ProviderResult>;
+  generateAssessment(messages: Message[], context?: ProviderContext): Promise<ProviderResult>;
+}
+
+export interface ProviderContext {
+  parentId: string;
+  studentId: string;
+  sessionId?: string;
 }

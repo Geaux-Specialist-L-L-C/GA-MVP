@@ -2,7 +2,7 @@ import { VertexAI } from '@google-cloud/vertexai';
 import { BeeAIAssessmentProvider } from '../beeai/provider.js';
 import type { Message } from '../types.js';
 import { questionBank } from './questionBank.js';
-import type { AssessmentProvider, ProviderResult } from './providerTypes.js';
+import type { AssessmentProvider, ProviderContext, ProviderResult } from './providerTypes.js';
 import { getVertexConfig } from './vertexConfig.js';
 import type { VertexConfig } from './vertexConfig.js';
 
@@ -23,7 +23,7 @@ class VertexAssessmentProvider implements AssessmentProvider {
     this.timeoutMs = config.timeoutMs;
   }
 
-  async generateAssessment(messages: Message[]): Promise<ProviderResult> {
+  async generateAssessment(messages: Message[], _context?: ProviderContext): Promise<ProviderResult> {
     const model = this.client.getGenerativeModel({ model: this.modelName });
     const prompt = buildPrompt(messages);
 
@@ -96,7 +96,7 @@ class VertexAssessmentProvider implements AssessmentProvider {
 }
 
 class StubAssessmentProvider implements AssessmentProvider {
-  async generateAssessment(messages: Message[]): Promise<ProviderResult> {
+  async generateAssessment(messages: Message[], _context?: ProviderContext): Promise<ProviderResult> {
     const combined = messages.map((message) => message.content).join(' ').toLowerCase();
     const style = pickStyle(combined);
     const stub = {

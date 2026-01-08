@@ -176,7 +176,7 @@ export const handleAssessment = async (req: AuthenticatedRequest, res: Response)
   const provider = getAssessmentProvider();
   let providerResult: { raw: unknown; model: string };
   try {
-    providerResult = await provider.generateAssessment(messages);
+    providerResult = await provider.generateAssessment(messages, { parentId, studentId });
   } catch (error) {
     providerResult = { raw: null, model: 'unavailable' };
   }
