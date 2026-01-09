@@ -21,7 +21,8 @@ Geaux Academy is a parent-led, student-focused learning platform:
 - Deployed to Google Cloud Run
 - Firebase Admin SDK for verifying Firebase ID tokens
 - Firestore for data persistence
-- Vertex AI (Gemini on Vertex) for Learning Style Assessment inference
+- BeeAI orchestration service (Cloud Run) for VARK assessment chat flow
+- Vertex AI (Gemini on Vertex) for summary learning-style inference (optional/legacy)
 - Service name: ga-assessment-service
 - Optional future services:
   - CrewAI pipeline service for curriculum generation and validation
@@ -40,8 +41,8 @@ Geaux Academy is a parent-led, student-focused learning platform:
 - ✅ ga-assessment-service scaffold in `/server` with auth, ownership checks, and baseline tests (Issue #138 closed)
 
 ### In Progress
-- ⏳ Wire assessment chat to `/api/learning-style/assess`
-- ⏳ Display assessment results and next steps in Student Dashboard
+- ⏳ Confirm VARK chat uses `/api/assessment/chat` with mode routing
+- ⏳ Display VARK results (`vark_profile`) in Student Dashboard
 - ⏳ Surface assessment status + learning style in Parent Dashboard
 - ⏳ Connect “Generate Curriculum” flow (CrewAI) after assessment completion
 
@@ -81,6 +82,17 @@ Recommended fields:
     rationale: string,
     recommendations: string[]
   } (optional)
+- vark_profile: {
+    model: "vark",
+    scores: { visual, auditory, read_write, kinesthetic },
+    primary: string,
+    secondary: string,
+    confidence: number,
+    summary: string,
+    recommendations: string[],
+    assessedAt: ISO string,
+    sessionId: string
+  } (optional, VARK complete only)
 - createdAt: ISO string
 - updatedAt: ISO string
 
@@ -97,8 +109,12 @@ Use this to store the full transcript + model outputs for audits and iteration:
 
 ## Learning Style Assessment Architecture
 
+There are now two assessment modes:
+1) VARK chat mode (BeeAI orchestration service)
+2) Summary learning-style inference (Vertex provider, optional/legacy)
+
 1) Student interacts with the chat UI (frontend)
-- The UI collects the conversation messages.
+- The UI collects conversation messages.
 - The UI submits them to the backend, not directly to any model provider.
 
 2) Backend endpoint performs security checks
@@ -106,24 +122,37 @@ Use this to store the full transcript + model outputs for audits and iteration:
 - Load students/{studentId}
 - Enforce ownership: student.parentId must equal request.auth.uid
 
-3) Backend calls Vertex AI (Gemini on Vertex)
-- Provide a strict instruction to return ONLY valid JSON:
-  {
-    "learningStyle": "...",
-    "confidence": 0-1,
-    "rationale": "short text",
-    "recommendations": ["..."]
-  }
-- Validate JSON shape before saving.
+3) Backend routes based on mode
+- VARK mode: route to BeeAI orchestration service via ga-assessment-service.
+- Summary mode: call Vertex AI (Gemini on Vertex) to infer a learning style from transcript.
 
-4) Backend persists the result
-- Update students/{studentId}:
-  - learningStyle
-  - hasTakenAssessment = true
-  - assessmentStatus = "completed"
-  - assessmentResults
-  - updatedAt
+4) Backend persists results only on completion
+- VARK: write `vark_profile` when status is complete.
+- Summary: write learning style fields if using legacy summary flow.
 - Optionally create assessments/{assessmentId} with transcript + result.
+
+### Mode Routing Contract
+- `/api/assessment/chat` defaults to VARK mode.
+- `mode: "vark"` uses session-based start/respond:
+  - Start: messages = [], gradeBand optional, sessionId omitted
+  - Respond: sessionId present, messages contain user response
+- `mode: "summary"` uses transcript-based inference (if enabled).
+- `/api/learning-style/assess` remains the summary/transcript endpoint.
+
+### Orchestration Service Notes
+- Health check: `/health`
+- LLM probe: `/probe/llm` (expects "OK" from the configured model)
+- VARK endpoints: `/api/assessment/vark/start` and `/api/assessment/vark/respond`
+- Session storage: Firestore when `FIREBASE_PROJECT_ID` or `GOOGLE_CLOUD_PROJECT` is set, otherwise in-memory.
+
+### Operational Safety
+- parentId is derived from auth uid only.
+- If a client sends parentId that mismatches auth uid, return `CLIENT_PARENT_MISMATCH`.
+- Firestore student writes are finalized only when VARK status is complete.
+
+### Observability / Logging
+- Log request context: studentId, sessionId, mode, and step (start/respond).
+- Log orchestration failures without leaking stack traces to clients.
 
 ---
 

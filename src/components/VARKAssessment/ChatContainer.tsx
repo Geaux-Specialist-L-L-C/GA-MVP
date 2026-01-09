@@ -31,14 +31,19 @@ interface Assessment {
   isComplete?: boolean;
 }
 
-const ChatContainer: React.FC = () => {
+interface ChatContainerProps {
+  studentId?: string;
+  gradeBand?: string;
+}
+
+const ChatContainer: React.FC<ChatContainerProps> = ({ studentId, gradeBand }) => {
   const {
     messages,
     sendMessage,
     isLoading,
     assessment,
     isComplete
-  } = useVARKAssessment();
+  } = useVARKAssessment({ studentId, gradeBand });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

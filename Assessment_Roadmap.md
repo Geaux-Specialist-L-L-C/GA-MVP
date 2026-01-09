@@ -3,6 +3,28 @@ Status (Jan 1, 2026): ✅ Implemented in `ga-assessment-service` under `/server`
 
 This file documents the assessment backend plan that has now been completed. Use it as a reference for setup, deployment, and follow-up wiring.
 
+## Update (Jan 2026): BeeAI VARK Orchestration
+- VARK assessment now routes through `POST /api/assessment/chat` with mode=vark.
+- ga-assessment-service is the gateway and forwards VARK turns to the BeeAI orchestration service (Cloud Run).
+- Orchestration responses are normalized to a stable camelCase contract.
+- Firestore student records are finalized only when VARK status is complete, and `vark_profile` is persisted.
+
+## Deployment Checklist (When You Come Back)
+- [ ] Set Cloud Run env vars for ga-assessment-service:
+  - `BEEAI_ORCHESTRATION_URL=https://beeai-orchestration-145629211979.us-central1.run.app`
+  - `ORCHESTRATION_TIMEOUT_MS=20000`
+  - `FIREBASE_PROJECT_ID`, `GOOGLE_CLOUD_PROJECT`
+- [ ] Smoke test VARK start/respond:
+  - Start: `POST /api/assessment/chat` with mode=vark, messages=[]
+  - Respond: `POST /api/assessment/chat` with mode=vark, sessionId, messages=[...]
+- [ ] Confirm Firestore writes:
+  - `students/{studentId}.assessmentStatus` transitions to completed on completion
+  - `students/{studentId}.vark_profile` exists after completion
+- [ ] Confirm ownership checks:
+  - parentId derived from auth uid
+  - mismatch returns error
+- [ ] Confirm BeeAI orchestration service health endpoint (if exposed)
+
 ## Completed Today (Jan 1, 2026)
 - Cloud Run-friendly TypeScript/Express service scaffolded in `/server`
 - Firebase ID token auth middleware + ownership checks (401/403/404 cases)
@@ -14,6 +36,8 @@ This file documents the assessment backend plan that has now been completed. Use
 - Minimal tests for `/healthz` and missing-auth assessment request
 
 ---
+
+## Summary Assessment (Legacy/Optional)
 
 ## 1) GCP Setup Checklist (Console work)
 

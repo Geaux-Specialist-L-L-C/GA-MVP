@@ -46,10 +46,18 @@ Deliverable:
 - [x] Vertex AI integration wrapper (Gemini on Vertex)
 - [x] POST /api/learning-style/assess endpoint
 - [x] Save results to Firestore students/{studentId}
+- [x] VARK chat gateway wired to BeeAI orchestration service (Cloud Run)
+- [x] Gateway hardening (auth-derived parentId, explicit mode routing, stable orchestration contract)
+- [x] VARK integration-style test with orchestration mocks
 - [ ] Assessment results UI (student view + parent view)
+- [ ] Set Cloud Run env vars for ga-assessment-service (BEEAI_ORCHESTRATION_URL, ORCHESTRATION_TIMEOUT_MS)
+- [ ] Run VARK integration test in CI
+- [ ] Confirm UI passes studentId + gradeBand into the VARK chat container
+- [ ] Add parent-facing display of vark_profile summary + assessmentStatus
+- [ ] Add lightweight analytics events (optional)
 
 Deliverable:
-- Assessment produces stored learning style + recommendations with confidence and rationale.
+- Assessment produces stored learning style + recommendations with confidence and rationale, and VARK produces a persisted vark_profile on completion.
 
 ### Phase 3: Curriculum Generation and Parent Approval (CrewAI)
 - [ ] Curriculum generation service (CrewAI or equivalent orchestration)

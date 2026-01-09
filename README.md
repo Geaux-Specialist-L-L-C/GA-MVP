@@ -56,6 +56,12 @@ For detailed security guidelines, see [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE
 
 > Additional roadmap notes live in the Development Plan and Assessment Roadmap linked above.
 
+## Assessment Architecture (Current)
+- ga-assessment-service acts as the gateway for assessment chat and routing decisions.
+- VARK assessment traffic is routed to the BeeAI orchestration service (Cloud Run) via `/api/assessment/chat`.
+- Summary learning-style inference (transcript-based) can still use the Vertex provider path via `/api/learning-style/assess`.
+- The gateway enforces auth-derived parentId, explicit mode routing, stable orchestration response normalization, and Firestore writes only on completion (persisting `vark_profile`).
+
 ## Status / Progress
 - ✅ Issue #135 (ParentDashboard real student data)
   - ParentDashboard now renders student cards using Firestore student documents for name/grade.
@@ -82,6 +88,12 @@ For detailed security guidelines, see [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE
   - Best-effort writes to `assessments` collection.
   - Vertex AI provider when env vars present, stub provider fallback otherwise.
   - Minimal vitest + supertest coverage for `/healthz` and missing-auth assessment request.
+- Assessment gateway + VARK orchestration hardening
+  - `/api/assessment/chat` routes VARK chat to the BeeAI orchestration service (Cloud Run) with explicit mode routing.
+  - parentId derived from auth only; request mismatch returns `CLIENT_PARENT_MISMATCH`.
+  - Orchestration responses normalized to a stable camelCase contract.
+  - Firestore writes finalize only when VARK status is complete (store `vark_profile`).
+  - Added an integration-style test for the VARK chat flow.
 
 ### Today’s Changes (files)
 **A) ParentDashboard + students**
@@ -135,8 +147,53 @@ gcloud run deploy ga-assessment-service \
 - Student ownership mismatch → 403
 - Missing student doc → 404
 
+## Verification (VARK)
+Env reminders:
+- `BEEAI_ORCHESTRATION_URL=https://beeai-orchestration-145629211979.us-central1.run.app`
+- `ORCHESTRATION_TIMEOUT_MS=20000`
+
+Start a VARK session:
+```bash
+curl -X POST http://localhost:8080/api/assessment/chat \
+  -H "Authorization: Bearer <FIREBASE_ID_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "studentId": "student_456",
+    "gradeBand": "3-5",
+    "mode": "vark",
+    "messages": []
+  }'
+```
+
+Respond to the VARK session:
+```bash
+curl -X POST http://localhost:8080/api/assessment/chat \
+  -H "Authorization: Bearer <FIREBASE_ID_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "studentId": "student_456",
+    "sessionId": "<sessionId>",
+    "mode": "vark",
+    "messages": [{ "role": "user", "content": "I like diagrams and pictures." }]
+  }'
+```
+
+## FAQ
+Q: Which service owns VARK sessions?
+A: The BeeAI orchestration service owns the session state; the gateway stores only the final `vark_profile` on completion.
+
+Q: What endpoints does the orchestration service expose?
+A: `/health`, `/probe/llm`, `/api/assessment/vark/start`, `/api/assessment/vark/respond`.
+
+Q: What orchestration env vars matter most?
+A: `LLM_CHAT_MODEL_NAME`, `GOOGLE_CLOUD_PROJECT`, `VERTEX_REGION` or `VERTEX_LOCATION`, and `FIREBASE_PROJECT_ID` for Firestore-backed sessions.
+
+Q: Why is `@ai-sdk/google-vertex` a production dependency?
+A: BeeAI loads it at runtime in Cloud Run, so it must be installed in the production layer.
+
 ## Next up
 - Next roadmap issue: #139
+- Set Cloud Run env vars for ga-assessment-service and verify BeeAI orchestration connectivity.
 
 ## Scripts
 ```bash

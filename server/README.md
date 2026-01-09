@@ -15,15 +15,16 @@ Create a `.env` file (see `.env.example`) with at least:
 - `GOOGLE_CLOUD_PROJECT`
 Plus any Vertex settings you want to test locally. Dotenv is loaded in dev so the service will read `.env` from the server directory.
 
-### Provider selection (Vertex vs BeeAI)
-- `ASSESSMENT_PROVIDER=vertex` (default) uses Vertex AI when configured, otherwise falls back to the stub.
-- `ASSESSMENT_PROVIDER=beeai` enables the BeeAI orchestrator adapter (see `src/beeai/` and `src/beeai/workflows/vark.yaml`).
-- `ASSESSMENT_PROVIDER=stub` forces the built-in stub provider.
+### Orchestration gateway (VARK)
+- VARK chat is routed through the BeeAI orchestration service (Cloud Run).
+- Configure the base URL via `BEEAI_ORCHESTRATION_URL` (no trailing slash recommended).
+- Configure request timeout via `ORCHESTRATION_TIMEOUT_MS` (default recommendation: 20000).
+- Do not send parentId from the client; the service derives it from the auth token.
+- Orchestration service endpoints: `/health`, `/probe/llm`, `/api/assessment/vark/start`, `/api/assessment/vark/respond`.
+- Orchestration session storage uses Firestore when `FIREBASE_PROJECT_ID` or `GOOGLE_CLOUD_PROJECT` is set, otherwise falls back to in-memory storage.
 
-BeeAI config:
-- `BEEAI_API_KEY` (required for BeeAI)
-- `BEEAI_API_URL` (optional; defaults to `https://api.beeai.dev`)
-- `BEEAI_WORKFLOW_ID` (preferred) or `BEEAI_WORKFLOW_PATH` for a local YAML workflow id/path
+### Summary learning-style inference (Vertex, optional/legacy)
+- `POST /api/learning-style/assess` uses Vertex when configured, otherwise falls back to the stub.
 
 ## Cloud Run deployment (repeatable)
 
@@ -32,20 +33,59 @@ cd server
 npm run deploy:cloudrun
 ```
 
-### Example request
+### Example request (VARK start)
 
 ```bash
-curl -X POST http://localhost:8080/api/learning-style/assess \
+curl -X POST http://localhost:8080/api/assessment/chat \
   -H "Authorization: Bearer <FIREBASE_ID_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
-    "parentId": "parent_123",
     "studentId": "student_456",
-    "messages": [
-      { "role": "user", "content": "My child likes pictures and videos." }
-    ]
+    "gradeBand": "3-5",
+    "mode": "vark",
+    "messages": []
   }'
 ```
+
+### Example request (VARK respond)
+
+```bash
+curl -X POST http://localhost:8080/api/assessment/chat \
+  -H "Authorization: Bearer <FIREBASE_ID_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "studentId": "student_456",
+    "sessionId": "<sessionId>",
+    "mode": "vark",
+    "messages": [{ "role": "user", "content": "I like diagrams and pictures." }]
+  }'
+```
+
+### Orchestration response contract (stable camelCase)
+```json
+{
+  "ok": true,
+  "sessionId": "string",
+  "status": "in_progress|complete",
+  "question": { "text": "string" },
+  "result": { "summary": "string", "recommendations": ["string"] }
+}
+```
+
+Error response shape:
+```json
+{
+  "ok": false,
+  "error": { "code": "string", "message": "string" }
+}
+```
+
+### FAQ
+Q: What does `/probe/llm` verify?
+A: It checks the LLM connection and expects an "OK" response from the configured model.
+
+Q: Why does orchestration need `LLM_CHAT_MODEL_NAME`?
+A: The orchestration service uses BeeAI `ChatModel.fromName` and requires a model name to run the VARK classifier.
 
 ## Cloud Run deploy
 
@@ -64,22 +104,10 @@ curl -s https://<cloud-run-url>/healthz
 ```
 
 ```bash
-curl -i -X POST https://<cloud-run-url>/api/learning-style/assess \
-  -H "Content-Type: application/json" \
-  -d '{"parentId":"parent_123","studentId":"student_456","messages":[{"role":"user","content":"hello"}]}'
-```
-
-```bash
-curl -X POST https://<cloud-run-url>/api/learning-style/assess \
+curl -i -X POST https://<cloud-run-url>/api/assessment/chat \
   -H "Authorization: Bearer <FIREBASE_ID_TOKEN>" \
   -H "Content-Type: application/json" \
-  -d '{
-    "parentId": "parent_123",
-    "studentId": "student_456",
-    "messages": [
-      { "role": "user", "content": "My child learns best with pictures." }
-    ]
-  }'
+  -d '{"studentId":"student_456","mode":"vark","messages":[]}'
 ```
 
 ### IAM + API prerequisites (GCP project: geaux-academy)
@@ -105,6 +133,8 @@ Required IAM roles for runtime service account:
 
 - `GOOGLE_CLOUD_PROJECT`
 - `FIREBASE_PROJECT_ID` (preferred for Firebase Admin token verification; falls back to `GOOGLE_CLOUD_PROJECT`)
+- `BEEAI_ORCHESTRATION_URL` (BeeAI orchestration service base URL)
+- `ORCHESTRATION_TIMEOUT_MS` (default recommendation: 20000)
 - `VERTEX_REGION` (or `VERTEX_LOCATION`)
 - `VERTEX_MODEL` (defaults to `gemini-2.0-flash-001`)
 

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
-  saveAssessmentResults, 
-  startAssessment, 
-  sendUserResponse 
+  startVarkAssessment, 
+  sendVarkResponse,
+  type VarkChatResponse,
+  type VarkChatResult
 } from '../services/varkService';
 
 interface Message {
@@ -14,8 +15,8 @@ interface Message {
 
 interface Assessment {
   inProgress: boolean;
-  currentQuestionIndex: number;
-  assessmentId?: string;
+  sessionId?: string;
+  currentQuestion?: string;
   isComplete?: boolean;
   answers: Array<{
     question: string;
@@ -30,34 +31,77 @@ interface Assessment {
   } | null;
 }
 
-export const useVARKAssessment = () => {
+export const useVARKAssessment = (options?: { studentId?: string; gradeBand?: string }) => {
   const { currentUser } = useAuth();
+  const resolvedStudentId = options?.studentId ?? currentUser?.uid;
+  const gradeBand = options?.gradeBand;
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [assessment, setAssessment] = useState<Assessment>({
     inProgress: false,
-    currentQuestionIndex: 0,
     answers: [],
     results: null
   });
 
+  const normalizeResults = (result: VarkChatResult) => {
+    const total = result.scores.v + result.scores.a + result.scores.r + result.scores.k;
+    const divisor = total > 0 ? total : 1;
+    const toPercent = (value: number) => Math.round((value / divisor) * 100);
+    const primaryStyle = {
+      V: 'Visual',
+      A: 'Auditory',
+      R: 'Read/Write',
+      K: 'Kinesthetic',
+      Multi: 'Multimodal'
+    }[result.primary] ?? 'Multimodal';
+
+    return {
+      visual: toPercent(result.scores.v),
+      auditory: toPercent(result.scores.a),
+      readWrite: toPercent(result.scores.r),
+      kinesthetic: toPercent(result.scores.k),
+      primaryStyle
+    };
+  };
+
+  const appendQuestion = (response: VarkChatResponse) => {
+    if (!response.question) {
+      return;
+    }
+    setMessages(prev => [...prev, {
+      text: response.question.text,
+      sender: 'ai',
+      timestamp: new Date().toISOString()
+    }]);
+    setAssessment(prev => ({
+      ...prev,
+      currentQuestion: response.question?.text
+    }));
+  };
+
   // Initialize assessment when component mounts
   useEffect(() => {
     const initializeChat = async () => {
-      if (currentUser && !assessment.inProgress) {
+      if (currentUser && resolvedStudentId && !assessment.inProgress) {
         setIsLoading(true);
         try {
-          const response = await startAssessment(currentUser.uid);
-          setMessages([{
-            text: response.initialMessage,
-            sender: 'ai',
-            timestamp: new Date().toISOString()
-          }]);
+          const token = await currentUser.getIdToken(true);
+          const response = await startVarkAssessment({
+            parentId: currentUser.uid,
+            studentId: resolvedStudentId,
+            gradeBand,
+            token
+          });
+          if (!response.sessionId) {
+            throw new Error('Missing sessionId in assessment response');
+          }
+          setMessages([]);
+          appendQuestion(response);
           
           setAssessment(prev => ({
             ...prev,
             inProgress: true,
-            assessmentId: response.assessmentId
+            sessionId: response.sessionId
           }));
         } catch (error) {
           console.error('Error starting assessment:', error);
@@ -73,10 +117,10 @@ export const useVARKAssessment = () => {
     };
     
     initializeChat();
-  }, [currentUser]);
+  }, [currentUser, resolvedStudentId, gradeBand]);
 
   const sendMessage = async (messageText: string) => {
-    if (!currentUser?.uid || !assessment.assessmentId) return;
+    if (!currentUser?.uid || !assessment.sessionId || !resolvedStudentId) return;
 
     const userMessage: Message = {
       text: messageText,
@@ -88,32 +132,42 @@ export const useVARKAssessment = () => {
     setIsLoading(true);
     
     try {
-      const response = await sendUserResponse({
-        userId: currentUser.uid,
-        assessmentId: assessment.assessmentId,
+      const token = await currentUser.getIdToken(true);
+      const response = await sendVarkResponse({
+        parentId: currentUser.uid,
+        studentId: resolvedStudentId,
+        sessionId: assessment.sessionId,
         message: messageText,
-        questionIndex: assessment.currentQuestionIndex
+        gradeBand,
+        token
       });
-      
-      setMessages(prev => [...prev, {
-        text: response.message,
-        sender: 'ai',
-        timestamp: new Date().toISOString()
-      }]);
-      
+
       setAssessment(prev => ({
         ...prev,
-        currentQuestionIndex: response.nextQuestionIndex,
         answers: [...prev.answers, {
-          question: response.currentQuestion,
+          question: prev.currentQuestion ?? '',
           answer: messageText
         }],
-        results: response.results || null,
-        isComplete: response.isComplete
+        results: response.result ? normalizeResults(response.result) : prev.results,
+        isComplete: response.status === 'complete'
       }));
-      
-      if (response.isComplete && response.results) {
-        await saveAssessmentResults(currentUser.uid, response.results);
+
+      if (response.status === 'complete' && response.result) {
+        const summary = response.result.summary;
+        const recommendations = response.result.recommendations
+          .map((step) => `- ${step}`)
+          .join('\n');
+        setMessages(prev => [...prev, {
+          text: `${summary}\n${recommendations}`,
+          sender: 'ai',
+          timestamp: new Date().toISOString()
+        }]);
+        setAssessment(prev => ({
+          ...prev,
+          currentQuestion: undefined
+        }));
+      } else {
+        appendQuestion(response);
       }
     } catch (error) {
       console.error('Error sending message:', error);

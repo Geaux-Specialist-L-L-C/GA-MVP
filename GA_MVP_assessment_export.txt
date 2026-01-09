@@ -1,0 +1,6100 @@
+GEAUX ACADEMY REPO EXPORT
+Repo root: /home/evopimp/Geaux-Dev/GA-MVP
+Mode: targeted
+Max file size: 300 KB
+Generated: 2026-01-08 23:12:46
+================================================================================
+
+
+################################################################################
+# FILE: orchestration/src/agent.ts
+# SIZE: 1381 bytes
+################################################################################
+
+import "dotenv/config.js";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
+import { FrameworkError } from "beeai-framework/errors";
+import { TokenMemory } from "beeai-framework/memory/tokenMemory";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSearch";
+import { createConsoleReader } from "./helpers/reader.js";
+import { ChatModel } from "beeai-framework/backend/chat";
+
+const agent = new ReActAgent({
+  llm: await ChatModel.fromName(process.env.LLM_CHAT_MODEL_NAME as any),
+  memory: new TokenMemory(),
+  tools: [new OpenMeteoTool(), new DuckDuckGoSearchTool()],
+});
+
+const reader = createConsoleReader({ fallback: "What is the current weather in Las Vegas?" });
+for await (const { prompt } of reader) {
+  try {
+    const response = await agent
+      .run(
+        { prompt },
+        {
+          execution: {
+            maxIterations: 8,
+            maxRetriesPerStep: 3,
+            totalMaxRetries: 10,
+          },
+        },
+      )
+      .observe((emitter) => {
+        emitter.on("update", (data) => {
+          reader.write(`Agent 🤖 (${data.update.key}) :`, data.update.value);
+        });
+      });
+
+    reader.write(`Agent 🤖 :`, response.result.text);
+  } catch (error) {
+    reader.write(`Error`, FrameworkError.ensure(error).dump());
+  }
+}
+
+################################################################################
+# FILE: orchestration/src/agent_code_interpreter.ts
+# SIZE: 2769 bytes
+################################################################################
+
+import "dotenv/config.js";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
+import { FrameworkError } from "beeai-framework/errors";
+import * as process from "node:process";
+import { PythonTool } from "beeai-framework/tools/python/python";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { LocalPythonStorage } from "beeai-framework/tools/python/storage";
+import { CustomTool } from "beeai-framework/tools/custom";
+import { createConsoleReader } from "./helpers/reader.js";
+import { ChatModel } from "beeai-framework/backend/chat";
+
+const codeInterpreterUrl = process.env.CODE_INTERPRETER_URL;
+if (!codeInterpreterUrl) {
+  throw new Error(`The 'CODE_INTERPRETER_URL' environment variable was not set! Terminating.`);
+}
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const agent = new ReActAgent({
+  llm: await ChatModel.fromName(process.env.LLM_CHAT_MODEL_NAME as any),
+  memory: new UnconstrainedMemory(),
+  tools: [
+    new PythonTool({
+      codeInterpreter: { url: codeInterpreterUrl },
+      storage: new LocalPythonStorage({
+        interpreterWorkingDir: `${__dirname}/../tmp/code_interpreter_target`,
+        localWorkingDir: `${__dirname}/../tmp/code_interpreter_source`,
+      }),
+    }),
+    await CustomTool.fromSourceCode(
+      {
+        url: codeInterpreterUrl,
+      },
+      `import requests
+
+def get_riddle() -> dict[str, str] | None:
+  """
+  Fetches a random riddle from the Riddles API.
+
+  This function retrieves a random riddle and its answer. It does not accept any input parameters.
+
+  Returns:
+      dict[str,str] | None: A dictionary containing:
+          - 'riddle' (str): The riddle question.
+          - 'answer' (str): The answer to the riddle.
+      Returns None if the request fails.
+  """
+  url = 'https://riddles-api.vercel.app/random'
+  
+  try:
+      response = requests.get(url)
+      response.raise_for_status() 
+      return response.json() 
+  except Exception as e:
+      return None`,
+    ),
+  ],
+});
+
+const reader = createConsoleReader({ fallback: "Generate a random riddle." });
+for await (const { prompt } of reader) {
+  try {
+    const response = await agent
+      .run(
+        { prompt },
+        {
+          execution: {
+            maxIterations: 8,
+            maxRetriesPerStep: 3,
+            totalMaxRetries: 10,
+          },
+        },
+      )
+      .observe((emitter) => {
+        emitter.on("update", (data) => {
+          reader.write(`Agent 🤖 (${data.update.key}) : `, data.update.value);
+        });
+      });
+
+    reader.write(`Agent 🤖 : `, response.result.text);
+  } catch (error) {
+    reader.write(`Error`, FrameworkError.ensure(error).dump());
+  }
+}
+
+################################################################################
+# FILE: orchestration/src/agent_observe.ts
+# SIZE: 1063 bytes
+################################################################################
+
+import "./hooks/telemetry.js";
+import "dotenv/config.js";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
+import { FrameworkError } from "beeai-framework/errors";
+import { TokenMemory } from "beeai-framework/memory/tokenMemory";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+import { ChatModel } from "beeai-framework/backend/chat";
+import process from "node:process";
+
+const agent = new ReActAgent({
+  llm: await ChatModel.fromName(process.env.LLM_CHAT_MODEL_NAME as any),
+  memory: new TokenMemory(),
+  tools: [new OpenMeteoTool(), new WikipediaTool()],
+});
+
+const prompt = `What is the current weather in Las Vegas?`;
+
+try {
+  const response = await agent.run(
+    { prompt },
+    {
+      execution: {
+        maxIterations: 8,
+        maxRetriesPerStep: 3,
+        totalMaxRetries: 10,
+      },
+    },
+  );
+
+  console.log(`Agent 🤖 : `, response.result.text);
+} catch (error) {
+  console.log(`Error`, FrameworkError.ensure(error).dump());
+}
+
+################################################################################
+# FILE: orchestration/src/agent_workflow.ts
+# SIZE: 5909 bytes
+################################################################################
+
+import "dotenv/config";
+import { z } from "zod";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { createConsoleReader } from "./helpers/reader.js";
+import { isEmpty } from "remeda";
+import { LLMTool } from "beeai-framework/tools/llm";
+import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSearch";
+import { Workflow } from "beeai-framework/workflows/workflow";
+import { ChatModel } from "beeai-framework/backend/chat";
+import process from "node:process";
+import { SystemMessage, UserMessage } from "beeai-framework/backend/message";
+
+const schema = z.object({
+  input: z.string(),
+  output: z.string().optional(),
+
+  topic: z.string().optional(),
+  notes: z.array(z.string()).default([]),
+  plan: z.string().optional(),
+  draft: z.string().optional(),
+});
+
+const workflow = new Workflow({
+  schema,
+  outputSchema: schema.required({ output: true }),
+})
+  .addStep("preprocess", async (state) => {
+    const model = await ChatModel.fromName(process.env.LLM_CHAT_MODEL_NAME as any);
+    const { object } = await model.createStructure({
+      messages: [
+        new UserMessage(
+          [
+            "Your task is to rewrite the user query so that it guides the content planner and editor to craft a blog post that perfectly aligns with the user's needs. Notes should be used only if the user complains about something.",
+            "If the user query does ",
+            "",
+            ...[state.topic && ["# Previous Topic", state.topic, ""]],
+            ...[!isEmpty(state.notes) && ["# Previous Notes", ...state.notes, ""]],
+            "# User Query",
+            state.input || "empty",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        ),
+      ],
+      schema: z
+        .object({
+          error: z
+            .string()
+            .describe(
+              "Use this field only if the user message is not a valid topic and is not a note to an existing blog post.",
+            ),
+        })
+        .or(schema.pick({ topic: true, notes: true })),
+    });
+
+    if ("error" in object) {
+      state.output = object.error;
+      return Workflow.END;
+    }
+
+    state.notes = object.notes ?? [];
+    state.topic = object.topic;
+  })
+  .addStrictStep("planner", schema.required({ topic: true }), async (state) => {
+    const llm = await ChatModel.fromName(process.env.LLM_CHAT_MODEL_NAME as any);
+    const agent = new ReActAgent({
+      llm,
+      memory: new UnconstrainedMemory(),
+      tools: [new DuckDuckGoSearchTool(), new LLMTool({ llm })],
+    });
+
+    const { result } = await agent.run({
+      prompt: [
+        `You are a Content Planner. Your task is to write a content plan for "${state.topic}" topic in Markdown format.`,
+        ``,
+        `# Objectives`,
+        `1. Prioritize the latest trends, key players, and noteworthy news.`,
+        `2. Identify the target audience, considering their interests and pain points.`,
+        `3. Develop a detailed content outline including introduction, key points, and a call to action.`,
+        `4. Include SEO keywords and relevant sources.`,
+        ``,
+        ...[!isEmpty(state.notes) && ["# Notes", ...state.notes, ""]],
+        `Provide a structured output that covers the mentioned sections.`,
+      ].join("\n"),
+    });
+
+    state.plan = result.text;
+  })
+  .addStrictStep("writer", schema.required({ plan: true }), async (state) => {
+    const model = await ChatModel.fromName(process.env.LLM_CHAT_MODEL_NAME as any);
+    const output = await model.create({
+      messages: [
+        new SystemMessage(
+          [
+            `You are a Content Writer. Your task is to write a compelling blog post based on the provided context.`,
+            ``,
+            `# Context`,
+            `${state.plan}`,
+            ``,
+            `# Objectives`,
+            `- An engaging introduction`,
+            `- Insightful body paragraphs (2-3 per section)`,
+            `- Properly named sections/subtitles`,
+            `- A summarizing conclusion`,
+            `- Format: Markdown`,
+            ``,
+            ...[!isEmpty(state.notes) && ["# Notes", ...state.notes, ""]],
+            `Ensure the content flows naturally, incorporates SEO keywords, and is well-structured.`,
+          ].join("\n"),
+        ),
+      ],
+    });
+
+    state.draft = output.getTextContent();
+  })
+  .addStrictStep("editor", schema.required({ draft: true }), async (state) => {
+    const model = await ChatModel.fromName(process.env.LLM_CHAT_MODEL_NAME as any);
+    const output = await model.create({
+      messages: [
+        new SystemMessage(
+          [
+            `You are an Editor. Your task is to transform the following draft blog post to a final version.`,
+            ``,
+            `# Draft`,
+            `${state.draft}`,
+            ``,
+            `# Objectives`,
+            `- Fix Grammatical errors`,
+            `- Journalistic best practices`,
+            ``,
+            ...[!isEmpty(state.notes) && ["# Notes", ...state.notes, ""]],
+            ``,
+            `IMPORTANT: The final version must not contain any editor's comments.`,
+          ].join("\n"),
+        ),
+      ],
+    });
+
+    state.output = output.getTextContent();
+  });
+
+let lastResult = {} as Workflow.output<typeof workflow>;
+const reader = createConsoleReader();
+reader.write(
+  "ℹ️ ",
+  "I am a content creator agent. Please give me a topic for which I will write a blog post..",
+);
+
+for await (const { prompt } of reader) {
+  const { result } = await workflow
+    .run({
+      input: prompt,
+      notes: lastResult?.notes,
+      topic: lastResult?.topic,
+    })
+    .observe((emitter) => {
+      emitter.on("start", ({ step, run }) => {
+        reader.write(`-> ▶️ ${step}`, JSON.stringify(run.state));
+      });
+    });
+
+  lastResult = result;
+  reader.write("🤖 Answer", lastResult.output);
+}
+
+################################################################################
+# FILE: orchestration/src/beeai/llm.ts
+# SIZE: 2468 bytes
+################################################################################
+
+import { z } from "zod";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { SystemMessage, UserMessage } from "beeai-framework/backend/message";
+
+const classifierSchema = z.object({
+  scores: z.object({
+    v: z.number(),
+    a: z.number(),
+    r: z.number(),
+    k: z.number(),
+  }),
+  confidence: z.number(),
+});
+
+export type VarkClassifierResult = z.infer<typeof classifierSchema>;
+
+function requiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} is not set`);
+  }
+  return value;
+}
+
+export async function probeLLM(): Promise<{
+  provider: "vertex";
+  model: string;
+  text: string;
+}> {
+  const modelName = requiredEnv("LLM_CHAT_MODEL_NAME");
+
+  const model = await ChatModel.fromName(modelName as any);
+  const output = await model.create({
+    messages: [new UserMessage('Reply with exactly "OK". Do not add any other text.')],
+  });
+
+  const text = output.getTextContent().trim();
+  if (text !== "OK") {
+    throw new Error(`unexpected LLM response: ${text}`);
+  }
+
+  return { provider: "vertex", model: modelName, text };
+}
+
+export async function classifyVarkResponse(input: string): Promise<VarkClassifierResult> {
+  requiredEnv("LLM_CHAT_MODEL_NAME");
+  const modelName = process.env.LLM_CHAT_MODEL_NAME ?? "unknown";
+
+  const model = await ChatModel.fromName(modelName as any);
+  const { object } = await model.createStructure({
+    messages: [
+      new SystemMessage(
+        [
+          "You are a classifier for VARK learning preferences.",
+          "Return JSON with numeric scores for v, a, r, k between 0 and 1 and a confidence between 0 and 1.",
+          "Scores should sum to 1. Output only JSON that matches the schema.",
+        ].join(" "),
+      ),
+      new UserMessage(
+        [
+          "Student response:",
+          input,
+          "",
+          'Return JSON: {"scores":{"v":0,"a":0,"r":0,"k":0},"confidence":0}',
+        ].join("\n"),
+      ),
+    ],
+    schema: classifierSchema,
+  });
+
+  return object;
+}
+
+export function logLlmProbeError(
+  error: unknown,
+  context: { model: string; projectId: string; region: string },
+): void {
+  const err = error as { message?: string; name?: string; code?: string };
+  console.error("probe_llm_failed", {
+    model: context.model,
+    projectId: context.projectId,
+    region: context.region,
+    message: err?.message ?? "unknown error",
+    name: err?.name ?? "Error",
+    code: err?.code ?? "unknown",
+  });
+}
+
+################################################################################
+# FILE: orchestration/src/beeai/vark.ts
+# SIZE: 8841 bytes
+################################################################################
+
+export const GRADE_BANDS = ["K-2", "3-5", "6-8", "9-12"] as const;
+export type GradeBand = (typeof GRADE_BANDS)[number];
+
+export type VarkModality = "V" | "A" | "R" | "K";
+export interface VarkScores {
+  v: number;
+  a: number;
+  r: number;
+  k: number;
+}
+const MODALITIES: readonly VarkModality[] = ["V", "A", "R", "K"];
+export interface VarkOption {
+  key: "A" | "B" | "C" | "D";
+  text: string;
+  mapsTo: VarkModality;
+}
+export interface VarkQuestion {
+  id: string;
+  text: string;
+  options: VarkOption[];
+  target: VarkModality;
+}
+
+export type VarkSessionStatus = "in_progress" | "complete";
+export interface VarkSession {
+  sessionId: string;
+  studentId: string;
+  gradeBand?: GradeBand;
+  status: VarkSessionStatus;
+  step: number;
+  scores: VarkScores;
+  askedCounts: VarkScores;
+  questionHistory: { id: string; target: VarkModality; answeredAt?: string }[];
+  currentQuestion: VarkQuestion | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface QuestionTemplate {
+  target: VarkModality;
+  text: string;
+  options: VarkOption[];
+}
+
+const QUESTION_TEMPLATES: QuestionTemplate[] = [
+  {
+    target: "V",
+    text: "When learning about a new topic, I prefer to start with:",
+    options: [
+      { key: "A", text: "A diagram, chart, or picture", mapsTo: "V" },
+      { key: "B", text: "Someone explaining it aloud", mapsTo: "A" },
+      { key: "C", text: "A short reading or handout", mapsTo: "R" },
+      { key: "D", text: "Trying it hands-on", mapsTo: "K" },
+    ],
+  },
+  {
+    target: "A",
+    text: "If I need to remember instructions, I do best when I:",
+    options: [
+      { key: "A", text: "See steps listed or shown", mapsTo: "V" },
+      { key: "B", text: "Hear someone say the steps", mapsTo: "A" },
+      { key: "C", text: "Read the steps myself", mapsTo: "R" },
+      { key: "D", text: "Practice the steps", mapsTo: "K" },
+    ],
+  },
+  {
+    target: "R",
+    text: "When learning vocabulary, I prefer to:",
+    options: [
+      { key: "A", text: "Match words to pictures", mapsTo: "V" },
+      { key: "B", text: "Say the words out loud", mapsTo: "A" },
+      { key: "C", text: "Read and write the words", mapsTo: "R" },
+      { key: "D", text: "Act out the words", mapsTo: "K" },
+    ],
+  },
+  {
+    target: "K",
+    text: "In class, I learn best when I can:",
+    options: [
+      { key: "A", text: "Watch a demonstration", mapsTo: "V" },
+      { key: "B", text: "Join a discussion", mapsTo: "A" },
+      { key: "C", text: "Use notes or a worksheet", mapsTo: "R" },
+      { key: "D", text: "Build or move something", mapsTo: "K" },
+    ],
+  },
+  {
+    target: "V",
+    text: "To understand how something works, I like to:",
+    options: [
+      { key: "A", text: "See a diagram or model", mapsTo: "V" },
+      { key: "B", text: "Listen to a clear explanation", mapsTo: "A" },
+      { key: "C", text: "Read a short description", mapsTo: "R" },
+      { key: "D", text: "Try it out myself", mapsTo: "K" },
+    ],
+  },
+  {
+    target: "A",
+    text: "When I'm learning something new, I most enjoy:",
+    options: [
+      { key: "A", text: "Looking at examples or pictures", mapsTo: "V" },
+      { key: "B", text: "Talking about it", mapsTo: "A" },
+      { key: "C", text: "Reading about it", mapsTo: "R" },
+      { key: "D", text: "Doing an activity", mapsTo: "K" },
+    ],
+  },
+  {
+    target: "R",
+    text: "If I need to review, I usually:",
+    options: [
+      { key: "A", text: "Review diagrams or slides", mapsTo: "V" },
+      { key: "B", text: "Replay or recall the lecture", mapsTo: "A" },
+      { key: "C", text: "Read notes or a summary", mapsTo: "R" },
+      { key: "D", text: "Practice with exercises", mapsTo: "K" },
+    ],
+  },
+  {
+    target: "K",
+    text: "When solving a problem, I prefer to:",
+    options: [
+      { key: "A", text: "Sketch it out", mapsTo: "V" },
+      { key: "B", text: "Explain it out loud", mapsTo: "A" },
+      { key: "C", text: "Write steps on paper", mapsTo: "R" },
+      { key: "D", text: "Try different solutions", mapsTo: "K" },
+    ],
+  },
+];
+
+const CLARIFYING_TEMPLATE: QuestionTemplate = {
+  target: "V",
+  text: "If you could choose one way to learn today, which sounds best?",
+  options: [
+    { key: "A", text: "See it in a picture or video", mapsTo: "V" },
+    { key: "B", text: "Hear someone explain it", mapsTo: "A" },
+    { key: "C", text: "Read about it", mapsTo: "R" },
+    { key: "D", text: "Try it with my hands", mapsTo: "K" },
+  ],
+};
+
+export const MAX_QUESTIONS = 6;
+
+export function createEmptyScores(): VarkScores {
+  return { v: 0, a: 0, r: 0, k: 0 };
+}
+
+export function pickWeakestModality(askedCounts: VarkScores, scores: VarkScores): VarkModality {
+  const modalities: { key: VarkModality; asked: number; score: number }[] = [
+    { key: "V", asked: askedCounts.v, score: scores.v },
+    { key: "A", asked: askedCounts.a, score: scores.a },
+    { key: "R", asked: askedCounts.r, score: scores.r },
+    { key: "K", asked: askedCounts.k, score: scores.k },
+  ];
+
+  modalities.sort((a, b) => {
+    if (a.asked !== b.asked) {
+      return a.asked - b.asked;
+    }
+    return a.score - b.score;
+  });
+
+  return modalities[0]?.key ?? "V";
+}
+
+export function buildQuestion(step: number, target?: VarkModality): VarkQuestion {
+  const templates = target
+    ? QUESTION_TEMPLATES.filter((q) => q.target === target)
+    : QUESTION_TEMPLATES;
+  const index = Math.max(0, step - 1) % templates.length;
+  const template = templates[index] ?? QUESTION_TEMPLATES[0];
+  return {
+    id: `Q${step}`,
+    text: template.text,
+    options: template.options,
+    target: template.target,
+  };
+}
+
+export function buildClarifyingQuestion(step: number): VarkQuestion {
+  return {
+    id: `Q${step}`,
+    text: CLARIFYING_TEMPLATE.text,
+    options: CLARIFYING_TEMPLATE.options,
+    target: CLARIFYING_TEMPLATE.target,
+  };
+}
+
+export function mapOptionToScore(option: VarkModality): VarkScores {
+  return {
+    v: option === "V" ? 1 : 0,
+    a: option === "A" ? 1 : 0,
+    r: option === "R" ? 1 : 0,
+    k: option === "K" ? 1 : 0,
+  };
+}
+
+export function addScores(base: VarkScores, delta: VarkScores): VarkScores {
+  return {
+    v: base.v + delta.v,
+    a: base.a + delta.a,
+    r: base.r + delta.r,
+    k: base.k + delta.k,
+  };
+}
+
+export function clampScores(scores: VarkScores): VarkScores {
+  return {
+    v: Number.isFinite(scores.v) ? Math.max(0, scores.v) : 0,
+    a: Number.isFinite(scores.a) ? Math.max(0, scores.a) : 0,
+    r: Number.isFinite(scores.r) ? Math.max(0, scores.r) : 0,
+    k: Number.isFinite(scores.k) ? Math.max(0, scores.k) : 0,
+  };
+}
+
+export function summarizeProfile(scores: VarkScores): {
+  primary: "V" | "A" | "R" | "K" | "Multi";
+  summary: string;
+  recommendations: string[];
+} {
+  const entries: { key: VarkModality; score: number }[] = MODALITIES.map((key) => {
+    switch (key) {
+      case "V":
+        return { key, score: scores.v };
+      case "A":
+        return { key, score: scores.a };
+      case "R":
+        return { key, score: scores.r };
+      case "K":
+        return { key, score: scores.k };
+      default:
+        return { key, score: 0 };
+    }
+  }).sort((a, b) => b.score - a.score);
+
+  const top = entries[0];
+  const second = entries[1];
+  const primary =
+    !top || !second || top.score === second.score || top.score - second.score < 1
+      ? "Multi"
+      : top.key;
+
+  const summaryByPrimary: Record<string, string> = {
+    V: "You seem to like learning with pictures, videos, and seeing how things look.",
+    A: "You seem to like learning by listening and talking things through.",
+    R: "You seem to like learning by reading and writing about ideas.",
+    K: "You seem to like learning by doing and trying things out.",
+    Multi: "You like learning in more than one way, which is a great strength and not a label.",
+  };
+
+  const recommendationsByPrimary: Record<string, string[]> = {
+    V: [
+      "Use diagrams, charts, or labeled pictures to study.",
+      "Highlight key ideas with color or visuals.",
+      "Watch a short video before practicing.",
+    ],
+    A: [
+      "Explain ideas out loud or teach them to someone else.",
+      "Listen to short summaries or recordings.",
+      "Join a small group discussion.",
+    ],
+    R: [
+      "Read short summaries and underline key words.",
+      "Write a few sentences explaining what you learned.",
+      "Make a simple list of steps or notes.",
+    ],
+    K: [
+      "Use hands-on activities or practice problems.",
+      "Build a model or act out the concept.",
+      "Take short movement breaks while studying.",
+    ],
+    Multi: [
+      "Mix visuals, talking, and short readings when you study.",
+      "Try a quick hands-on activity after learning.",
+      "Switch methods if you get stuck.",
+    ],
+  };
+
+  return {
+    primary,
+    summary: summaryByPrimary[primary],
+    recommendations: recommendationsByPrimary[primary],
+  };
+}
+
+################################################################################
+# FILE: orchestration/src/helpers/reader.ts
+# SIZE: 2377 bytes
+################################################################################
+
+import readline from "node:readline/promises";
+import { stdin, stdout } from "node:process";
+import picocolors from "picocolors";
+import * as R from "remeda";
+import stripAnsi from "strip-ansi";
+import type { Abortable } from "node:events";
+
+interface ReadFromConsoleInput {
+  fallback?: string;
+  input?: string;
+  allowEmpty?: boolean;
+}
+
+export function createConsoleReader({
+  fallback,
+  input = "User 👤 : ",
+  allowEmpty = false,
+}: ReadFromConsoleInput = {}) {
+  const rl = readline.createInterface({ input: stdin, output: stdout, terminal: true, prompt: "" });
+  let isActive = true;
+
+  return {
+    write(role: string, data: string) {
+      rl.write(
+        [role && R.piped(picocolors.red, picocolors.bold)(role), stripAnsi(data ?? "")]
+          .filter(Boolean)
+          .join(" ")
+          .concat("\n"),
+      );
+    },
+
+    async prompt(): Promise<string> {
+      for await (const { prompt } of this) {
+        return prompt;
+      }
+      process.exit(0);
+    },
+
+    async askSingleQuestion(queryMessage: string, options?: Abortable): Promise<string> {
+      const answer = await rl.question(
+        R.piped(picocolors.cyan, picocolors.bold)(queryMessage),
+        options ?? { signal: undefined },
+      );
+      return stripAnsi(answer.trim());
+    },
+
+    close() {
+      stdin.pause();
+      rl.close();
+    },
+
+    async *[Symbol.asyncIterator]() {
+      if (!isActive) {
+        return;
+      }
+
+      try {
+        rl.write(
+          `${picocolors.dim(`Interactive session has started. To escape, input 'q' and submit.\n`)}`,
+        );
+
+        for (let iteration = 1, prompt = ""; isActive; iteration++) {
+          prompt = await rl.question(R.piped(picocolors.cyan, picocolors.bold)(input));
+          prompt = stripAnsi(prompt);
+
+          if (prompt === "q") {
+            break;
+          }
+          if (!prompt.trim() || prompt === "\n") {
+            prompt = fallback ?? "";
+          }
+          if (allowEmpty !== false && !prompt.trim()) {
+            rl.write("Error: Empty prompt is not allowed. Please try again.\n");
+            iteration -= 1;
+            continue;
+          }
+          yield { prompt, iteration };
+        }
+      } catch (e) {
+        if (e.code === "ERR_USE_AFTER_CLOSE") {
+          return;
+        }
+        throw e;
+      } finally {
+        isActive = false;
+        rl.close();
+      }
+    },
+  };
+}
+
+################################################################################
+# FILE: orchestration/src/hooks/telemetry.ts
+# SIZE: 1670 bytes
+################################################################################
+
+/**
+ * Copyright 2024 IBM Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import "dotenv/config";
+import "@opentelemetry/instrumentation/hook.mjs";
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic-conventions";
+import { Version } from "beeai-framework";
+import { NodeSDK, node, resources } from "@opentelemetry/sdk-node";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto";
+import { BeeAIInstrumentation } from "@arizeai/openinference-instrumentation-beeai";
+import * as beeaiFramework from "beeai-framework";
+
+const beeAIInstrumentation = new BeeAIInstrumentation();
+
+const sdk = new NodeSDK({
+  resource: new resources.Resource({
+    [ATTR_SERVICE_NAME]: "beeai-framework-starter",
+    [ATTR_SERVICE_VERSION]: Version,
+  }),
+  spanProcessors: [
+    new node.SimpleSpanProcessor(
+      new OTLPTraceExporter({
+        url: "http://127.0.0.1:6006/v1/traces",
+      }),
+    ),
+    new node.SimpleSpanProcessor(new node.ConsoleSpanExporter()),
+  ],
+});
+
+sdk.start();
+
+beeAIInstrumentation.manuallyInstrument(beeaiFramework);
+
+process.on("beforeExit", async () => {
+  await sdk.shutdown();
+});
+
+################################################################################
+# FILE: orchestration/src/requirement_agent.ts
+# SIZE: 2468 bytes
+################################################################################
+
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { ConditionalRequirement } from "beeai-framework/agents/requirement/requirements/conditional";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { ThinkTool } from "beeai-framework/tools/think";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+import { Tool } from "beeai-framework/tools/base";
+import { GlobalTrajectoryMiddleware } from "beeai-framework/middleware/trajectory";
+import process from "node:process";
+import { createConsoleReader } from "./helpers/reader.js";
+import { FrameworkError } from "beeai-framework/errors";
+
+// Create an agent that plans activities based on weather and events
+const agent = new RequirementAgent({
+  llm: await ChatModel.fromName(process.env.LLM_CHAT_MODEL_NAME as any, { stream: true }),
+  tools: [
+    new ThinkTool(), // to reason
+    new OpenMeteoTool(), // retrieve weather data
+    new WikipediaTool(), // search for data
+  ],
+  instructions: "Plan activities for a given destination based on current weather.",
+  requirements: [
+    // Force thinking first
+    new ConditionalRequirement(ThinkTool, { forceAtStep: 1, maxInvocations: 5 }),
+    // Search only after getting weather and at least once
+    new ConditionalRequirement(WikipediaTool, {
+      onlyAfter: [OpenMeteoTool],
+      minInvocations: 1,
+      maxInvocations: 2,
+    }),
+    // Weather tool be used at least once but not consecutively
+    new ConditionalRequirement(OpenMeteoTool, {
+      consecutiveAllowed: false,
+      minInvocations: 1,
+      maxInvocations: 2,
+    }),
+  ],
+  middlewares: [
+    new GlobalTrajectoryMiddleware({
+      included: [Tool],
+    }),
+  ],
+});
+
+// Run with execution logging
+const reader = createConsoleReader({ fallback: "What to do in Boston?" });
+for await (const { prompt } of reader) {
+  try {
+    const response = await agent
+      .run(
+        { prompt },
+        {
+          execution: {
+            maxIterations: 20,
+            maxRetriesPerStep: 3,
+            totalMaxRetries: 10,
+          },
+        },
+      )
+      .observe((emitter) => {
+        emitter.on("finalAnswer", (data) => {
+          reader.write(`Final Answer 🤖`, data.delta);
+        });
+      });
+
+    reader.write(`Agent 🤖 :`, response.result.text);
+  } catch (error) {
+    reader.write(`Error`, FrameworkError.ensure(error).dump());
+  }
+}
+
+################################################################################
+# FILE: orchestration/src/server.ts
+# SIZE: 8499 bytes
+################################################################################
+
+import http from "node:http";
+import { randomUUID } from "node:crypto";
+import { probeLLM, logLlmProbeError, classifyVarkResponse } from "./beeai/llm.js";
+import {
+  GRADE_BANDS,
+  MAX_QUESTIONS,
+  addScores,
+  buildClarifyingQuestion,
+  buildQuestion,
+  clampScores,
+  createEmptyScores,
+  mapOptionToScore,
+  pickWeakestModality,
+  summarizeProfile,
+  type VarkQuestion,
+  type VarkScores,
+  type VarkSession,
+} from "./beeai/vark.js";
+import { getSessionStore } from "./storage/sessionStore.js";
+
+const port = Number(process.env.PORT ?? 8080);
+const sessionStore = getSessionStore();
+
+const MAX_BODY_BYTES = 1024 * 1024;
+
+function sendJson(res: http.ServerResponse, status: number, payload: unknown): void {
+  res.writeHead(status, { "content-type": "application/json" });
+  res.end(JSON.stringify(payload));
+}
+
+function sendText(res: http.ServerResponse, status: number, payload: string): void {
+  res.writeHead(status, { "content-type": "text/plain" });
+  res.end(payload);
+}
+
+async function readJson(req: http.IncomingMessage): Promise<any> {
+  const body = await new Promise<string>((resolve, reject) => {
+    let data = "";
+    req.on("data", (chunk) => {
+      data += chunk;
+      if (data.length > MAX_BODY_BYTES) {
+        const err = new Error("payload too large") as Error & { statusCode?: number };
+        err.statusCode = 413;
+        reject(err);
+        req.destroy();
+      }
+    });
+    req.on("end", () => resolve(data));
+    req.on("error", (err) => reject(err));
+  });
+
+  if (!body) {
+    return {};
+  }
+  try {
+    return JSON.parse(body);
+  } catch {
+    const err = new Error("invalid json") as Error & { statusCode?: number };
+    err.statusCode = 400;
+    throw err;
+  }
+}
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+function normalizeAnswer(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function recordQuestionAsked(session: VarkSession, question: VarkQuestion): void {
+  session.questionHistory.push({ id: question.id, target: question.target });
+  session.askedCounts = addScores(session.askedCounts, mapOptionToScore(question.target));
+  session.currentQuestion = question;
+  session.updatedAt = nowIso();
+}
+
+function markQuestionAnswered(session: VarkSession): void {
+  const last = session.questionHistory[session.questionHistory.length - 1];
+  if (last) {
+    last.answeredAt = nowIso();
+  }
+  session.updatedAt = nowIso();
+}
+
+async function handleProbe(res: http.ServerResponse): Promise<void> {
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT;
+  const region = process.env.VERTEX_REGION ?? process.env.VERTEX_LOCATION;
+  const model = process.env.LLM_CHAT_MODEL_NAME;
+
+  if (!model || !projectId || !region) {
+    sendJson(res, 500, {
+      ok: false,
+      error: "Missing Vertex configuration",
+    });
+    return;
+  }
+
+  try {
+    const result = await probeLLM();
+    sendJson(res, 200, { ok: true, provider: result.provider, model, text: result.text });
+  } catch (error) {
+    logLlmProbeError(error, { model, projectId, region });
+    sendJson(res, 500, { ok: false, error: "LLM probe failed" });
+  }
+}
+
+async function handleStart(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  try {
+    const payload = await readJson(req);
+    const studentId = normalizeAnswer(payload?.studentId);
+    if (!studentId) {
+      sendJson(res, 400, { error: "studentId is required" });
+      return;
+    }
+
+    const gradeBand = normalizeAnswer(payload?.gradeBand);
+    if (gradeBand && !GRADE_BANDS.includes(gradeBand as any)) {
+      sendJson(res, 400, { error: "gradeBand is invalid" });
+      return;
+    }
+
+    const sessionId = randomUUID();
+    const question = buildQuestion(1);
+    const now = nowIso();
+    const session: VarkSession = {
+      sessionId,
+      studentId,
+      gradeBand: gradeBand ? (gradeBand as any) : undefined,
+      status: "in_progress",
+      step: 1,
+      scores: createEmptyScores(),
+      askedCounts: createEmptyScores(),
+      questionHistory: [],
+      currentQuestion: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    recordQuestionAsked(session, question);
+    await sessionStore.saveSession(session);
+    sendJson(res, 200, { sessionId, question });
+  } catch (error: any) {
+    const status = typeof error?.statusCode === "number" ? error.statusCode : 500;
+    sendJson(res, status, { error: error?.message ?? "failed to start session" });
+  }
+}
+
+async function applyResponseScores(
+  question: VarkQuestion,
+  answer: string,
+): Promise<{ delta: VarkScores; confidence: number }> {
+  const direct = answer.toUpperCase();
+  if (direct === "A" || direct === "B" || direct === "C" || direct === "D") {
+    const option = question.options.find((opt) => opt.key === direct);
+    if (!option) {
+      throw new Error("answer does not match available options");
+    }
+    return { delta: mapOptionToScore(option.mapsTo), confidence: 1 };
+  }
+
+  if (!answer) {
+    throw new Error("answer is required");
+  }
+
+  const classification = await classifyVarkResponse(answer);
+  const delta = clampScores({
+    v: classification.scores.v,
+    a: classification.scores.a,
+    r: classification.scores.r,
+    k: classification.scores.k,
+  });
+
+  return { delta, confidence: classification.confidence };
+}
+
+async function handleRespond(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  try {
+    const payload = await readJson(req);
+    const sessionId = normalizeAnswer(payload?.sessionId);
+    const answer = normalizeAnswer(payload?.answer);
+    if (!sessionId) {
+      sendJson(res, 400, { error: "sessionId is required" });
+      return;
+    }
+
+    const session = await sessionStore.getSession(sessionId);
+    if (!session) {
+      sendJson(res, 404, { error: "session not found" });
+      return;
+    }
+
+    if (session.status !== "in_progress" || !session.currentQuestion) {
+      sendJson(res, 409, { error: "session is not active" });
+      return;
+    }
+
+    const { delta, confidence } = await applyResponseScores(session.currentQuestion, answer);
+    session.scores = addScores(session.scores, delta);
+    markQuestionAnswered(session);
+
+    if (session.step >= MAX_QUESTIONS) {
+      const result = summarizeProfile(session.scores);
+      session.status = "complete";
+      session.currentQuestion = null;
+      session.updatedAt = nowIso();
+      await sessionStore.saveSession(session);
+      sendJson(res, 200, {
+        done: true,
+        result: {
+          scores: session.scores,
+          primary: result.primary,
+          summary: result.summary,
+          recommendations: result.recommendations,
+        },
+      });
+      return;
+    }
+
+    const target = pickWeakestModality(session.askedCounts, session.scores);
+    const nextQuestion =
+      confidence < 0.6
+        ? buildClarifyingQuestion(session.step + 1)
+        : buildQuestion(session.step + 1, target);
+    session.step += 1;
+    recordQuestionAsked(session, nextQuestion);
+    await sessionStore.saveSession(session);
+    sendJson(res, 200, { sessionId, question: nextQuestion });
+  } catch (error: any) {
+    const status = typeof error?.statusCode === "number" ? error.statusCode : 500;
+    sendJson(res, status, { error: error?.message ?? "failed to record response" });
+  }
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+  const path = url.pathname;
+
+  if (req.method === "GET" && path === "/health") {
+    sendText(res, 200, "ok");
+    return;
+  }
+
+  if (req.method === "GET" && path === "/probe/llm") {
+    await handleProbe(res);
+    return;
+  }
+
+  if (req.method === "POST" && path === "/api/assessment/vark/start") {
+    await handleStart(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && path === "/api/assessment/vark/respond") {
+    await handleRespond(req, res);
+    return;
+  }
+
+  // Minimal JSON handler for POST /vark/run
+  if (req.method === "POST" && path === "/vark/run") {
+    try {
+      const parsed = await readJson(req);
+      const out = {
+        sessionId: parsed.sessionId ?? randomUUID(),
+        memory: parsed.memory ?? {},
+        output: { ok: true },
+      };
+      sendJson(res, 200, out);
+    } catch (e: any) {
+      const status = typeof e?.statusCode === "number" ? e.statusCode : 400;
+      sendJson(res, status, { error: e?.message ?? "bad request" });
+    }
+    return;
+  }
+
+  sendText(res, 404, "not found");
+});
+
+server.listen(port, () => console.log(`listening on :${port}`));
+
+################################################################################
+# FILE: orchestration/src/storage/sessionStore.ts
+# SIZE: 1685 bytes
+################################################################################
+
+import { Firestore } from "@google-cloud/firestore";
+import type { VarkSession } from "../beeai/vark.js";
+
+export interface SessionStore {
+  getSession(sessionId: string): Promise<VarkSession | null>;
+  saveSession(session: VarkSession): Promise<void>;
+}
+
+class MemorySessionStore implements SessionStore {
+  private sessions = new Map<string, VarkSession>();
+
+  async getSession(sessionId: string): Promise<VarkSession | null> {
+    return this.sessions.get(sessionId) ?? null;
+  }
+
+  async saveSession(session: VarkSession): Promise<void> {
+    this.sessions.set(session.sessionId, session);
+  }
+}
+
+class FirestoreSessionStore implements SessionStore {
+  private collection: FirebaseFirestore.CollectionReference;
+
+  constructor(projectId: string) {
+    const firestore = new Firestore({ projectId });
+    this.collection = firestore.collection("vark_sessions");
+  }
+
+  async getSession(sessionId: string): Promise<VarkSession | null> {
+    const snapshot = await this.collection.doc(sessionId).get();
+    return snapshot.exists ? (snapshot.data() as VarkSession) : null;
+  }
+
+  async saveSession(session: VarkSession): Promise<void> {
+    await this.collection.doc(session.sessionId).set(session, { merge: true });
+  }
+}
+
+let store: SessionStore | null = null;
+
+export function getSessionStore(): SessionStore {
+  if (store) {
+    return store;
+  }
+
+  const projectId = process.env.FIREBASE_PROJECT_ID ?? process.env.GOOGLE_CLOUD_PROJECT;
+  if (projectId) {
+    console.info("session_store=firestore", { projectId });
+    store = new FirestoreSessionStore(projectId);
+  } else {
+    console.info("session_store=memory");
+    store = new MemorySessionStore();
+  }
+
+  return store;
+}
+
+################################################################################
+# FILE: server/.env.example
+# SIZE: 570 bytes
+################################################################################
+
+PORT=8080
+GOOGLE_CLOUD_PROJECT=
+FIREBASE_PROJECT_ID=
+VERTEX_REGION=us-central1
+VERTEX_MODEL=gemini-2.0-flash-001
+# Assessment provider selection: vertex | beeai | stub
+ASSESSMENT_PROVIDER=vertex
+# BeeAI (optional)
+# BEEAI_API_KEY=
+# BEEAI_API_URL=https://api.beeai.dev
+# BEEAI_WORKFLOW_ID=vark-assessment
+# BEEAI_WORKFLOW_PATH=./src/beeai/workflows/vark.yaml
+# Optional Vertex tuning
+# VERTEX_TEMPERATURE=0.2
+# VERTEX_MAX_TOKENS=512
+# VERTEX_TIMEOUT_MS=20000
+# For local development with Firebase Admin SDK
+# GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+
+################################################################################
+# FILE: server/Dockerfile
+# SIZE: 288 bytes
+################################################################################
+
+FROM node:20-slim
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm install --omit=dev
+
+COPY tsconfig.json ./
+COPY src ./src
+
+RUN npm install --include=dev \
+  && npm run build \
+  && npm prune --omit=dev
+
+ENV NODE_ENV=production
+ENV PORT=8080
+
+CMD ["node", "dist/index.js"]
+
+################################################################################
+# FILE: server/README.md
+# SIZE: 4163 bytes
+################################################################################
+
+# Assessment Service (Cloud Run)
+
+TypeScript/Express service for the learning-style assessment chat endpoint.
+
+## Local development
+
+```bash
+cd server
+npm install
+npm run dev
+```
+
+Create a `.env` file (see `.env.example`) with at least:
+- `FIREBASE_PROJECT_ID`
+- `GOOGLE_CLOUD_PROJECT`
+Plus any Vertex settings you want to test locally. Dotenv is loaded in dev so the service will read `.env` from the server directory.
+
+### Provider selection (Vertex vs BeeAI)
+- `ASSESSMENT_PROVIDER=vertex` (default) uses Vertex AI when configured, otherwise falls back to the stub.
+- `ASSESSMENT_PROVIDER=beeai` enables the BeeAI orchestrator adapter (see `src/beeai/` and `src/beeai/workflows/vark.yaml`).
+- `ASSESSMENT_PROVIDER=stub` forces the built-in stub provider.
+
+BeeAI config:
+- `BEEAI_API_KEY` (required for BeeAI)
+- `BEEAI_API_URL` (optional; defaults to `https://api.beeai.dev`)
+- `BEEAI_WORKFLOW_ID` (preferred) or `BEEAI_WORKFLOW_PATH` for a local YAML workflow id/path
+
+## Cloud Run deployment (repeatable)
+
+```bash
+cd server
+npm run deploy:cloudrun
+```
+
+### Example request
+
+```bash
+curl -X POST http://localhost:8080/api/learning-style/assess \
+  -H "Authorization: Bearer <FIREBASE_ID_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parentId": "parent_123",
+    "studentId": "student_456",
+    "messages": [
+      { "role": "user", "content": "My child likes pictures and videos." }
+    ]
+  }'
+```
+
+## Cloud Run deploy
+
+```bash
+gcloud run deploy ga-assessment-service \
+  --source . \
+  --region us-central1 \
+  --service-account ga-assessment-runner@geaux-academy.iam.gserviceaccount.com \
+  --set-env-vars "GOOGLE_CLOUD_PROJECT=geaux-academy,FIREBASE_PROJECT_ID=geaux-academy,VERTEX_REGION=us-central1,VERTEX_MODEL=gemini-2.0-flash-001" \
+  --allow-unauthenticated=false
+```
+
+### Verification
+```bash
+curl -s https://<cloud-run-url>/healthz
+```
+
+```bash
+curl -i -X POST https://<cloud-run-url>/api/learning-style/assess \
+  -H "Content-Type: application/json" \
+  -d '{"parentId":"parent_123","studentId":"student_456","messages":[{"role":"user","content":"hello"}]}'
+```
+
+```bash
+curl -X POST https://<cloud-run-url>/api/learning-style/assess \
+  -H "Authorization: Bearer <FIREBASE_ID_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parentId": "parent_123",
+    "studentId": "student_456",
+    "messages": [
+      { "role": "user", "content": "My child learns best with pictures." }
+    ]
+  }'
+```
+
+### IAM + API prerequisites (GCP project: geaux-academy)
+- Enable APIs:
+  - run.googleapis.com
+  - cloudbuild.googleapis.com
+  - artifactregistry.googleapis.com
+  - aiplatform.googleapis.com
+  - firestore.googleapis.com
+  - iamcredentials.googleapis.com
+  - serviceusage.googleapis.com
+- Service account `ga-assessment-runner@geaux-academy.iam.gserviceaccount.com` needs:
+  - Vertex AI User (or least-privilege equivalent)
+  - Cloud Datastore User (Firestore access)
+  - Secret Manager Secret Accessor (if using secrets)
+
+Required IAM roles for runtime service account:
+- `roles/datastore.user`
+- `roles/aiplatform.user` (or `roles/aiplatform.developer` if needed)
+- `roles/serviceusage.serviceUsageConsumer`
+
+### Required environment variables
+
+- `GOOGLE_CLOUD_PROJECT`
+- `FIREBASE_PROJECT_ID` (preferred for Firebase Admin token verification; falls back to `GOOGLE_CLOUD_PROJECT`)
+- `VERTEX_REGION` (or `VERTEX_LOCATION`)
+- `VERTEX_MODEL` (defaults to `gemini-2.0-flash-001`)
+
+Optional Vertex tuning:
+- `VERTEX_TEMPERATURE`
+- `VERTEX_MAX_TOKENS`
+- `VERTEX_TIMEOUT_MS`
+
+### Auth notes
+
+Cloud Run uses Application Default Credentials (ADC) from the service account attached to the service. For local development, set `GOOGLE_APPLICATION_CREDENTIALS` to a service account JSON file.
+Ensure `FIREBASE_PROJECT_ID` matches the Firebase project that issued the ID tokens (e.g., `geaux-academy`) to avoid `Invalid token` responses.
+
+### Troubleshooting verifyIdToken failures
+If you see `verifyIdToken failed; check FIREBASE_PROJECT_ID vs token aud`:
+- Confirm token issuer/audience is `geaux-academy`.
+- Confirm Cloud Run env includes `FIREBASE_PROJECT_ID=geaux-academy`.
+- Confirm frontend Firebase config uses the same project.
+
+################################################################################
+# FILE: server/package.json
+# SIZE: 812 bytes
+################################################################################
+
+{
+  "name": "ga-mvp-assessment-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "deploy:cloudrun": "bash scripts/deploy_cloudrun.sh"
+  },
+  "dependencies": {
+    "@google-cloud/vertexai": "^1.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.5.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.7",
+    "@types/supertest": "^2.0.16",
+    "supertest": "^6.3.4",
+    "tsx": "^4.7.2",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}
+
+################################################################################
+# FILE: server/src/__tests__/app.test.ts
+# SIZE: 1049 bytes
+################################################################################
+
+import { describe, expect, it, vi } from 'vitest';
+import { healthHandler } from '../app.js';
+import { authenticate } from '../middleware/auth.js';
+import type { AuthenticatedRequest } from '../types.js';
+
+describe('assessment service', () => {
+  it('returns ok for healthz', async () => {
+    const res = createMockResponse();
+    await healthHandler({}, res);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ ok: true });
+  });
+
+  it('returns 401 when auth header is missing', async () => {
+    const req = { headers: {} } as AuthenticatedRequest;
+    const res = createMockResponse();
+    const next = vi.fn();
+
+    await authenticate(req, res, next);
+
+    expect(res.statusCode).toBe(401);
+    expect(next).not.toHaveBeenCalled();
+  });
+});
+
+const createMockResponse = () => {
+  const res: any = {};
+  res.statusCode = 200;
+  res.body = null;
+  res.status = (code: number) => {
+    res.statusCode = code;
+    return res;
+  };
+  res.json = (payload: unknown) => {
+    res.body = payload;
+    return res;
+  };
+  return res;
+};
+
+################################################################################
+# FILE: server/src/__tests__/assessment.decision.test.ts
+# SIZE: 4828 bytes
+################################################################################
+
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AuthenticatedRequest, Message } from '../types.js';
+import { handleAssessment, countEvidence, isLowSignal } from '../routes/assessment.js';
+
+const update = vi.fn().mockResolvedValue(undefined);
+const add = vi.fn().mockResolvedValue(undefined);
+const get = vi.fn();
+
+vi.mock('../services/firestore.js', () => {
+  return {
+    db: {
+      collection: (name: string) => {
+        if (name === 'students') {
+          return {
+            doc: () => ({
+              get,
+              update
+            })
+          };
+        }
+        return {
+          add
+        };
+      }
+    }
+  };
+});
+
+vi.mock('../services/vertex.js', () => ({
+  getAssessmentProvider: () => ({
+    generateAssessment: vi.fn().mockResolvedValue({
+      raw: JSON.stringify({
+        learningStyle: 'Visual',
+        confidence: 0.8,
+        explanation: 'Example explanation.',
+        nextSteps: ['Step 1', 'Step 2', 'Step 3'],
+        model: 'test-model',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        decision: 'final'
+      }),
+      model: 'test-model'
+    })
+  })
+}));
+
+const createMockResponse = () => {
+  const res: any = {};
+  res.statusCode = 200;
+  res.body = null;
+  res.status = (code: number) => {
+    res.statusCode = code;
+    return res;
+  };
+  res.json = (payload: unknown) => {
+    res.body = payload;
+    return res;
+  };
+  return res;
+};
+
+beforeEach(() => {
+  update.mockClear();
+  add.mockClear();
+  get.mockReset();
+});
+
+describe('assessment evidence gating', () => {
+  it('returns needs_more_data for low-signal input and does not set learningStyle', async () => {
+    get.mockResolvedValue({
+      exists: true,
+      data: () => ({ parentId: 'parent' })
+    });
+
+    const req = {
+      body: {
+        parentId: 'parent',
+        studentId: 'student',
+        messages: [{ role: 'user', content: 'maybe' }]
+      },
+      user: { uid: 'parent' }
+    } as unknown as AuthenticatedRequest;
+    const res = createMockResponse();
+
+    await handleAssessment(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.decision).toBe('needs_more_data');
+    expect(res.body.evidenceCount).toBe(0);
+    expect(res.body.questions?.length).toBeGreaterThan(0);
+    expect(update).toHaveBeenCalledTimes(1);
+    const updatePayload = update.mock.calls[0][0] as Record<string, unknown>;
+    expect(updatePayload).not.toHaveProperty('learningStyle');
+    expect(updatePayload.assessmentStatus).toBe('in_progress');
+  });
+
+  it('finalizes when evidence threshold met', async () => {
+    get.mockResolvedValue({
+      exists: true,
+      data: () => ({ parentId: 'parent' })
+    });
+
+    const messages: Message[] = [
+      { role: 'user', content: 'I learn best with pictures and charts.' },
+      { role: 'user', content: 'I remember things after drawing them.' },
+      { role: 'user', content: 'Seeing videos helps me understand quickly.' },
+      { role: 'user', content: 'I like diagrams in my notes.' }
+    ];
+    const req = {
+      body: {
+        parentId: 'parent',
+        studentId: 'student',
+        messages
+      },
+      user: { uid: 'parent' }
+    } as unknown as AuthenticatedRequest;
+    const res = createMockResponse();
+
+    await handleAssessment(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.decision).toBe('final');
+    expect(update).toHaveBeenCalledTimes(1);
+    const updatePayload = update.mock.calls[0][0] as Record<string, unknown>;
+    expect(updatePayload.learningStyle).toBeDefined();
+    expect(updatePayload.assessmentStatus).toBe('completed');
+  });
+
+  it('does not overwrite completed status on low evidence', async () => {
+    get.mockResolvedValue({
+      exists: true,
+      data: () => ({ parentId: 'parent', assessmentStatus: 'completed', learningStyle: 'Visual' })
+    });
+
+    const req = {
+      body: {
+        parentId: 'parent',
+        studentId: 'student',
+        messages: [{ role: 'user', content: 'maybe' }]
+      },
+      user: { uid: 'parent' }
+    } as unknown as AuthenticatedRequest;
+    const res = createMockResponse();
+
+    await handleAssessment(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.decision).toBe('needs_more_data');
+    expect(update).not.toHaveBeenCalled();
+  });
+});
+
+describe('evidence helpers', () => {
+  it('detects low-signal content', () => {
+    expect(isLowSignal('maybe')).toBe(true);
+    expect(isLowSignal('ok')).toBe(true);
+    expect(isLowSignal('I like diagrams and charts')).toBe(false);
+  });
+
+  it('counts evidence based on user messages', () => {
+    const messages: Message[] = [
+      { role: 'user', content: 'maybe' },
+      { role: 'assistant', content: 'Tell me more.' },
+      { role: 'user', content: 'I like diagrams and charts.' }
+    ];
+    expect(countEvidence(messages)).toBe(1);
+  });
+});
+
+################################################################################
+# FILE: server/src/__tests__/assessment.fallback.test.ts
+# SIZE: 2062 bytes
+################################################################################
+
+import { describe, expect, it, vi } from 'vitest';
+import type { AuthenticatedRequest } from '../types.js';
+import { handleAssessment } from '../routes/assessment.js';
+
+const update = vi.fn().mockResolvedValue(undefined);
+const add = vi.fn().mockResolvedValue(undefined);
+const get = vi.fn().mockResolvedValue({
+  exists: true,
+  data: () => ({ parentId: 'parent' })
+});
+
+vi.mock('../services/firestore.js', () => {
+  return {
+    db: {
+      collection: (name: string) => {
+        if (name === 'students') {
+          return {
+            doc: () => ({
+              get,
+              update
+            })
+          };
+        }
+        return {
+          add
+        };
+      }
+    }
+  };
+});
+
+vi.mock('../middleware/auth.js', () => ({
+  authenticate: (_req: unknown, _res: unknown, next: () => void) => {
+    // @ts-expect-error partial request user injection for tests
+    _req.user = { uid: 'parent' };
+    next();
+  }
+}));
+
+vi.mock('../services/vertex.js', () => ({
+  getAssessmentProvider: () => ({
+    generateAssessment: vi.fn().mockRejectedValue(new Error('timeout'))
+  })
+}));
+
+describe('assessment route fallback', () => {
+  it('returns a safe fallback result when provider fails', async () => {
+    const res = createMockResponse();
+    const req = {
+      body: {
+        parentId: 'parent',
+        studentId: 'student',
+        messages: [{ role: 'user', content: 'hello' }]
+      },
+      user: { uid: 'parent' }
+    } as unknown as AuthenticatedRequest;
+
+    await handleAssessment(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.learningStyle).toBe('Multimodal');
+    expect(res.body.model).toBe('unavailable');
+    expect(Array.isArray(res.body.nextSteps)).toBe(true);
+    expect(typeof res.body.createdAt).toBe('string');
+  });
+});
+
+const createMockResponse = () => {
+  const res: any = {};
+  res.statusCode = 200;
+  res.body = null;
+  res.status = (code: number) => {
+    res.statusCode = code;
+    return res;
+  };
+  res.json = (payload: unknown) => {
+    res.body = payload;
+    return res;
+  };
+  return res;
+};
+
+################################################################################
+# FILE: server/src/__tests__/beeai.provider.test.ts
+# SIZE: 3498 bytes
+################################################################################
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { BeeAIClient, type BeeAIConfig } from '../beeai/client.js';
+import { BeeAIAssessmentProvider } from '../beeai/provider.js';
+import { createDefaultMemory, loadSessionMemory } from '../beeai/sessionStore.js';
+import type { Message } from '../types.js';
+
+const mockFetch = vi.fn();
+const ResponseCtor = Response;
+
+describe('BeeAI integration', () => {
+  beforeEach(() => {
+    process.env.NODE_ENV = 'test';
+    vi.stubGlobal('fetch', mockFetch);
+    mockFetch.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('BeeAIClient posts workflow run and normalizes response', async () => {
+    const config: BeeAIConfig = {
+      apiKey: 'test-key',
+      apiUrl: 'https://beeai.test',
+      workflowId: 'wf1'
+    };
+
+    const payload = {
+      trace_id: 'trace-123',
+      output: {
+        final_report: {
+          learningStyle: 'Visual',
+          confidence: 0.82,
+          explanation: 'Prefers visuals',
+          nextSteps: ['Use diagrams', 'Try short videos'],
+          model: 'beeai-model',
+          createdAt: '2024-01-01T00:00:00.000Z'
+        },
+        memory: createDefaultMemory()
+      }
+    };
+
+    mockFetch.mockResolvedValue(
+      new ResponseCtor(JSON.stringify(payload), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    );
+
+    const client = new BeeAIClient(config);
+    const runResult = await client.runWorkflow({
+      messages: [{ role: 'user', content: 'I love diagrams' } as Message],
+      memory: createDefaultMemory(),
+      parentId: 'parent1',
+      studentId: 'student1'
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://beeai.test/v1/workflows/wf1/run',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer test-key'
+        })
+      })
+    );
+    expect(runResult.report?.learningStyle).toBe('Visual');
+    expect(runResult.traceId).toBe('trace-123');
+    expect(runResult.memory).not.toBeNull();
+  });
+
+  it('BeeAIAssessmentProvider saves session state', async () => {
+    const config: BeeAIConfig = {
+      apiKey: 'test-key',
+      apiUrl: 'https://beeai.test',
+      workflowId: 'wf-session'
+    };
+
+    const updatedMemory = {
+      ...createDefaultMemory(),
+      session_status: 'complete' as const,
+      focus_modality: 'Visual',
+      final_report: null
+    };
+
+    const payload = {
+      output: {
+        final_report: {
+          learningStyle: 'Visual',
+          confidence: 0.75,
+          explanation: 'Visual leaning detected',
+          nextSteps: ['Use diagrams'],
+          model: 'beeai-model',
+          createdAt: '2024-01-02T00:00:00.000Z'
+        },
+        memory: updatedMemory
+      }
+    };
+
+    mockFetch.mockResolvedValue(
+      new ResponseCtor(JSON.stringify(payload), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    );
+
+    const provider = new BeeAIAssessmentProvider(new BeeAIClient(config));
+    const result = await provider.generateAssessment(
+      [{ role: 'user', content: 'I like seeing pictures' } as Message],
+      { parentId: 'parentA', studentId: 'studentA' }
+    );
+
+    const saved = await loadSessionMemory('parentA', 'studentA');
+
+    expect(result.raw).toBeDefined();
+    expect(saved).not.toBeNull();
+    expect(saved?.session_status).toBe('complete');
+    expect(saved?.focus_modality).toBe('Visual');
+  });
+});
+
+################################################################################
+# FILE: server/src/__tests__/firestore.test.ts
+# SIZE: 1232 bytes
+################################################################################
+
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const initializeApp = vi.fn(() => ({ name: 'test-app' }));
+const getApps = vi.fn(() => []);
+const getAuth = vi.fn(() => ({ auth: true }));
+const getFirestore = vi.fn(() => ({ db: true }));
+
+vi.mock('firebase-admin/app', () => ({
+  getApps,
+  initializeApp
+}));
+
+vi.mock('firebase-admin/auth', () => ({
+  getAuth
+}));
+
+vi.mock('firebase-admin/firestore', () => ({
+  getFirestore
+}));
+
+beforeEach(() => {
+  vi.resetModules();
+  initializeApp.mockClear();
+  getApps.mockClear();
+  getAuth.mockClear();
+  getFirestore.mockClear();
+  delete process.env.FIREBASE_PROJECT_ID;
+  delete process.env.GOOGLE_CLOUD_PROJECT;
+  delete process.env.GCLOUD_PROJECT;
+});
+
+describe('firestore service config', () => {
+  it('uses FIREBASE_PROJECT_ID when provided', async () => {
+    process.env.FIREBASE_PROJECT_ID = 'geaux-academy';
+    const { auth, db } = await import('../services/firestore.js');
+
+    expect(initializeApp).toHaveBeenCalledWith({ projectId: 'geaux-academy' });
+    expect(getAuth).toHaveBeenCalledWith({ name: 'test-app' });
+    expect(getFirestore).toHaveBeenCalledWith({ name: 'test-app' });
+    expect(auth).toBeDefined();
+    expect(db).toBeDefined();
+  });
+});
+
+################################################################################
+# FILE: server/src/__tests__/vertex.test.ts
+# SIZE: 2891 bytes
+################################################################################
+
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+
+const mockGenerateContent = vi.fn();
+const mockGetGenerativeModel = vi.fn().mockReturnValue({ generateContent: mockGenerateContent });
+
+vi.mock('@google-cloud/vertexai', () => {
+  const VertexAI = vi.fn().mockImplementation(() => ({
+    getGenerativeModel: mockGetGenerativeModel
+  }));
+  return { VertexAI };
+});
+
+const resetEnv = () => {
+  delete process.env.GOOGLE_CLOUD_PROJECT;
+  delete process.env.VERTEX_REGION;
+  delete process.env.VERTEX_LOCATION;
+  delete process.env.VERTEX_MODEL;
+  delete process.env.VERTEX_TEMPERATURE;
+  delete process.env.VERTEX_MAX_TOKENS;
+  delete process.env.VERTEX_TIMEOUT_MS;
+};
+
+beforeEach(() => {
+  vi.resetModules();
+  mockGenerateContent.mockReset();
+  mockGetGenerativeModel.mockClear();
+  resetEnv();
+});
+
+describe('vertex provider config', () => {
+  it('falls back to stub provider when env is missing', async () => {
+    const { getAssessmentProvider } = await import('../services/vertex.js');
+    const provider = getAssessmentProvider();
+    const result = await provider.generateAssessment([{ role: 'user', content: 'likes diagrams' }]);
+
+    expect(result.model).toBe('stub');
+  });
+
+  it('uses vertex provider when env is present', async () => {
+    process.env.GOOGLE_CLOUD_PROJECT = 'project-id';
+    process.env.VERTEX_REGION = 'us-central1';
+    process.env.VERTEX_MODEL = 'my-model';
+
+    mockGenerateContent.mockResolvedValueOnce({
+      response: {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    learningStyle: 'Visual',
+                    confidence: 0.9,
+                    explanation: 'short',
+                    nextSteps: ['a', 'b', 'c'],
+                    model: 'my-model',
+                    createdAt: '2026-01-01T00:00:00.000Z'
+                  })
+                }
+              ]
+            }
+          }
+        ]
+      }
+    });
+
+    const { getAssessmentProvider } = await import('../services/vertex.js');
+    const provider = getAssessmentProvider();
+    const result = await provider.generateAssessment([{ role: 'user', content: 'hello' }]);
+
+    expect(result.model).toBe('my-model');
+    expect(mockGetGenerativeModel).toHaveBeenCalledWith({ model: 'my-model' });
+    expect(mockGenerateContent).toHaveBeenCalled();
+  });
+
+  it('buildPrompt emphasizes strict JSON and allowed learning styles', async () => {
+    const { buildPrompt } = await import('../services/vertex.js');
+
+    const prompt = buildPrompt([{ role: 'user', content: 'prefers pictures' }]);
+
+    expect(prompt).toContain('STRICT JSON');
+    expect(prompt).toContain('learningStyle": "Visual|Auditory|Read/Write|Kinesthetic|Multimodal"');
+    expect(prompt).toContain('Do not include markdown fences');
+    expect(prompt).toContain('ISO 8601 timestamp');
+  });
+});
+
+################################################################################
+# FILE: server/src/app.ts
+# SIZE: 403 bytes
+################################################################################
+
+import cors from 'cors';
+import express from 'express';
+import assessmentRouter from './routes/assessment.js';
+
+const app = express();
+
+app.use(cors());
+app.use(express.json({ limit: '1mb' }));
+
+export const healthHandler = (_req: unknown, res: express.Response) => {
+  res.status(200).json({ ok: true });
+};
+
+app.get('/healthz', healthHandler);
+
+app.use('/api', assessmentRouter);
+
+export default app;
+
+################################################################################
+# FILE: server/src/beeai/client.ts
+# SIZE: 3337 bytes
+################################################################################
+
+import type { Message } from '../types.js';
+import type { BeeAIMemory, BeeAIReport, BeeAIWorkflowRun } from './types.js';
+
+interface RunWorkflowInput {
+  messages: Message[];
+  memory: BeeAIMemory;
+  parentId: string;
+  studentId: string;
+}
+
+export interface BeeAIConfig {
+  apiKey: string;
+  apiUrl: string;
+  workflowId: string;
+}
+
+export class BeeAIClient {
+  private config: BeeAIConfig | null;
+
+  constructor(config = resolveConfig()) {
+    this.config = config;
+  }
+
+  async runWorkflow(input: RunWorkflowInput): Promise<BeeAIWorkflowRun> {
+    if (!this.config) {
+      throw new Error('BeeAI config missing');
+    }
+
+    const url = `${this.config.apiUrl}/v1/workflows/${this.config.workflowId}/run`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.config.apiKey}`
+      },
+      body: JSON.stringify({
+        input: {
+          messages: input.messages,
+          memory: input.memory,
+          parentId: input.parentId,
+          studentId: input.studentId
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`BeeAI workflow failed (${response.status})`);
+    }
+
+    const data = (await response.json()) as BeeAIRunResponse;
+    const report = normalizeReport(data.output?.final_report);
+    const memory = (data.output?.memory as BeeAIMemory | undefined) ?? null;
+
+    return {
+      report,
+      memory,
+      traceId: data.trace_id
+    };
+  }
+}
+
+interface BeeAIRunResponse {
+  trace_id?: string;
+  output?: {
+    final_report?: unknown;
+    memory?: unknown;
+  };
+}
+
+const normalizeReport = (input: unknown): BeeAIReport | null => {
+  if (!input || typeof input !== 'object') return null;
+  const candidate = input as Record<string, unknown>;
+  if (!candidate.learningStyle) return null;
+  const learningStyle = candidate.learningStyle as BeeAIReport['learningStyle'];
+  const confidence =
+    typeof candidate.confidence === 'number' && Number.isFinite(candidate.confidence)
+      ? clamp(candidate.confidence, 0, 1)
+      : 0.5;
+  const explanation =
+    typeof candidate.explanation === 'string'
+      ? candidate.explanation
+      : 'Learning style estimate based on current session.';
+  const nextSteps = Array.isArray(candidate.nextSteps)
+    ? candidate.nextSteps.filter((step) => typeof step === 'string')
+    : [];
+  const createdAt =
+    typeof candidate.createdAt === 'string' ? candidate.createdAt : new Date().toISOString();
+
+  return {
+    learningStyle,
+    confidence,
+    explanation,
+    nextSteps: nextSteps.length ? nextSteps : ['Try a mix of visuals, audio, reading, and hands-on.'],
+    model: typeof candidate.model === 'string' ? candidate.model : 'beeai',
+    createdAt,
+    traceId: typeof candidate.traceId === 'string' ? candidate.traceId : undefined
+  };
+};
+
+const resolveConfig = (): BeeAIConfig | null => {
+  const apiKey = process.env.BEEAI_API_KEY?.trim();
+  const apiUrl = process.env.BEEAI_API_URL?.trim() ?? 'https://api.beeai.dev';
+  const workflowId =
+    process.env.BEEAI_WORKFLOW_ID?.trim() ?? process.env.BEEAI_WORKFLOW_PATH?.trim();
+
+  if (!apiKey || !workflowId) {
+    return null;
+  }
+
+  return {
+    apiKey,
+    apiUrl,
+    workflowId
+  };
+};
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+################################################################################
+# FILE: server/src/beeai/provider.ts
+# SIZE: 2483 bytes
+################################################################################
+
+import { BeeAIClient } from './client.js';
+import {
+  createDefaultMemory,
+  loadSessionMemory,
+  saveSessionMemory
+} from './sessionStore.js';
+import type { BeeAIMemory, BeeAIReport } from './types.js';
+import type { Message } from '../types.js';
+import type { AssessmentProvider, ProviderContext, ProviderResult } from '../services/providerTypes.js';
+
+export class BeeAIAssessmentProvider implements AssessmentProvider {
+  private client: BeeAIClient;
+
+  constructor(client = new BeeAIClient()) {
+    this.client = client;
+  }
+
+  async generateAssessment(
+    messages: Message[],
+    context?: ProviderContext
+  ): Promise<ProviderResult> {
+    const parentId = context?.parentId ?? 'anonymous_parent';
+    const studentId = context?.studentId ?? 'anonymous_student';
+
+    const memory = (await loadSessionMemory(parentId, studentId)) ?? createDefaultMemory();
+    let report: BeeAIReport | null = null;
+    let updatedMemory: BeeAIMemory = memory;
+
+    try {
+      const runResult = await this.client.runWorkflow({
+        messages,
+        memory,
+        parentId,
+        studentId
+      });
+      report = runResult.report ?? null;
+      updatedMemory = runResult.memory ?? memory;
+    } catch (error) {
+      // fall back to a safe default; route-level normalization will handle
+      report = {
+        learningStyle: 'Multimodal',
+        confidence: 0.45,
+        explanation: 'BeeAI workflow unavailable; using safe default response.',
+        nextSteps: [
+          'Share a few more details about how learning feels easiest.',
+          'Describe whether pictures, audio, text, or hands-on practice works best.',
+          'Try answering one more question to refine the recommendation.'
+        ],
+        model: 'beeai-fallback',
+        createdAt: new Date().toISOString()
+      };
+    }
+
+    await saveSessionMemory(parentId, studentId, updatedMemory);
+
+    if (!report) {
+      report = {
+        learningStyle: 'Multimodal',
+        confidence: 0.4,
+        explanation: 'Need more responses to choose a specific learning style.',
+        nextSteps: [
+          'Share a few more details about how learning feels easiest.',
+          'Describe whether pictures, audio, text, or hands-on practice works best.',
+          'Try answering one more question to refine the recommendation.'
+        ],
+        model: 'beeai-orchestrator',
+        createdAt: new Date().toISOString()
+      };
+    }
+
+    return {
+      raw: report,
+      model: report.model
+    };
+  }
+}
+
+################################################################################
+# FILE: server/src/beeai/sessionStore.ts
+# SIZE: 1593 bytes
+################################################################################
+
+import { db } from '../services/firestore.js';
+import type { BeeAIMemory } from './types.js';
+
+const memoryDefaults = (): BeeAIMemory => ({
+  question_history: [],
+  response_scores: [],
+  session_status: 'active',
+  focus_modality: null,
+  final_report: null
+});
+
+const inMemoryStore = new Map<string, BeeAIMemory>();
+const useInMemory = process.env.NODE_ENV === 'test';
+
+const buildKey = (parentId: string, studentId: string) => `${parentId}_${studentId}`;
+
+export const createDefaultMemory = memoryDefaults;
+
+export const loadSessionMemory = async (
+  parentId: string,
+  studentId: string
+): Promise<BeeAIMemory | null> => {
+  const key = buildKey(parentId, studentId);
+
+  if (useInMemory) {
+    return inMemoryStore.get(key) ?? null;
+  }
+
+  try {
+    const ref = db.collection('assessmentSessions').doc(key);
+    const snap = await ref.get();
+    if (!snap.exists) return null;
+    const data = snap.data() as BeeAIMemory | undefined;
+    if (!data) return null;
+    return data;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const saveSessionMemory = async (
+  parentId: string,
+  studentId: string,
+  memory: BeeAIMemory
+): Promise<void> => {
+  const key = buildKey(parentId, studentId);
+
+  if (useInMemory) {
+    inMemoryStore.set(key, memory);
+    return;
+  }
+
+  try {
+    const ref = db.collection('assessmentSessions').doc(key);
+    await ref.set(
+      {
+        ...memory,
+        updatedAt: new Date().toISOString(),
+        parentId,
+        studentId
+      },
+      { merge: true }
+    );
+  } catch (error) {
+    // non-fatal; continue without blocking assessment
+  }
+};
+
+################################################################################
+# FILE: server/src/beeai/types.ts
+# SIZE: 631 bytes
+################################################################################
+
+export type SessionStatus = 'active' | 'needs_more_data' | 'complete';
+
+export interface BeeAIMemory {
+  question_history: string[];
+  response_scores: number[];
+  session_status: SessionStatus;
+  focus_modality: string | null;
+  final_report: BeeAIReport | null;
+}
+
+export interface BeeAIReport {
+  learningStyle: 'Visual' | 'Auditory' | 'Read/Write' | 'Kinesthetic' | 'Multimodal';
+  confidence: number;
+  explanation: string;
+  nextSteps: string[];
+  model: string;
+  createdAt: string;
+  traceId?: string;
+}
+
+export interface BeeAIWorkflowRun {
+  report: BeeAIReport | null;
+  memory: BeeAIMemory | null;
+  traceId?: string;
+}
+
+################################################################################
+# FILE: server/src/beeai/workflows/vark.yaml
+# SIZE: 236 bytes
+################################################################################
+
+steps:
+  - call: ScenarioGeneratorAgent
+  - call: ResponseEvaluatorAgent
+  - call: ConsistencyCheckerAgent
+  - if: session_status != "complete"
+    then:
+      - loop: back to ScenarioGeneratorAgent
+  - call: PreferenceSynthesizerAgent
+
+################################################################################
+# FILE: server/src/index.ts
+# SIZE: 211 bytes
+################################################################################
+
+import 'dotenv/config';
+import app from './app.js';
+
+const port = process.env.PORT ? Number(process.env.PORT) : 8080;
+
+app.listen(port, () => {
+  console.log(`Assessment service listening on port ${port}`);
+});
+
+################################################################################
+# FILE: server/src/middleware/auth.ts
+# SIZE: 967 bytes
+################################################################################
+
+import type { NextFunction, Response } from 'express';
+import { auth } from '../services/firestore.js';
+import type { AuthenticatedRequest } from '../types.js';
+
+export const authenticate = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Missing Authorization header' });
+  }
+
+  const token = header.replace('Bearer ', '').trim();
+  if (!token) {
+    return res.status(401).json({ error: 'Missing token' });
+  }
+
+  try {
+    const decoded = await auth.verifyIdToken(token);
+    req.user = { uid: decoded.uid };
+    return next();
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.info(
+        '[ga-assessment-service] verifyIdToken failed; check FIREBASE_PROJECT_ID vs token aud'
+      );
+    }
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
+################################################################################
+# FILE: server/src/routes/assessment.ts
+# SIZE: 7330 bytes
+################################################################################
+
+import { Router, type Response } from 'express';
+import { z } from 'zod';
+import { authenticate } from '../middleware/auth.js';
+import { db } from '../services/firestore.js';
+import { getAssessmentProvider } from '../services/vertex.js';
+import type {
+  AssessmentDecision,
+  AssessmentResult,
+  AuthenticatedRequest,
+  LearningStyle,
+  Message
+} from '../types.js';
+
+const router = Router();
+
+const messageSchema = z.object({
+  role: z.enum(['system', 'user', 'assistant']),
+  content: z.string().min(1)
+});
+
+const requestSchema = z.object({
+  parentId: z.string().min(1),
+  studentId: z.string().min(1),
+  messages: z.array(messageSchema)
+});
+
+const allowedStyles: LearningStyle[] = [
+  'Visual',
+  'Auditory',
+  'Read/Write',
+  'Kinesthetic',
+  'Multimodal'
+];
+
+const MIN_EVIDENCE = 4;
+
+const fallbackResult = (model: string): AssessmentResult => ({
+  learningStyle: 'Multimodal',
+  confidence: 0.5,
+  explanation:
+    'We could not confidently determine a single learning style, so a blended approach is recommended.',
+  nextSteps: [
+    'Mix visuals, discussion, and hands-on activities.',
+    'Ask the student which format feels easiest today.',
+    'Adjust study methods based on what keeps them engaged.'
+  ],
+  model,
+  createdAt: new Date().toISOString()
+});
+
+const normalizeAssessment = (input: unknown, model: string): AssessmentResult => {
+  const base = fallbackResult(model);
+  let parsed: Record<string, unknown> | null = null;
+
+  if (typeof input === 'string') {
+    const trimmed = input.trim();
+    try {
+      parsed = JSON.parse(trimmed) as Record<string, unknown>;
+    } catch (error) {
+      const start = trimmed.indexOf('{');
+      const end = trimmed.lastIndexOf('}');
+      if (start >= 0 && end > start) {
+        try {
+          parsed = JSON.parse(trimmed.slice(start, end + 1)) as Record<string, unknown>;
+        } catch (innerError) {
+          parsed = null;
+        }
+      }
+    }
+  } else if (typeof input === 'object' && input !== null) {
+    parsed = input as Record<string, unknown>;
+  }
+
+  if (!parsed) {
+    return base;
+  }
+
+  const style = allowedStyles.includes(parsed.learningStyle as LearningStyle)
+    ? (parsed.learningStyle as LearningStyle)
+    : base.learningStyle;
+  const confidence =
+    typeof parsed.confidence === 'number' && parsed.confidence >= 0 && parsed.confidence <= 1
+      ? parsed.confidence
+      : base.confidence;
+  const explanation = typeof parsed.explanation === 'string' ? parsed.explanation : base.explanation;
+  const nextSteps = Array.isArray(parsed.nextSteps)
+    ? parsed.nextSteps.filter((step) => typeof step === 'string')
+    : base.nextSteps;
+
+  const trimmedSteps =
+    nextSteps.length >= 3 && nextSteps.length <= 6 ? nextSteps : base.nextSteps;
+
+  return {
+    learningStyle: style,
+    confidence,
+    explanation,
+    nextSteps: trimmedSteps,
+    model,
+    createdAt: new Date().toISOString()
+  };
+};
+
+const lowSignalTokens = new Set([
+  'maybe',
+  'idk',
+  "i don't know",
+  'dont know',
+  'ok',
+  'okay',
+  'yes',
+  'no',
+  'k',
+  'nah',
+  'sure',
+  'fine',
+  'idc',
+  'n/a'
+]);
+
+const isLowSignal = (content: string): boolean => {
+  const normalized = content.trim().toLowerCase();
+  if (!normalized) return true;
+  const noPunct = normalized.replace(/[^\w\s]/g, '').trim();
+  if (!noPunct) return true;
+  if (lowSignalTokens.has(noPunct)) return true;
+  if (noPunct.length < 6) return true;
+  const wordCount = noPunct.split(/\s+/).filter(Boolean).length;
+  return wordCount < 3;
+};
+
+const countEvidence = (messages: Message[]): number =>
+  messages.filter((message) => {
+    if (message.role !== 'user') return false;
+    const normalized = message.content.trim();
+    if (!normalized) return false;
+    if (isLowSignal(normalized)) return false;
+    const wordCount = normalized.split(/\s+/).filter(Boolean).length;
+    return normalized.length >= 12 || wordCount >= 3;
+  }).length;
+
+const followUpQuestions = () => [
+  'When learning something new, do you prefer pictures/videos, listening, reading, or hands-on practice?',
+  'Tell me about a time school felt easy. What were you doing?',
+  'Do you remember better after writing notes, talking about it, or building/trying it?'
+];
+
+const missingEvidenceMessage = () => [`Need at least ${MIN_EVIDENCE} detailed responses.`];
+
+export const handleAssessment = async (req: AuthenticatedRequest, res: Response) => {
+  const parseResult = requestSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ error: 'Invalid request body' });
+  }
+
+  const { parentId, studentId, messages } = parseResult.data;
+  const evidenceCount = countEvidence(messages);
+  const decision: AssessmentDecision =
+    evidenceCount < MIN_EVIDENCE ? 'needs_more_data' : 'final';
+
+  if (!req.user || req.user.uid !== parentId) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const studentRef = db.collection('students').doc(studentId);
+  const studentSnap = await studentRef.get();
+
+  if (!studentSnap.exists) {
+    return res.status(404).json({ error: 'Student not found' });
+  }
+
+  const studentData = studentSnap.data();
+  if (studentData?.parentId !== parentId) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const provider = getAssessmentProvider();
+  let providerResult: { raw: unknown; model: string };
+  try {
+    providerResult = await provider.generateAssessment(messages, { parentId, studentId });
+  } catch (error) {
+    providerResult = { raw: null, model: 'unavailable' };
+  }
+
+  const normalized = normalizeAssessment(providerResult.raw, providerResult.model);
+  const responsePayload: AssessmentResult = {
+    ...normalized,
+    decision,
+    evidenceCount
+  };
+
+  if (decision === 'needs_more_data') {
+    responsePayload.confidence = Math.min(responsePayload.confidence, 0.4);
+    responsePayload.missingEvidence = missingEvidenceMessage();
+    responsePayload.questions = followUpQuestions();
+
+    const existingStatus = studentData?.assessmentStatus;
+    const existingStyle = studentData?.learningStyle;
+    if (!(existingStatus === 'completed' && existingStyle)) {
+      await studentRef.update({
+        assessmentStatus: 'in_progress',
+        updatedAt: new Date().toISOString()
+      });
+    }
+  } else {
+    const existingStatus = studentData?.assessmentStatus;
+    const existingStyle = studentData?.learningStyle;
+    if (existingStatus === 'completed' && existingStyle && normalized.confidence < 0.55) {
+      responsePayload.learningStyle = existingStyle as LearningStyle;
+    } else {
+      await studentRef.update({
+        learningStyle: responsePayload.learningStyle,
+        hasTakenAssessment: true,
+        assessmentStatus: 'completed',
+        updatedAt: new Date().toISOString()
+      });
+    }
+  }
+
+  try {
+    await db.collection('assessments').add({
+      parentId,
+      studentId,
+      messages,
+      result: responsePayload,
+      createdAt: new Date().toISOString(),
+      model: normalized.model,
+      decision,
+      evidenceCount
+    });
+  } catch (error) {
+    // TODO: add structured logging for failed assessment history writes
+  }
+
+  return res.status(200).json(responsePayload);
+};
+
+router.post('/assessment/chat', authenticate, handleAssessment);
+router.post('/learning-style/assess', authenticate, handleAssessment);
+
+export default router;
+
+export { countEvidence, isLowSignal };
+
+################################################################################
+# FILE: server/src/services/firestore.ts
+# SIZE: 560 bytes
+################################################################################
+
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
+
+const resolveProjectId = () =>
+  process.env.FIREBASE_PROJECT_ID ??
+  process.env.GOOGLE_CLOUD_PROJECT ??
+  process.env.GCLOUD_PROJECT ??
+  undefined;
+
+const projectId = resolveProjectId();
+const app =
+  getApps().length > 0
+    ? getApps()[0]
+    : projectId
+      ? initializeApp({ projectId })
+      : initializeApp();
+
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+
+################################################################################
+# FILE: server/src/services/providerTypes.ts
+# SIZE: 351 bytes
+################################################################################
+
+import type { Message } from '../types.js';
+
+export interface ProviderResult {
+  raw: unknown;
+  model: string;
+}
+
+export interface AssessmentProvider {
+  generateAssessment(messages: Message[], context?: ProviderContext): Promise<ProviderResult>;
+}
+
+export interface ProviderContext {
+  parentId: string;
+  studentId: string;
+  sessionId?: string;
+}
+
+################################################################################
+# FILE: server/src/services/questionBank.ts
+# SIZE: 8420 bytes
+################################################################################
+
+export type Modality = 'Visual' | 'Auditory' | 'Read/Write' | 'Kinesthetic';
+
+export interface QuestionOption {
+  modality: Modality;
+  text: string;
+}
+
+export interface QuestionItem {
+  id: string;
+  gradeBand: 'K-2' | '3-5' | '6-8' | '9-12';
+  prompt: string;
+  options: QuestionOption[];
+}
+
+export const questionBank: QuestionItem[] = [
+  {
+    id: 'k2-1',
+    gradeBand: 'K-2',
+    prompt: "You're learning a new game. What helps most?",
+    options: [
+      { modality: 'Visual', text: 'See pictures that show the steps.' },
+      { modality: 'Auditory', text: 'Hear someone tell me the steps.' },
+      { modality: 'Read/Write', text: 'Look at simple words with a grown-up.' },
+      { modality: 'Kinesthetic', text: 'Try it out while someone helps me.' }
+    ]
+  },
+  {
+    id: 'k2-2',
+    gradeBand: 'K-2',
+    prompt: 'You want to remember a short story.',
+    options: [
+      { modality: 'Visual', text: 'Look at pictures from the story.' },
+      { modality: 'Auditory', text: 'Hear it read out loud again.' },
+      { modality: 'Read/Write', text: 'Point to the words with a grown-up.' },
+      { modality: 'Kinesthetic', text: 'Act it out with movement.' }
+    ]
+  },
+  {
+    id: 'k2-3',
+    gradeBand: 'K-2',
+    prompt: "You're learning about animals.",
+    options: [
+      { modality: 'Visual', text: 'Look at animal pictures.' },
+      { modality: 'Auditory', text: 'Listen to someone talk about animals.' },
+      { modality: 'Read/Write', text: 'Look at animal words with help.' },
+      { modality: 'Kinesthetic', text: 'Pretend to be the animal.' }
+    ]
+  },
+  {
+    id: 'k2-4',
+    gradeBand: 'K-2',
+    prompt: 'You need to find your way to a room.',
+    options: [
+      { modality: 'Visual', text: 'See a picture map.' },
+      { modality: 'Auditory', text: 'Listen to directions.' },
+      { modality: 'Read/Write', text: 'Follow simple words with a grown-up.' },
+      { modality: 'Kinesthetic', text: 'Walk the path once with someone.' }
+    ]
+  },
+  {
+    id: 'k2-5',
+    gradeBand: 'K-2',
+    prompt: "You're learning a new song.",
+    options: [
+      { modality: 'Visual', text: 'Watch someone show the hand motions.' },
+      { modality: 'Auditory', text: 'Listen and sing it back.' },
+      { modality: 'Read/Write', text: 'Look at the words with a grown-up.' },
+      { modality: 'Kinesthetic', text: 'Do the motions while you sing.' }
+    ]
+  },
+  {
+    id: '35-1',
+    gradeBand: '3-5',
+    prompt: "You're learning about the solar system.",
+    options: [
+      { modality: 'Visual', text: 'Look at a poster with planets.' },
+      { modality: 'Auditory', text: 'Listen to someone explain planets.' },
+      { modality: 'Read/Write', text: 'Read a book about planets.' },
+      { modality: 'Kinesthetic', text: 'Build a model of the planets.' }
+    ]
+  },
+  {
+    id: '35-2',
+    gradeBand: '3-5',
+    prompt: 'You need to remember a poem.',
+    options: [
+      { modality: 'Visual', text: 'Picture the poem in your head.' },
+      { modality: 'Auditory', text: 'Hear it read out loud again.' },
+      { modality: 'Read/Write', text: 'Read or write it a few times.' },
+      { modality: 'Kinesthetic', text: 'Act it out with gestures.' }
+    ]
+  },
+  {
+    id: '35-3',
+    gradeBand: '3-5',
+    prompt: "You're learning a new sport skill.",
+    options: [
+      { modality: 'Visual', text: 'Watch a demo or video.' },
+      { modality: 'Auditory', text: 'Listen to tips and coaching.' },
+      { modality: 'Read/Write', text: 'Read the steps or rules.' },
+      { modality: 'Kinesthetic', text: 'Try it yourself right away.' }
+    ]
+  },
+  {
+    id: '35-4',
+    gradeBand: '3-5',
+    prompt: "You're learning how to solve a puzzle.",
+    options: [
+      { modality: 'Visual', text: "Watch how it's solved." },
+      { modality: 'Auditory', text: 'Talk through it with someone.' },
+      { modality: 'Read/Write', text: 'Read a guide with steps.' },
+      { modality: 'Kinesthetic', text: 'Keep trying until it works.' }
+    ]
+  },
+  {
+    id: '35-5',
+    gradeBand: '3-5',
+    prompt: "You're studying for a quiz.",
+    options: [
+      { modality: 'Visual', text: 'Use diagrams or charts.' },
+      { modality: 'Auditory', text: 'Explain it out loud.' },
+      { modality: 'Read/Write', text: 'Read notes or rewrite them.' },
+      { modality: 'Kinesthetic', text: 'Do practice activities or problems.' }
+    ]
+  },
+  {
+    id: '68-1',
+    gradeBand: '6-8',
+    prompt: "You're preparing for a test.",
+    options: [
+      { modality: 'Visual', text: 'Make diagrams or mind maps.' },
+      { modality: 'Auditory', text: 'Discuss the material out loud.' },
+      { modality: 'Read/Write', text: 'Read and rewrite notes.' },
+      { modality: 'Kinesthetic', text: 'Do practice activities or problems.' }
+    ]
+  },
+  {
+    id: '68-2',
+    gradeBand: '6-8',
+    prompt: "You're learning a science concept.",
+    options: [
+      { modality: 'Visual', text: 'Study a diagram or video.' },
+      { modality: 'Auditory', text: 'Listen to an explanation.' },
+      { modality: 'Read/Write', text: 'Read the textbook section.' },
+      { modality: 'Kinesthetic', text: 'Try a hands-on experiment.' }
+    ]
+  },
+  {
+    id: '68-3',
+    gradeBand: '6-8',
+    prompt: "You're learning how something works.",
+    options: [
+      { modality: 'Visual', text: 'Watch a visual demo.' },
+      { modality: 'Auditory', text: 'Talk it through with someone.' },
+      { modality: 'Read/Write', text: 'Read a step-by-step guide.' },
+      { modality: 'Kinesthetic', text: 'Take it apart or build it.' }
+    ]
+  },
+  {
+    id: '68-4',
+    gradeBand: '6-8',
+    prompt: "You're memorizing key facts.",
+    options: [
+      { modality: 'Visual', text: 'Use color-coded flashcards.' },
+      { modality: 'Auditory', text: 'Say the facts out loud.' },
+      { modality: 'Read/Write', text: 'Write the facts in your own words.' },
+      { modality: 'Kinesthetic', text: 'Use movement or hands-on practice.' }
+    ]
+  },
+  {
+    id: '68-5',
+    gradeBand: '6-8',
+    prompt: "You want to learn a new skill (coding, art, music).",
+    options: [
+      { modality: 'Visual', text: 'Watch a tutorial or diagram.' },
+      { modality: 'Auditory', text: 'Listen to a teacher explain.' },
+      { modality: 'Read/Write', text: 'Read instructions or notes.' },
+      { modality: 'Kinesthetic', text: 'Practice by doing the skill.' }
+    ]
+  },
+  {
+    id: '912-1',
+    gradeBand: '9-12',
+    prompt: 'You need to learn a new math concept.',
+    options: [
+      { modality: 'Visual', text: 'Study a diagram or worked example.' },
+      { modality: 'Auditory', text: 'Listen to a teacher or tutor explain.' },
+      { modality: 'Read/Write', text: 'Read the textbook and take notes.' },
+      { modality: 'Kinesthetic', text: 'Work through problems yourself.' }
+    ]
+  },
+  {
+    id: '912-2',
+    gradeBand: '9-12',
+    prompt: "You're learning a historical event.",
+    options: [
+      { modality: 'Visual', text: 'Look at timelines or maps.' },
+      { modality: 'Auditory', text: 'Listen to a lecture or podcast.' },
+      { modality: 'Read/Write', text: 'Read and annotate a text.' },
+      { modality: 'Kinesthetic', text: 'Do a simulation or project.' }
+    ]
+  },
+  {
+    id: '912-3',
+    gradeBand: '9-12',
+    prompt: "You're preparing for a presentation.",
+    options: [
+      { modality: 'Visual', text: 'Design slides or visuals first.' },
+      { modality: 'Auditory', text: 'Practice speaking it out loud.' },
+      { modality: 'Read/Write', text: 'Write a detailed outline.' },
+      { modality: 'Kinesthetic', text: 'Rehearse while moving or using props.' }
+    ]
+  },
+  {
+    id: '912-4',
+    gradeBand: '9-12',
+    prompt: "You're learning a complex process in science.",
+    options: [
+      { modality: 'Visual', text: 'Watch a diagram or animation.' },
+      { modality: 'Auditory', text: 'Listen to an explanation.' },
+      { modality: 'Read/Write', text: 'Read a detailed guide and take notes.' },
+      { modality: 'Kinesthetic', text: 'Use a model or lab activity.' }
+    ]
+  },
+  {
+    id: '912-5',
+    gradeBand: '9-12',
+    prompt: "You're studying for finals.",
+    options: [
+      { modality: 'Visual', text: 'Use charts, diagrams, or mind maps.' },
+      { modality: 'Auditory', text: 'Teach it out loud or discuss.' },
+      { modality: 'Read/Write', text: 'Read and rewrite notes.' },
+      { modality: 'Kinesthetic', text: 'Practice with problems or labs.' }
+    ]
+  }
+];
+
+################################################################################
+# FILE: server/src/services/vertex.ts
+# SIZE: 7987 bytes
+################################################################################
+
+import { VertexAI } from '@google-cloud/vertexai';
+import { BeeAIAssessmentProvider } from '../beeai/provider.js';
+import type { Message } from '../types.js';
+import { questionBank } from './questionBank.js';
+import type { AssessmentProvider, ProviderContext, ProviderResult } from './providerTypes.js';
+import { getVertexConfig } from './vertexConfig.js';
+import type { VertexConfig } from './vertexConfig.js';
+
+export type { AssessmentProvider, ProviderResult } from './providerTypes.js';
+
+class VertexAssessmentProvider implements AssessmentProvider {
+  private client: VertexAI;
+  private modelName: string;
+  private temperature: number;
+  private maxOutputTokens: number;
+  private timeoutMs: number;
+
+  constructor(config: VertexConfig, client?: VertexAI) {
+    this.client = client ?? new VertexAI({ project: config.project, location: config.location });
+    this.modelName = config.model;
+    this.temperature = config.temperature;
+    this.maxOutputTokens = config.maxOutputTokens;
+    this.timeoutMs = config.timeoutMs;
+  }
+
+  async generateAssessment(messages: Message[], _context?: ProviderContext): Promise<ProviderResult> {
+    const model = this.client.getGenerativeModel({ model: this.modelName });
+    const prompt = buildPrompt(messages);
+
+    const execute = async () => {
+      const response = await model.generateContent({
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: prompt }]
+          }
+        ],
+        generationConfig: {
+          temperature: this.temperature,
+          maxOutputTokens: this.maxOutputTokens
+        }
+      });
+
+      const text = response.response.candidates
+        ?.flatMap((candidate) => candidate.content.parts ?? [])
+        .map((part) => ('text' in part ? part.text : ''))
+        .join('')
+        .trim();
+
+      return {
+        raw: text ?? '',
+        model: this.modelName
+      };
+    };
+
+    return this.withRetry(() => this.withTimeout(execute));
+  }
+
+  private async withTimeout<T>(fn: () => Promise<T>): Promise<T> {
+    if (!this.timeoutMs || this.timeoutMs <= 0) {
+      return fn();
+    }
+
+    return new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error('Vertex request timed out'));
+      }, this.timeoutMs);
+
+      fn()
+        .then((result) => {
+          clearTimeout(timer);
+          resolve(result);
+        })
+        .catch((error) => {
+          clearTimeout(timer);
+          reject(error);
+        });
+    });
+  }
+
+  private async withRetry<T>(fn: () => Promise<T>): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+        if (!isRetryableError(error) || attempt === 1) {
+          throw error;
+        }
+        await sleep(200);
+      }
+    }
+    throw lastError;
+  }
+}
+
+class StubAssessmentProvider implements AssessmentProvider {
+  async generateAssessment(messages: Message[], _context?: ProviderContext): Promise<ProviderResult> {
+    const combined = messages.map((message) => message.content).join(' ').toLowerCase();
+    const style = pickStyle(combined);
+    const stub = {
+      learningStyle: style,
+      confidence: 0.62,
+      explanation:
+        'Based on the chat so far, this is a best-effort guess of how the student seems to learn.',
+      nextSteps: nextStepsForStyle(style),
+      model: 'stub'
+    };
+
+    return {
+      raw: stub,
+      model: 'stub'
+    };
+  }
+}
+
+const pickStyle = (text: string) => {
+  if (text.includes('visual') || text.includes('see') || text.includes('diagram')) {
+    return 'Visual';
+  }
+  if (text.includes('listen') || text.includes('auditory') || text.includes('hear')) {
+    return 'Auditory';
+  }
+  if (text.includes('read') || text.includes('write') || text.includes('notes')) {
+    return 'Read/Write';
+  }
+  if (text.includes('hands') || text.includes('kinesthetic') || text.includes('build')) {
+    return 'Kinesthetic';
+  }
+  return 'Multimodal';
+};
+
+const nextStepsForStyle = (style: string) => {
+  const base = {
+    Visual: [
+      'Use diagrams or pictures when introducing new ideas.',
+      'Summarize lessons with charts or color-coded notes.',
+      'Try short videos before homework sessions.'
+    ],
+    Auditory: [
+      'Discuss key ideas out loud before writing answers.',
+      'Use audiobooks or read assignments together.',
+      'Encourage short verbal summaries after each lesson.'
+    ],
+    'Read/Write': [
+      'Provide written checklists for study sessions.',
+      'Encourage rewriting notes in their own words.',
+      'Use flashcards with concise text prompts.'
+    ],
+    Kinesthetic: [
+      'Add hands-on activities or experiments when possible.',
+      'Take short movement breaks between study blocks.',
+      'Use manipulatives or real-world examples.'
+    ],
+    Multimodal: [
+      'Mix visuals, discussion, and hands-on practice.',
+      'Rotate study formats to keep engagement high.',
+      'Let the student choose the format that feels easiest.'
+    ]
+  } as const;
+
+  return base[style as keyof typeof base] ?? base.Multimodal;
+};
+
+const buildPrompt = (messages: Message[]) => {
+  const transcript = messages
+    .map((message) => `${message.role.toUpperCase()}: ${message.content}`)
+    .join('\n');
+
+  const questionBankText = questionBank
+    .map((item) => {
+      const options = item.options
+        .map((option) => `- [${option.modality}] ${option.text}`)
+        .join('\n');
+      return `${item.gradeBand} | ${item.id}\n${item.prompt}\n${options}`;
+    })
+    .join('\n\n');
+
+  return [
+    'Return STRICT JSON only. Do not include markdown fences, prose, or commentary.',
+    'Use exactly this JSON shape and allowed values:',
+    '{',
+    '  "learningStyle": "Visual|Auditory|Read/Write|Kinesthetic|Multimodal",',
+    '  "confidence": 0.0-1.0,',
+    '  "explanation": "short parent-friendly string",',
+    '  "nextSteps": ["3-6 actionable bullet strings"],',
+    '  "model": "<model name>",',
+    '  "createdAt": "<ISO 8601 timestamp>",',
+    '  "decision": "final|needs_more_data",',
+    '  "missingEvidence": ["short reasons if needs_more_data"],',
+    '  "questions": ["1-3 follow-up questions if needs_more_data"]',
+    '}',
+    'Rules:',
+    '- Respond with JSON only (no markdown, no preamble).',
+    '- learningStyle must be exactly one of: Visual, Auditory, Read/Write, Kinesthetic, Multimodal.',
+    '- nextSteps must be an array of 3-6 concise action items.',
+    '- Keep explanation brief and supportive for parents.',
+    '- If evidence is insufficient, set decision to needs_more_data and include follow-up questions.',
+    '- Follow-up questions must be selected from the provided question bank.',
+    'Question bank (use as-is, do not rewrite the options):',
+    questionBankText,
+    'Conversation transcript:',
+    transcript
+  ].join('\n');
+};
+
+export const getAssessmentProvider = (): AssessmentProvider => {
+  const choice = (process.env.ASSESSMENT_PROVIDER ?? '').toLowerCase();
+  if (choice === 'beeai') {
+    console.info('[ga-assessment-service] BeeAI provider enabled.');
+    return new BeeAIAssessmentProvider();
+  }
+
+  const config = getVertexConfig();
+  if (config) {
+    return new VertexAssessmentProvider(config);
+  }
+
+  if (choice === 'stub') {
+    console.info('[ga-assessment-service] Stub provider enabled.');
+  }
+  return new StubAssessmentProvider();
+};
+
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+const isRetryableError = (error: unknown) => {
+  const maybeError = error as { code?: unknown; status?: unknown; message?: unknown };
+  const code = maybeError?.code ?? maybeError?.status;
+  if (code === 429 || code === 503) {
+    return true;
+  }
+
+  const message =
+    typeof maybeError?.message === 'string' ? maybeError.message.toLowerCase() : undefined;
+  return message?.includes('timeout') || message?.includes('deadline') || false;
+};
+
+export { buildPrompt };
+
+################################################################################
+# FILE: server/src/services/vertexConfig.ts
+# SIZE: 1956 bytes
+################################################################################
+
+export interface VertexConfig {
+  project: string;
+  location: string;
+  model: string;
+  temperature: number;
+  maxOutputTokens: number;
+  timeoutMs: number;
+}
+
+const DEFAULT_MODEL = 'gemini-2.0-flash-001';
+const DEFAULT_TEMPERATURE = 0.2;
+const DEFAULT_MAX_OUTPUT_TOKENS = 512;
+const DEFAULT_TIMEOUT_MS = 20000;
+
+let cachedConfig: VertexConfig | null | undefined;
+let logged = false;
+
+const parseNumber = (value: string | undefined, fallback: number) => {
+  if (!value) return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const logConfigOnce = (config: VertexConfig | null) => {
+  if (logged) return;
+  logged = true;
+
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
+  if (!config) {
+    console.info('[ga-assessment-service] Vertex disabled, using stub provider.');
+    return;
+  }
+
+  console.info(
+    `[ga-assessment-service] Vertex enabled (project=${config.project}, location=${config.location}, model=${config.model}).`
+  );
+};
+
+export const getVertexConfig = (): VertexConfig | null => {
+  if (cachedConfig !== undefined) {
+    return cachedConfig;
+  }
+
+  const project = process.env.GOOGLE_CLOUD_PROJECT?.trim();
+  const location = (process.env.VERTEX_REGION ?? process.env.VERTEX_LOCATION)?.trim();
+  const model = (process.env.VERTEX_MODEL ?? DEFAULT_MODEL).trim();
+
+  if (!project || !location || !model) {
+    cachedConfig = null;
+    logConfigOnce(cachedConfig);
+    return cachedConfig;
+  }
+
+  cachedConfig = {
+    project,
+    location,
+    model,
+    temperature: parseNumber(process.env.VERTEX_TEMPERATURE, DEFAULT_TEMPERATURE),
+    maxOutputTokens: parseNumber(process.env.VERTEX_MAX_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS),
+    timeoutMs: parseNumber(process.env.VERTEX_TIMEOUT_MS, DEFAULT_TIMEOUT_MS)
+  };
+
+  logConfigOnce(cachedConfig);
+  return cachedConfig;
+};
+
+export const resetVertexConfigCache = () => {
+  cachedConfig = undefined;
+  logged = false;
+};
+
+################################################################################
+# FILE: server/src/types.ts
+# SIZE: 883 bytes
+################################################################################
+
+import type { Request } from 'express';
+
+export type MessageRole = 'system' | 'user' | 'assistant';
+
+export interface Message {
+  role: MessageRole;
+  content: string;
+}
+
+export interface AssessmentRequestBody {
+  parentId: string;
+  studentId: string;
+  messages: Message[];
+}
+
+export type LearningStyle =
+  | 'Visual'
+  | 'Auditory'
+  | 'Read/Write'
+  | 'Kinesthetic'
+  | 'Multimodal';
+
+export type AssessmentDecision = 'final' | 'needs_more_data';
+
+export interface AssessmentResult {
+  learningStyle: LearningStyle;
+  confidence: number;
+  explanation: string;
+  nextSteps: string[];
+  model: string;
+  createdAt: string;
+  decision?: AssessmentDecision;
+  missingEvidence?: string[];
+  questions?: string[];
+  evidenceCount?: number;
+}
+
+export interface AuthenticatedUser {
+  uid: string;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user?: AuthenticatedUser;
+}
+
+################################################################################
+# FILE: src/components/VARKAssessment/ChatContainer.tsx
+# SIZE: 2315 bytes
+################################################################################
+
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import ChatMessage from './ChatMessage';
+import ChatInput from './ChatInput';
+import TypingIndicator from './TypingIndicator';
+import VARKResults from './VARKResults';
+import { useVARKAssessment } from '../../hooks/useVARKAssessment';
+
+interface Message {
+  text: string;
+  sender: 'user' | 'ai';
+  timestamp: string;
+}
+
+interface VARKResults {
+  visual: number;
+  auditory: number;
+  readWrite: number;
+  kinesthetic: number;
+  primaryStyle: string;
+}
+
+interface Assessment {
+  inProgress: boolean;
+  currentQuestionIndex: number;
+  answers: Array<{
+    question: string;
+    answer: string;
+  }>;
+  results: VARKResults | null;
+  isComplete?: boolean;
+}
+
+const ChatContainer: React.FC = () => {
+  const {
+    messages,
+    sendMessage,
+    isLoading,
+    assessment,
+    isComplete
+  } = useVARKAssessment();
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden"
+    >
+      <div className="p-6 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+        <h2 className="text-2xl font-bold">Learning Style Assessment</h2>
+        <p className="mt-2 opacity-90">Let's discover how you learn best through a friendly conversation.</p>
+      </div>
+      
+      <div className="h-[500px] overflow-y-auto p-6 bg-gray-50">
+        {messages.map((msg: Message, index: number) => (
+          <ChatMessage 
+            key={index} 
+            message={msg.text} 
+            sender={msg.sender} 
+            timestamp={msg.timestamp}
+          />
+        ))}
+        
+        {isLoading && <TypingIndicator />}
+        <div ref={messagesEndRef} />
+      </div>
+      
+      {isComplete ? (
+        <VARKResults results={assessment.results!} />
+      ) : (
+        <div className="p-4 border-t">
+          <ChatInput 
+            onSendMessage={sendMessage}
+            disabled={isLoading} 
+          />
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+export default ChatContainer;
+
+################################################################################
+# FILE: src/components/VARKAssessment/ChatInput.tsx
+# SIZE: 1614 bytes
+################################################################################
+
+import React, { useState, FormEvent } from 'react';
+import { motion } from 'framer-motion';
+
+interface ChatInputProps {
+  onSendMessage: (message: string) => void;
+  disabled?: boolean;
+}
+
+const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled }) => {
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (message.trim() && !disabled) {
+      onSendMessage(message);
+      setMessage('');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex gap-2">
+      <input
+        type="text"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder="Type your response here..."
+        disabled={disabled}
+        className="flex-1 px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all disabled:opacity-60"
+      />
+      <motion.button
+        type="submit"
+        disabled={disabled || !message.trim()}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="p-2 rounded-full bg-blue-600 text-white disabled:opacity-60 disabled:cursor-not-allowed"
+      >
+        <svg 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round"
+          className="w-5 h-5"
+        >
+          <path d="M22 2L11 13" />
+          <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+        </svg>
+      </motion.button>
+    </form>
+  );
+};
+
+export default ChatInput;
+
+################################################################################
+# FILE: src/components/VARKAssessment/ChatMessage.tsx
+# SIZE: 1128 bytes
+################################################################################
+
+import React from 'react';
+import { motion } from 'framer-motion';
+
+interface ChatMessageProps {
+  message: string;
+  sender: 'user' | 'ai';
+  timestamp: string;
+}
+
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, sender, timestamp }) => {
+  const isUser = sender === 'user';
+  const formattedTime = new Date(timestamp).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}
+    >
+      <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+        isUser 
+          ? 'bg-blue-600 text-white ml-auto rounded-br-sm' 
+          : 'bg-white shadow-md rounded-bl-sm'
+      }`}>
+        <p className="text-sm sm:text-base whitespace-pre-wrap">{message}</p>
+        <div className={`text-xs mt-1 ${isUser ? 'text-blue-100' : 'text-gray-500'}`}>
+          {formattedTime} • {isUser ? 'You' : 'AI Tutor'}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+export default ChatMessage;
+
+################################################################################
+# FILE: src/components/VARKAssessment/TypingIndicator.tsx
+# SIZE: 605 bytes
+################################################################################
+
+import React from 'react';
+import { motion } from 'framer-motion';
+
+const TypingIndicator: React.FC = () => {
+  return (
+    <div className="flex items-center gap-2 p-3 max-w-[100px] bg-white rounded-xl shadow-md mb-4">
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          initial={{ y: 0 }}
+          animate={{ y: [-2, 2, -2] }}
+          transition={{
+            duration: 0.6,
+            repeat: Infinity,
+            delay: i * 0.2,
+          }}
+          className="w-2 h-2 bg-blue-600 rounded-full"
+        />
+      ))}
+    </div>
+  );
+};
+
+export default TypingIndicator;
+
+################################################################################
+# FILE: src/components/VARKAssessment/VARKResults.tsx
+# SIZE: 3813 bytes
+################################################################################
+
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Radar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+// Register ChartJS components
+ChartJS.register(
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend
+);
+
+interface VARKResultsProps {
+  results: {
+    visual: number;
+    auditory: number;
+    readWrite: number;
+    kinesthetic: number;
+    primaryStyle: string;
+  };
+}
+
+const VARKResults: React.FC<VARKResultsProps> = ({ results }) => {
+  const { visual, auditory, readWrite, kinesthetic, primaryStyle } = results;
+  
+  const data = {
+    labels: ['Visual', 'Auditory', 'Read/Write', 'Kinesthetic'],
+    datasets: [
+      {
+        label: 'Your Learning Style',
+        data: [visual, auditory, readWrite, kinesthetic],
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        borderColor: 'rgb(59, 130, 246)',
+        borderWidth: 2,
+        pointBackgroundColor: 'rgb(59, 130, 246)',
+        pointHoverRadius: 6,
+      },
+    ],
+  };
+
+  const options = {
+    scales: {
+      r: {
+        beginAtZero: true,
+        max: 100,
+        ticks: {
+          stepSize: 20,
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
+  };
+
+  const getLearningTips = (style: string) => {
+    const tips = {
+      Visual: [
+        'Use diagrams, charts, and mind maps',
+        'Watch educational videos and demonstrations',
+        'Highlight text in different colors',
+        'Create visual summaries of concepts',
+      ],
+      Auditory: [
+        'Record and replay lectures',
+        'Participate in group discussions',
+        'Use text-to-speech for reading materials',
+        'Explain concepts out loud to yourself',
+      ],
+      'Read/Write': [
+        'Take detailed notes during lectures',
+        'Rewrite information in your own words',
+        'Create lists and summaries',
+        'Practice writing explanations',
+      ],
+      Kinesthetic: [
+        'Use hands-on learning activities',
+        'Take breaks to move around while studying',
+        'Create physical models or diagrams',
+        'Use role-playing to understand concepts',
+      ],
+    }[style] || [];
+
+    return tips;
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="p-6 bg-white"
+    >
+      <h2 className="text-2xl font-bold text-center mb-6">Your VARK Learning Style Results</h2>
+      
+      <div className="grid md:grid-cols-2 gap-8">
+        <div className="aspect-square">
+          <Radar data={data} options={options} />
+        </div>
+        
+        <div>
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold mb-2">
+              Your Primary Learning Style:
+            </h3>
+            <div className="text-2xl font-bold text-blue-600">
+              {primaryStyle}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-xl font-semibold mb-4">
+              Recommended Learning Strategies:
+            </h3>
+            <ul className="space-y-3">
+              {getLearningTips(primaryStyle).map((tip, index) => (
+                <motion.li
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex items-center gap-2"
+                >
+                  <span className="text-blue-600">•</span>
+                  {tip}
+                </motion.li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+export default VARKResults;
+
+################################################################################
+# FILE: src/components/chat/ChatUI.css
+# SIZE: 1264 bytes
+################################################################################
+
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.chat-window {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #fff;
+}
+
+.message {
+  margin: 0.5rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  max-width: 80%;
+}
+
+.message.user {
+  background-color: #e3f2fd;
+  margin-left: auto;
+  text-align: right;
+}
+
+.message.tutor {
+  background-color: #f5f5f5;
+  margin-right: auto;
+}
+
+.message.processing {
+  background-color: #fafafa;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.input-container {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #fff;
+  border-top: 1px solid #e0e0e0;
+}
+
+.input-container input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.input-container button {
+  padding: 0.75rem 1.5rem;
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.input-container button:disabled {
+  background-color: #bdbdbd;
+  cursor: not-allowed;
+}
+
+.input-container input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+################################################################################
+# FILE: src/components/chat/ChatUI.tsx
+# SIZE: 2700 bytes
+################################################################################
+
+import React, { useState } from 'react';
+import { assessLearningStyle } from '../../services/assessmentService';
+import { useAuth } from '../../contexts/AuthContext';
+import './ChatUI.css';
+
+interface Message {
+  sender: 'user' | 'tutor';
+  text: string;
+}
+
+const ChatUI: React.FC<{ studentId?: string }> = ({ studentId }) => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputText, setInputText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { currentUser } = useAuth();
+
+  const handleSend = async () => {
+    if (!inputText.trim() || !currentUser?.uid) return;
+    if (!studentId) {
+      setError('Missing student ID. Open the assessment from a student profile.');
+      return;
+    }
+
+    const userMessage: Message = { sender: 'user', text: inputText };
+    setMessages(prev => [...prev, userMessage]);
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const token = await currentUser.getIdToken(true);
+      const result = await assessLearningStyle({
+        parentId: currentUser.uid,
+        studentId,
+        token,
+        messages: [
+          { role: 'user', content: inputText }
+        ]
+      });
+
+      const tutorMessage: Message = {
+        sender: 'tutor',
+        text: `Learning style: ${result.learningStyle}\n${result.explanation}`
+      };
+      setMessages(prev => [...prev, tutorMessage]);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Assessment failed.';
+      setMessages(prev => [...prev, { sender: 'tutor', text: errorMessage }]);
+    } finally {
+      setIsProcessing(false);
+    }
+    setInputText('');
+  };
+
+  return (
+    <div className="chat-container">
+      <div className="chat-window">
+        {messages.map((msg, idx) => (
+          <div key={idx} className={`message ${msg.sender}`}>
+            {msg.text}
+          </div>
+        ))}
+        {isProcessing && (
+          <div className="message tutor processing">
+            Thinking...
+          </div>
+        )}
+      </div>
+      {error && <div className="message tutor">{error}</div>}
+      <div className="input-container">
+        <input
+          type="text"
+          value={inputText}
+          placeholder="Type your message..."
+          onChange={(e) => setInputText(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && !isProcessing && handleSend()}
+          disabled={isProcessing}
+        />
+        <button 
+          onClick={handleSend}
+          disabled={isProcessing || !inputText.trim()}
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ChatUI;
+
+################################################################################
+# FILE: src/components/chat/LearningStyleChat.tsx
+# SIZE: 30748 bytes
+################################################################################
+
+import React, { useState, useRef, useEffect } from 'react';
+import styled from 'styled-components';
+import { FaPaperPlane } from 'react-icons/fa';
+import { useAuth } from '../../contexts/AuthContext';
+import Message from '../Message';
+import { assessLearningStyle, checkAssessmentHealth } from '../../services/assessmentService';
+import Button from '../common/Button';
+import { questionBank, type QuestionItem, type QuestionOption } from '../../services/assessmentQuestionBank';
+import { getStudentProfile, updateStudentAssessmentTone } from '../../services/profileService';
+
+interface ChatMessage {
+  text: string;
+  sender: 'user' | 'bot';
+}
+
+type Tone = 'playful' | 'calm' | 'funny';
+
+const TONE_LABELS: Record<Tone, string> = {
+  playful: 'Playful',
+  calm: 'Calm',
+  funny: 'Funny'
+};
+
+const ACKS_BY_TONE: Record<Tone, string[]> = {
+  playful: [
+    'Nice pick! ✅',
+    'Got it! You’re doing awesome.',
+    'Sweet! That helps a lot.',
+    'Great choice — you’re crushing this.',
+    'Boom. Next question coming up!'
+  ],
+  calm: [
+    'Thanks for sharing.',
+    'Got it. You are doing great.',
+    'Thanks. That helps a lot.',
+    'Good choice. Let us keep going.',
+    'Thanks. Ready for the next one.'
+  ],
+  funny: [
+    'Nice pick. Brain high five.',
+    'Got it. Your brain is cooking.',
+    'Sweet. That helps a bunch.',
+    'Great choice. Nailed it.',
+    'Boom. Next question inbound.'
+  ]
+};
+
+const MODALITY_ACKS_BY_TONE: Record<Tone, Record<QuestionOption['modality'], string[]>> = {
+  playful: {
+    Visual: [
+      'Nice choice — your eyes are doing the work!',
+      'Great pick! Visuals can be super helpful.',
+      'Love it. Pictures and charts can be magic.'
+    ],
+    Auditory: [
+      'Awesome — your ears are on point!',
+      'Great pick! Listening can really stick.',
+      'Nice! Talking it out helps a lot.'
+    ],
+    'Read/Write': [
+      'Nice! Your notes-brain is strong.',
+      'Great pick — reading and writing can lock it in.',
+      'Love it. Words for the win!'
+    ],
+    Kinesthetic: [
+      'Love it — hands-on power!',
+      'Great pick! Doing it helps it stick.',
+      'Nice! Learning by doing is a superpower.'
+    ],
+    NotSure: [
+      'Totally okay — thanks for being honest.',
+      'No worries at all. We’ll figure it out together.',
+      'That’s okay! We can try another question.'
+    ]
+  },
+  calm: {
+    Visual: [
+      'Thanks. Visuals can be helpful.',
+      'Got it. Seeing it makes sense.',
+      'Nice. Pictures can make it clear.'
+    ],
+    Auditory: [
+      'Thanks. Listening can really help.',
+      'Got it. Talking it out can stick.',
+      'Nice. Hearing it can make it clear.'
+    ],
+    'Read/Write': [
+      'Thanks. Reading and writing can help.',
+      'Got it. Notes can lock it in.',
+      'Nice. Words can make it clear.'
+    ],
+    Kinesthetic: [
+      'Thanks. Hands-on practice can help.',
+      'Got it. Doing it can make it stick.',
+      'Nice. Learning by doing can work well.'
+    ],
+    NotSure: [
+      'Thanks for sharing. We can try another question.',
+      'No worries. We will figure it out together.',
+      'That is okay. Let us keep going.'
+    ]
+  },
+  funny: {
+    Visual: [
+      'Nice. Your eyes are on the case.',
+      'Great pick. Visuals for the win.',
+      'Love it. Pictures doing the heavy lifting.'
+    ],
+    Auditory: [
+      'Nice. Your ears are on the job.',
+      'Great pick. Listening power activated.',
+      'Love it. Talk it out, brain it out.'
+    ],
+    'Read/Write': [
+      'Nice. Notes for the win.',
+      'Great pick. Words are your sidekick.',
+      'Love it. Pens and pages, yes please.'
+    ],
+    Kinesthetic: [
+      'Nice. Hands-on hero mode.',
+      'Great pick. Do it to learn it.',
+      'Love it. Movement makes it stick.'
+    ],
+    NotSure: [
+      'All good. Even superheroes pause.',
+      'No worries. We can try another one.',
+      'Totally fine. We will figure it out.'
+    ]
+  }
+};
+
+const MORE_DATA_BY_TONE: Record<Tone, string> = {
+  playful: "You're doing great — let's do one more question!",
+  calm: 'Thanks. Let us try one more question.',
+  funny: 'Nice. One more and we are in business.'
+};
+
+const FINAL_PREFIX_BY_TONE: Record<Tone, string> = {
+  playful: 'All done',
+  calm: 'Finished',
+  funny: 'We did it'
+};
+
+const LearningStyleChat: React.FC<{ studentId?: string }> = ({ studentId }) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
+  const [questionQueue, setQuestionQueue] = useState<QuestionItem[]>([]);
+  const [currentQuestion, setCurrentQuestion] = useState<QuestionItem | null>(null);
+  const [selectedOptions, setSelectedOptions] = useState<QuestionOption[]>([]);
+  const [answeredCount, setAnsweredCount] = useState(0);
+  const [gradeBand, setGradeBand] = useState<QuestionItem['gradeBand']>('3-5');
+  const [totalQuestions, setTotalQuestions] = useState(30);
+  const [studentName, setStudentName] = useState('');
+  const [studentGrade, setStudentGrade] = useState('');
+  const [tone, setTone] = useState<Tone>('playful');
+  const [celebrationEnabled, setCelebrationEnabled] = useState(true);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [rephraseCount, setRephraseCount] = useState(0);
+  const [autoSimplify, setAutoSimplify] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const manualGradeBandRef = useRef(false);
+  const confettiRef = useRef<ConfettiPiece[]>([]);
+  const { currentUser } = useAuth();
+
+  const notSureOption: QuestionOption = { modality: 'NotSure', text: 'Not sure yet.' };
+
+  const initializeAssessment = () => {
+    const storedAutoSimplify = getStoredAutoSimplify(studentId);
+    setAutoSimplify(storedAutoSimplify);
+    const questionSet = buildQuestionSet(gradeBand);
+    const orderedQuestions = getQuestionOrder(questionSet, studentId);
+    const [firstQuestion, ...rest] = orderedQuestions;
+    const nameLabel = studentName.trim();
+    const firstPrompt = firstQuestion ? getDisplayPrompt(firstQuestion.prompt, storedAutoSimplify) : '';
+    setTotalQuestions(questionSet.length);
+    setQuestionQueue(rest);
+    setCurrentQuestion(firstQuestion ?? null);
+    setSelectedOptions([]);
+    setAnsweredCount(0);
+    setMessages([
+      {
+        text:
+          'Parent note: Please let your child answer on their own. There are no right or wrong answers.',
+        sender: 'bot'
+      },
+      {
+        text: `Hi${nameLabel ? ` ${nameLabel}` : ''}! I'm here to help assess your learning style. Let's start with one question.`,
+        sender: 'bot'
+      },
+      ...(firstQuestion ? [{ text: firstPrompt, sender: 'bot' as const }] : [])
+    ]);
+  };
+
+  // Initialize chat with assessment start message
+  useEffect(() => {
+    initializeAssessment();
+  }, [studentId, gradeBand]);
+
+  useEffect(() => {
+    let isActive = true;
+    if (!studentId) return;
+
+    getStudentProfile(studentId)
+      .then((profile) => {
+        if (!profile || !isActive) return;
+        const name = profile.name ?? '';
+        const grade = profile.grade ?? '';
+        const storedTone = (profile as { assessmentTone?: Tone }).assessmentTone;
+        setStudentName(name);
+        setStudentGrade(grade);
+        if (storedTone && storedTone in TONE_LABELS) {
+          setTone(storedTone);
+          localStorage.setItem(getToneStorageKey(studentId), storedTone);
+        }
+        if (!manualGradeBandRef.current) {
+          const inferredBand = inferGradeBand(grade);
+          if (inferredBand && inferredBand !== gradeBand) {
+            setGradeBand(inferredBand);
+          }
+        }
+      })
+      .catch(() => {
+        // Ignore missing profile to keep chat usable.
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [studentId, gradeBand]);
+
+  useEffect(() => {
+    const toneKey = getToneStorageKey(studentId);
+    const storedTone = localStorage.getItem(toneKey) as Tone | null;
+    if (storedTone && storedTone in TONE_LABELS) {
+      setTone(storedTone);
+    }
+  }, [studentId]);
+
+  useEffect(() => {
+    const celebrationKey = getCelebrationStorageKey(studentId);
+    const storedCelebration = localStorage.getItem(celebrationKey);
+    if (storedCelebration !== null) {
+      setCelebrationEnabled(storedCelebration === 'true');
+    }
+    const rephraseKey = getRephraseStorageKey(studentId);
+    const storedRephrase = localStorage.getItem(rephraseKey);
+    if (storedRephrase) {
+      const count = Number(storedRephrase);
+      if (!Number.isNaN(count)) {
+        setRephraseCount(count);
+        setAutoSimplify(count >= REPHRASE_THRESHOLD);
+      }
+    }
+  }, [studentId]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Check API connection on mount and set up periodic checks
+  useEffect(() => {
+    checkApiConnection();
+    const intervalId = setInterval(checkApiConnection, 30000); // Check every 30 seconds
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const checkApiConnection = async (): Promise<void> => {
+    const isConnected = await checkAssessmentHealth();
+    setConnectionError(!isConnected);
+  };
+
+  const formatAssessmentResponse = (result: {
+    learningStyle: string;
+    explanation: string;
+    nextSteps: string[];
+    decision?: 'final' | 'needs_more_data';
+    questions?: string[];
+    missingEvidence?: string[];
+  }) => {
+    if (result.decision === 'needs_more_data') {
+      return [
+        `${studentName.trim() ? `${studentName}, ` : ''}I need just a little more detail before I can lock in your learning style.`,
+        MORE_DATA_BY_TONE[tone] ?? MORE_DATA_BY_TONE.playful
+      ].join('\n');
+    }
+
+    const steps = result.nextSteps.map((step) => `- ${step}`).join('\n');
+    return [
+      `${FINAL_PREFIX_BY_TONE[tone] ?? FINAL_PREFIX_BY_TONE.playful}${studentName.trim() ? `, ${studentName}` : ''}! Your learning style is ${result.learningStyle}.`,
+      result.explanation,
+      'Here’s how to use this superpower:',
+      steps
+    ].join('\n');
+  };
+
+  const formatSelectionMessage = (options: QuestionOption[]) => {
+    const list = options.map((option) => option.text).join('; ');
+    return `I would choose: ${list}.`;
+  };
+
+  const advanceQuestion = (followUps?: string[]) => {
+    let nextQuestion: QuestionItem | null = null;
+    setQuestionQueue((prev) => {
+      if (prev.length > 0) {
+        const [next, ...rest] = prev;
+        nextQuestion = next ?? null;
+        return rest;
+      }
+
+      if (followUps?.length) {
+        const followUpItems = followUps.map((prompt) => getQuestionItem(prompt));
+        const [next, ...rest] = followUpItems;
+        nextQuestion = next ?? null;
+        return rest;
+      }
+
+      return prev;
+    });
+    setCurrentQuestion(nextQuestion);
+    return nextQuestion;
+  };
+
+  const handleOptionSelect = (option: QuestionOption) => {
+    if (loading) return;
+    setSelectedOptions([option]);
+    void sendMessage([option]);
+  };
+
+  const getFunAck = () => {
+    const list = ACKS_BY_TONE[tone] ?? ACKS_BY_TONE.playful;
+    return list[Math.floor(Math.random() * list.length)];
+  };
+  const getAckForOptions = (options: QuestionOption[]) => {
+    const firstOption = options[0];
+    if (!firstOption) return getFunAck();
+    const ackList =
+      MODALITY_ACKS_BY_TONE[tone]?.[firstOption.modality] ??
+      MODALITY_ACKS_BY_TONE.playful[firstOption.modality] ??
+      ACKS_BY_TONE.playful;
+    return attachName(ackList[Math.floor(Math.random() * ackList.length)], studentName);
+  };
+
+  const sendMessage = async (optionsOverride?: QuestionOption[]): Promise<void> => {
+    const activeOptions = optionsOverride ?? selectedOptions;
+    if (!input.trim() && activeOptions.length === 0) return;
+    if (loading) return;
+
+    const userMessage =
+      activeOptions.length > 0 ? formatSelectionMessage(activeOptions) : input.trim();
+    setInput('');
+    setSelectedOptions([]);
+    const ackMessage =
+      activeOptions.length > 0 ? getAckForOptions(activeOptions) : attachName(getFunAck(), studentName);
+    setMessages(prev => [
+      ...prev,
+      { text: userMessage, sender: 'user' },
+      { text: ackMessage, sender: 'bot' }
+    ]);
+
+    try {
+      if (!currentUser) {
+        setMessages((prev) => [
+          ...prev,
+          { text: 'Please sign in to continue the assessment.', sender: 'bot' }
+        ]);
+        return;
+      }
+      if (!studentId) {
+        setMessages((prev) => [
+          ...prev,
+          { text: 'Missing student information. Please try again.', sender: 'bot' }
+        ]);
+        return;
+      }
+
+      setLoading(true);
+      const token = await currentUser.getIdToken(true);
+      const apiMessages = [...messages, { text: userMessage, sender: 'user' }].map((msg) => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.text
+      }));
+
+      const result = await assessLearningStyle({
+        parentId: currentUser.uid,
+        studentId,
+        messages: apiMessages,
+        token
+      });
+
+      if (result.decision === 'needs_more_data') {
+        const nextQuestion = advanceQuestion(result.questions);
+        const nextPrompt = nextQuestion ? getDisplayPrompt(nextQuestion.prompt, autoSimplify) : '';
+        setMessages((prev) => [
+          ...prev,
+          { text: formatAssessmentResponse(result), sender: 'bot' },
+          ...(nextQuestion ? [{ text: nextPrompt, sender: 'bot' }] : [])
+        ]);
+        setAnsweredCount((count) => count + 1);
+      } else {
+        const willContinue = answeredCount + 1 < totalQuestions;
+        const nextQuestion = willContinue ? advanceQuestion() : null;
+        const nextPrompt = nextQuestion ? getDisplayPrompt(nextQuestion.prompt, autoSimplify) : '';
+        setMessages((prev) => [
+          ...prev,
+          { text: formatAssessmentResponse(result), sender: 'bot' },
+          ...(nextQuestion ? [{ text: nextPrompt, sender: 'bot' }] : [])
+        ]);
+        setAnsweredCount((count) => count + 1);
+        if (nextQuestion) {
+          setCurrentQuestion(nextQuestion);
+        } else {
+          setCurrentQuestion(null);
+          triggerCelebration();
+        }
+      }
+      setConnectionError(false);
+    } catch (error: unknown) {
+      console.error('Error sending message:', error);
+      const message = getFriendlyErrorMessage(error);
+      setMessages((prev) => [...prev, { text: message, sender: 'bot' }]);
+      setConnectionError(true);
+      await checkApiConnection();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGradeBandChange = (nextBand: QuestionItem['gradeBand']) => {
+    if (nextBand === gradeBand) return;
+    if (answeredCount > 0 || messages.length > 0) {
+      const confirmReset = window.confirm(
+        'Changing the grade band will restart this assessment. Continue?'
+      );
+      if (!confirmReset) return;
+    }
+    manualGradeBandRef.current = true;
+    setGradeBand(nextBand);
+  };
+
+  const handleToneChange = (nextTone: Tone) => {
+    setTone(nextTone);
+    localStorage.setItem(getToneStorageKey(studentId), nextTone);
+    if (studentId) {
+      updateStudentAssessmentTone(studentId, nextTone).catch(() => {
+        // Ignore failures to keep chat usable.
+      });
+    }
+  };
+
+  const handleRephrase = () => {
+    if (!currentQuestion) return;
+    const rephrased = rephrasePrompt(currentQuestion.prompt);
+    const nextCount = rephraseCount + 1;
+    setRephraseCount(nextCount);
+    localStorage.setItem(getRephraseStorageKey(studentId), String(nextCount));
+    if (nextCount >= REPHRASE_THRESHOLD) {
+      setAutoSimplify(true);
+    }
+    setMessages((prev) => [
+      ...prev,
+      { text: `Another way to ask: ${rephrased}`, sender: 'bot' }
+    ]);
+  };
+
+  const triggerCelebration = () => {
+    if (!celebrationEnabled) return;
+    setShowCelebration(true);
+    playCelebrationSound();
+    window.setTimeout(() => setShowCelebration(false), 2200);
+  };
+
+  const progressValue = totalQuestions > 0
+    ? Math.min(Math.round((answeredCount / totalQuestions) * 100), 100)
+    : 0;
+  const progressLabel = getProgressLabel(answeredCount, totalQuestions);
+
+  return (
+    <ChatContainer className="card">
+      {showCelebration ? (
+        <ConfettiOverlay aria-hidden="true">
+          {getConfettiPieces(confettiRef).map((piece, index) => (
+            <ConfettiPiece
+              key={`${piece.left}-${index}`}
+              style={{
+                left: `${piece.left}%`,
+                backgroundColor: piece.color,
+                animationDelay: `${piece.delay}ms`,
+                animationDuration: `${piece.duration}ms`,
+                width: `${piece.size}px`,
+                height: `${piece.size * 1.4}px`
+              }}
+            />
+          ))}
+        </ConfettiOverlay>
+      ) : null}
+      <ChatHeader>
+        🎓 Learning Style Assessment
+        <GradeRow>
+          <label htmlFor="grade-band-select">Grade band:</label>
+          <GradeSelect
+            id="grade-band-select"
+            value={gradeBand}
+            onChange={(event) => handleGradeBandChange(event.target.value as QuestionItem['gradeBand'])}
+          >
+            <option value="K-2">K–2</option>
+            <option value="3-5">3–5</option>
+            <option value="6-8">6–8</option>
+            <option value="9-12">9–12</option>
+          </GradeSelect>
+          {studentGrade.trim() ? (
+            <GradeHint>Detected: {studentGrade}</GradeHint>
+          ) : null}
+          <ToneSelect
+            aria-label="Tone"
+            value={tone}
+            onChange={(event) => handleToneChange(event.target.value as Tone)}
+          >
+            {Object.entries(TONE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label} tone
+              </option>
+            ))}
+          </ToneSelect>
+          <CelebrateToggle>
+            <input
+              type="checkbox"
+              checked={celebrationEnabled}
+              onChange={(event) => {
+                const enabled = event.target.checked;
+                setCelebrationEnabled(enabled);
+                localStorage.setItem(
+                  getCelebrationStorageKey(studentId),
+                  String(enabled)
+                );
+              }}
+            />
+            Celebrate
+          </CelebrateToggle>
+        </GradeRow>
+        <ProgressBar>
+          <ProgressFill style={{ width: `${progressValue}%` }} />
+        </ProgressBar>
+        <ProgressText>
+          Question {Math.min(answeredCount + 1, totalQuestions)} of {totalQuestions}
+        </ProgressText>
+        {progressLabel ? <ProgressMilestone>{progressLabel}</ProgressMilestone> : null}
+        {connectionError && (
+          <ConnectionError>⚠️ Connection Error - Check if the assessment service is running</ConnectionError>
+        )}
+      </ChatHeader>
+      <ChatBody>
+        {messages.map((msg, index) => (
+          <Message key={index} sender={msg.sender}>{msg.text}</Message>
+        ))}
+        {loading && <Message sender="bot">Typing...</Message>}
+        <div ref={chatEndRef} />
+      </ChatBody>
+      <ChatFooter>
+        {currentQuestion?.options?.length ? (
+          <OptionList>
+            {currentQuestion.options.map((option) => {
+              const isSelected = selectedOptions.some(
+                (selected) => selected.text === option.text
+              );
+              return (
+                  <OptionButton
+                    key={option.text}
+                    type="button"
+                    $selected={isSelected}
+                    onClick={() => handleOptionSelect(option)}
+                  >
+                    {option.text}
+                  </OptionButton>
+                );
+              })}
+            <OptionButton
+              type="button"
+              $selected={selectedOptions.some((option) => option.text === notSureOption.text)}
+              onClick={() => handleOptionSelect(notSureOption)}
+            >
+              {notSureOption.text}
+            </OptionButton>
+          </OptionList>
+        ) : null}
+        {currentQuestion ? (
+          <RephraseButton type="button" onClick={handleRephrase}>
+            Rephrase this question
+          </RephraseButton>
+        ) : null}
+        <InputRow>
+          <ChatInput
+            type="text"
+            value={input}
+            placeholder="Type your response or choose an option..."
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+            className="form-input"
+          />
+          <Button onClick={sendMessage} $variant="primary">
+            <FaPaperPlane />
+          </Button>
+        </InputRow>
+      </ChatFooter>
+    </ChatContainer>
+  );
+};
+
+const ChatContainer = styled.div`
+  height: 500px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+`;
+
+const ChatHeader = styled.div`
+  padding: var(--spacing-md);
+  border-bottom: 1px solid #eee;
+  font-weight: bold;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const ConnectionError = styled.div`
+  color: var(--color-error);
+  font-size: 0.8em;
+  margin-top: 4px;
+`;
+
+const ChatBody = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+`;
+
+const ChatFooter = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-top: 1px solid #eee;
+`;
+
+const ChatInput = styled.input`
+  flex: 1;
+`;
+
+const ProgressText = styled.div`
+  font-size: 0.85em;
+  color: #666;
+`;
+
+const ProgressMilestone = styled.div`
+  font-size: 0.8em;
+  color: #4a4a4a;
+`;
+
+const GradeRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 0.85em;
+  color: #444;
+`;
+
+const GradeSelect = styled.select`
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+`;
+
+const GradeHint = styled.span`
+  color: #666;
+  font-size: 0.85em;
+`;
+
+const ToneSelect = styled.select`
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+`;
+
+const CelebrateToggle = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85em;
+  color: #555;
+`;
+
+const ConfettiOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 2;
+`;
+
+const ConfettiPiece = styled.span`
+  position: absolute;
+  top: -10px;
+  border-radius: 2px;
+  animation-name: confetti-fall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+
+  @keyframes confetti-fall {
+    0% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(520px) rotate(260deg);
+      opacity: 0;
+    }
+  }
+`;
+
+const ProgressBar = styled.div`
+  position: relative;
+  height: 8px;
+  background: #eee;
+  border-radius: 999px;
+  overflow: hidden;
+`;
+
+const ProgressFill = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #5aa6ff, #5ad4ff);
+  transition: width 200ms ease;
+`;
+
+const OptionList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+`;
+
+const RephraseButton = styled.button`
+  align-self: flex-start;
+  border: none;
+  background: none;
+  color: var(--primary-color);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+`;
+
+const InputRow = styled.div`
+  display: flex;
+  gap: var(--spacing-sm);
+`;
+
+const OptionButton = styled.button<{ $selected?: boolean }>`
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid ${({ $selected }) => ($selected ? 'var(--primary-color)' : '#ddd')};
+  background: ${({ $selected }) => ($selected ? 'rgba(0, 119, 255, 0.1)' : '#fff')};
+  cursor: pointer;
+  font-size: 0.9rem;
+`;
+
+export default LearningStyleChat;
+
+const getFriendlyErrorMessage = (error: unknown) => {
+  const status = (error as { status?: number }).status;
+  if (status === 401) {
+    return 'Please sign in again to continue your assessment.';
+  }
+  if (status === 403) {
+    return 'You do not have access to this student.';
+  }
+  if (status === 404) {
+    return 'We could not find that student record. Please try again.';
+  }
+  return error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+};
+
+const getQuestionItem = (prompt: string): QuestionItem => {
+  const matched = questionBank.find((question) => question.prompt === prompt);
+  return (
+    matched ?? {
+      id: `followup-${prompt.slice(0, 20)}`,
+      gradeBand: '6-8',
+      prompt,
+      options: []
+    }
+  );
+};
+
+const attachName = (message: string, name: string) => {
+  const trimmed = name.trim();
+  if (!trimmed) return message;
+  if (message.endsWith('!')) {
+    return message.slice(0, -1) + `, ${trimmed}!`;
+  }
+  if (message.endsWith('.')) {
+    return message.slice(0, -1) + `, ${trimmed}.`;
+  }
+  return `${message} ${trimmed}`;
+};
+
+const getToneStorageKey = (studentId?: string) =>
+  `ga-assessment-tone:${studentId ?? 'guest'}`;
+
+const getCelebrationStorageKey = (studentId?: string) =>
+  `ga-assessment-celebrate:${studentId ?? 'guest'}`;
+
+const getRephraseStorageKey = (studentId?: string) =>
+  `ga-assessment-rephrase:${studentId ?? 'guest'}`;
+
+const REPHRASE_THRESHOLD = 2;
+
+const CONFETTI_COLORS = ['#5aa6ff', '#ffd166', '#ef476f', '#06d6a0', '#8338ec'];
+
+type ConfettiPiece = {
+  left: number;
+  delay: number;
+  duration: number;
+  size: number;
+  color: string;
+};
+
+const getConfettiPieces = (ref: React.MutableRefObject<ConfettiPiece[]>) => {
+  if (ref.current.length) return ref.current;
+  const pieces = Array.from({ length: 24 }).map(() => ({
+    left: Math.random() * 100,
+    delay: Math.random() * 400,
+    duration: 1400 + Math.random() * 800,
+    size: 6 + Math.random() * 6,
+    color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]
+  }));
+  ref.current = pieces;
+  return pieces;
+};
+
+const playCelebrationSound = () => {
+  try {
+    const AudioContext =
+      window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof window.AudioContext }).webkitAudioContext;
+    if (!AudioContext) return;
+    const context = new AudioContext();
+    const notes = [523.25, 659.25, 783.99];
+    notes.forEach((frequency, index) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = 'triangle';
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.12, context.currentTime + index * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + index * 0.08 + 0.2);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(context.currentTime + index * 0.08);
+      oscillator.stop(context.currentTime + index * 0.08 + 0.22);
+    });
+  } catch {
+    // Ignore audio errors to avoid blocking the UI.
+  }
+};
+
+const getStoredAutoSimplify = (studentId?: string) => {
+  const stored = localStorage.getItem(getRephraseStorageKey(studentId));
+  if (!stored) return false;
+  const count = Number(stored);
+  if (Number.isNaN(count)) return false;
+  return count >= REPHRASE_THRESHOLD;
+};
+
+const getProgressLabel = (answered: number, total: number) => {
+  if (!total) return '';
+  const ratio = answered / total;
+  if (ratio >= 1) return 'All done!';
+  if (ratio >= 0.9) return 'Almost there!';
+  if (ratio >= 0.6) return 'You are past halfway!';
+  if (ratio >= 0.3) return 'Nice start!';
+  if (answered > 0) return 'Keep going!';
+  return '';
+};
+
+const rephrasePrompt = (prompt: string) => {
+  const trimmed = prompt.trim();
+  if (!trimmed) return prompt;
+  if (trimmed.startsWith("You're")) {
+    return `Imagine you are${trimmed.slice(5)}`;
+  }
+  if (trimmed.startsWith('You are')) {
+    return `Imagine you are${trimmed.slice(7)}`;
+  }
+  if (trimmed.startsWith('You need to')) {
+    return `Suppose you need to${trimmed.slice(10)}`;
+  }
+  if (trimmed.startsWith('You want to')) {
+    return `Suppose you want to${trimmed.slice(10)}`;
+  }
+  if (trimmed.startsWith('You')) {
+    return `Imagine${trimmed.slice(3)}`;
+  }
+  return `Think about this: ${trimmed}`;
+};
+
+const getDisplayPrompt = (prompt: string, autoSimplify: boolean) =>
+  autoSimplify ? rephrasePrompt(prompt) : prompt;
+
+const inferGradeBand = (grade: string): QuestionItem['gradeBand'] | null => {
+  if (!grade) return null;
+  const normalized = grade.trim().toLowerCase();
+  if (normalized.startsWith('k')) return 'K-2';
+  const match = normalized.match(/\d+/);
+  if (!match) return null;
+  const value = Number(match[0]);
+  if (Number.isNaN(value)) return null;
+  if (value <= 2) return 'K-2';
+  if (value <= 5) return '3-5';
+  if (value <= 8) return '6-8';
+  return '9-12';
+};
+
+const getOrderStorageKey = (gradeBand: QuestionItem['gradeBand'], studentId?: string) =>
+  `ga-assessment-order:${studentId ?? 'guest'}:${gradeBand}`;
+
+const getQuestionOrder = (questions: QuestionItem[], studentId?: string) => {
+  const [sample] = questions;
+  if (!sample) return [];
+  const storageKey = getOrderStorageKey(sample.gradeBand, studentId);
+  const stored = localStorage.getItem(storageKey);
+  if (stored) {
+    try {
+      const ids = JSON.parse(stored) as string[];
+      const map = new Map(questions.map((question) => [question.id, question]));
+      const ordered = ids.map((id) => map.get(id)).filter(Boolean) as QuestionItem[];
+      if (ordered.length === questions.length) {
+        return ordered;
+      }
+    } catch {
+      // Ignore invalid stored data and reshuffle below.
+    }
+  }
+  const shuffled = shuffleQuestions(questions);
+  localStorage.setItem(
+    storageKey,
+    JSON.stringify(shuffled.map((question) => question.id))
+  );
+  return shuffled;
+};
+
+const shuffleQuestions = (questions: QuestionItem[]) => {
+  const items = [...questions];
+  for (let i = items.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
+};
+
+const buildQuestionSet = (gradeBand: QuestionItem['gradeBand']): QuestionItem[] => {
+  const primary = questionBank.filter((q) => q.gradeBand === gradeBand);
+  const secondary = questionBank.filter((q) => q.gradeBand !== gradeBand);
+  const result: QuestionItem[] = [];
+  let idxPrimary = 0;
+  let idxSecondary = 0;
+  while (result.length < 30) {
+    if (idxPrimary < primary.length) {
+      result.push(primary[idxPrimary]);
+      idxPrimary += 1;
+    } else if (secondary.length) {
+      result.push(secondary[idxSecondary % secondary.length]);
+      idxSecondary += 1;
+    } else {
+      // In case the bank is tiny, repeat from start.
+      result.push(primary[idxPrimary % primary.length]);
+      idxPrimary += 1;
+    }
+  }
+  return shuffleQuestions(result);
+};
+
+################################################################################
+# FILE: src/components/chat/TestChat.tsx
+# SIZE: 5048 bytes
+################################################################################
+
+import React, { useEffect, useState } from 'react';
+import styled from 'styled-components';
+import { assessLearningStyle, checkAssessmentHealth } from '../../services/assessmentService';
+import { useAuth } from '../../contexts/AuthContext';
+
+const TestChat: React.FC = () => {
+  const [connectionStatus, setConnectionStatus] = useState<string>('Checking connection...');
+  const [testMessage, setTestMessage] = useState<string>('');
+  const [studentId, setStudentId] = useState<string>('');
+  const [response, setResponse] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const { currentUser } = useAuth();
+
+  useEffect(() => {
+    checkConnection();
+  }, []);
+
+  const checkConnection = async () => {
+    try {
+      const isConnected = await checkAssessmentHealth();
+      setConnectionStatus(isConnected ? 'Connected ✅' : 'Not connected ❌');
+    } catch (error) {
+      setConnectionStatus('Connection failed ❌');
+      setError(error instanceof Error ? error.message : 'Connection failed');
+    }
+  };
+
+  const handleTestMessage = async () => {
+    if (!testMessage.trim() || !currentUser?.uid) return;
+    if (!studentId.trim()) {
+      setError('Student ID is required.');
+      return;
+    }
+
+    try {
+      setError('');
+      const token = await currentUser.getIdToken(true);
+      const result = await assessLearningStyle({
+        parentId: currentUser.uid,
+        studentId,
+        token,
+        messages: [{ role: 'user', content: testMessage }]
+      });
+      setResponse(JSON.stringify(result, null, 2));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Assessment failed.');
+    }
+  };
+
+  return (
+    <TestContainer>
+      <TestCard>
+        <h2>Assessment Service Test</h2>
+        
+        <StatusSection>
+          <h3>Connection Status:</h3>
+          <StatusText>{connectionStatus}</StatusText>
+          <RefreshButton onClick={checkConnection}>
+            Refresh Connection
+          </RefreshButton>
+        </StatusSection>
+
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+
+        <TestSection>
+          <h3>Send Test Message:</h3>
+          <TestInput
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
+            placeholder="Student ID..."
+          />
+          <TestInput
+            value={testMessage}
+            onChange={(e) => setTestMessage(e.target.value)}
+            placeholder="Type a test message..."
+          />
+          <SendButton 
+            onClick={handleTestMessage}
+            disabled={!testMessage.trim() || !currentUser}
+          >
+            Send Message
+          </SendButton>
+        </TestSection>
+
+        {response && (
+          <ResponseSection>
+            <h3>Response:</h3>
+            <ResponseText>{response}</ResponseText>
+          </ResponseSection>
+        )}
+      </TestCard>
+    </TestContainer>
+  );
+};
+
+const TestContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 1rem;
+  background-color: var(--background);
+`;
+
+const TestCard = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 600px;
+
+  h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+  }
+
+  h3 {
+    margin-bottom: 1rem;
+    color: var(--text-color);
+  }
+`;
+
+const StatusSection = styled.div`
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+`;
+
+const StatusText = styled.div`
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+`;
+
+const TestSection = styled.div`
+  margin-bottom: 2rem;
+`;
+
+const TestInput = styled.textarea`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  min-height: 100px;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+`;
+
+const ResponseSection = styled.div`
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+`;
+
+const ResponseText = styled.div`
+  white-space: pre-wrap;
+  font-family: monospace;
+  padding: 1rem;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+`;
+
+const Button = styled.button`
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`;
+
+const RefreshButton = styled(Button)`
+  background-color: #6c757d;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: #5a6268;
+  }
+`;
+
+const SendButton = styled(Button)`
+  background-color: var(--primary-color);
+  color: white;
+  width: 100%;
+
+  &:hover:not(:disabled) {
+    background-color: var(--primary-dark);
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: #dc2626;
+  background-color: #fee2e2;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+`;
+
+export default TestChat;
+
+################################################################################
+# FILE: src/hooks/useVARKAssessment.ts
+# SIZE: 3635 bytes
+################################################################################
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { 
+  saveAssessmentResults, 
+  startAssessment, 
+  sendUserResponse 
+} from '../services/varkService';
+
+interface Message {
+  text: string;
+  sender: 'user' | 'ai';
+  timestamp: string;
+}
+
+interface Assessment {
+  inProgress: boolean;
+  currentQuestionIndex: number;
+  assessmentId?: string;
+  isComplete?: boolean;
+  answers: Array<{
+    question: string;
+    answer: string;
+  }>;
+  results: {
+    visual: number;
+    auditory: number;
+    readWrite: number;
+    kinesthetic: number;
+    primaryStyle: string;
+  } | null;
+}
+
+export const useVARKAssessment = () => {
+  const { currentUser } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [assessment, setAssessment] = useState<Assessment>({
+    inProgress: false,
+    currentQuestionIndex: 0,
+    answers: [],
+    results: null
+  });
+
+  // Initialize assessment when component mounts
+  useEffect(() => {
+    const initializeChat = async () => {
+      if (currentUser && !assessment.inProgress) {
+        setIsLoading(true);
+        try {
+          const response = await startAssessment(currentUser.uid);
+          setMessages([{
+            text: response.initialMessage,
+            sender: 'ai',
+            timestamp: new Date().toISOString()
+          }]);
+          
+          setAssessment(prev => ({
+            ...prev,
+            inProgress: true,
+            assessmentId: response.assessmentId
+          }));
+        } catch (error) {
+          console.error('Error starting assessment:', error);
+          setMessages([{
+            text: 'Sorry, there was an error starting the assessment. Please try again.',
+            sender: 'ai',
+            timestamp: new Date().toISOString()
+          }]);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    initializeChat();
+  }, [currentUser]);
+
+  const sendMessage = async (messageText: string) => {
+    if (!currentUser?.uid || !assessment.assessmentId) return;
+
+    const userMessage: Message = {
+      text: messageText,
+      sender: 'user',
+      timestamp: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
+    
+    try {
+      const response = await sendUserResponse({
+        userId: currentUser.uid,
+        assessmentId: assessment.assessmentId,
+        message: messageText,
+        questionIndex: assessment.currentQuestionIndex
+      });
+      
+      setMessages(prev => [...prev, {
+        text: response.message,
+        sender: 'ai',
+        timestamp: new Date().toISOString()
+      }]);
+      
+      setAssessment(prev => ({
+        ...prev,
+        currentQuestionIndex: response.nextQuestionIndex,
+        answers: [...prev.answers, {
+          question: response.currentQuestion,
+          answer: messageText
+        }],
+        results: response.results || null,
+        isComplete: response.isComplete
+      }));
+      
+      if (response.isComplete && response.results) {
+        await saveAssessmentResults(currentUser.uid, response.results);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setMessages(prev => [...prev, {
+        text: "I'm sorry, there was an error processing your response. Please try again.",
+        sender: 'ai',
+        timestamp: new Date().toISOString()
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    messages,
+    sendMessage,
+    isLoading,
+    assessment,
+    isComplete: assessment.isComplete || false
+  };
+};
+
+################################################################################
+# FILE: src/pages/TakeAssessment.tsx
+# SIZE: 4284 bytes
+################################################################################
+
+import React, { useState, useEffect } from 'react';
+import { useAuth } from "../contexts/AuthContext";
+import { useParams } from "react-router-dom";
+import { getStudentProfile, updateStudentAssessmentStatus } from "../services/profileService";
+import type { Student } from '../types/student';
+import styled from 'styled-components';
+import LearningStyleChat from '../components/chat/LearningStyleChat';
+
+const TakeAssessment: React.FC = () => {
+  const { currentUser } = useAuth();
+  const { studentId } = useParams<{ studentId: string }>();
+  const [student, setStudent] = useState<Student | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStudent = async (): Promise<void> => {
+      if (!studentId || !currentUser) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const studentProfile = await getStudentProfile(studentId);
+        if (!studentProfile || !studentProfile.id) {
+          setError("Student profile not found");
+        } else {
+          setStudent({
+            ...studentProfile,
+            id: studentProfile.id
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching student profile:", error);
+        setError("Failed to load student profile");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudent();
+  }, [currentUser, studentId]);
+
+  const handleAssessmentCompletion = async (): Promise<void> => {
+    if (!studentId) {
+      setError("Student ID is required");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await updateStudentAssessmentStatus(studentId, "completed");
+      setStudent(prev => prev ? { ...prev, hasTakenAssessment: true } : null);
+    } catch (error) {
+      console.error("Error completing assessment:", error);
+      setError("Failed to complete assessment");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <LoadingContainer>Loading assessment...</LoadingContainer>;
+  }
+
+  if (error) {
+    return <ErrorContainer>{error}</ErrorContainer>;
+  }
+
+  if (!student) {
+    return <ErrorContainer>No student found</ErrorContainer>;
+  }
+
+  return (
+    <AssessmentContainer>
+      <Header>
+        <h1>Learning Style Assessment</h1>
+        <StudentName>for {student.name}</StudentName>
+      </Header>
+
+      <ContentSection>
+        <p>Chat with our AI assistant to help determine your learning style. The assistant will ask you questions and analyze your responses to identify the learning style that best suits you.</p>
+        <LearningStyleChat />
+      </ContentSection>
+
+      <ActionSection>
+        <CompleteButton 
+          onClick={handleAssessmentCompletion}
+          disabled={loading}
+        >
+          {loading ? "Completing..." : "Complete Assessment"}
+        </CompleteButton>
+      </ActionSection>
+    </AssessmentContainer>
+  );
+};
+
+const AssessmentContainer = styled.div`
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+`;
+
+const Header = styled.div`
+  text-align: center;
+  margin-bottom: 2rem;
+
+  h1 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+  }
+`;
+
+const StudentName = styled.h2`
+  font-size: 1.25rem;
+  color: var(--text-color);
+`;
+
+const ContentSection = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+`;
+
+const ActionSection = styled.div`
+  display: flex;
+  justify-content: center;
+`;
+
+const CompleteButton = styled.button`
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: var(--primary-dark);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  font-size: 1.1rem;
+  color: var(--text-color);
+`;
+
+const ErrorContainer = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: #dc2626;
+  background-color: #fee2e2;
+  border-radius: 8px;
+  margin: 2rem auto;
+  max-width: 600px;
+`;
+
+export default TakeAssessment;
+
+################################################################################
+# FILE: src/pages/profile/StudentProfile/StudentDashboard.tsx
+# SIZE: 9019 bytes
+################################################################################
+
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { motion as m } from 'framer-motion';
+import styled from 'styled-components';
+import { useAuth } from '../../../contexts/AuthContext';
+import { getStudentProfile } from '../../../services/profileService';
+import { Student } from '../../../types/auth';
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
+import LearningStyleChat from '../../../components/chat/LearningStyleChat';
+
+interface StudentData extends Student {
+  recentActivities: Array<{
+    id?: string;
+    type: string;
+    name: string;
+    date: string;
+  }>;
+  progress: Array<{
+    type: string;
+    value: number;
+  }>;
+}
+
+const StudentDashboard: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const [studentData, setStudentData] = useState<StudentData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
+
+  const isDevEnvironment =
+    typeof window !== 'undefined' && window.location.hostname === 'localhost';
+
+  const logDebug = (...args: unknown[]) => {
+    if (isDevEnvironment) {
+      console.debug(...args);
+    }
+  };
+
+  const fetchWithTimeout = async <T,>(promise: Promise<T>, timeoutMs: number) => {
+    let timeoutId: number | undefined;
+    const timeoutPromise = new Promise<T>((_, reject) => {
+      timeoutId = window.setTimeout(() => {
+        reject(new Error('Timed out loading dashboard data'));
+      }, timeoutMs);
+    });
+
+    return Promise.race([promise, timeoutPromise]).finally(() => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    });
+  };
+
+  const handleRetry = () => {
+    setLoading(true);
+    setError('');
+    setNeedsSetup(false);
+    setReloadToken((value) => value + 1);
+  };
+
+  const hasAuth = Boolean(currentUser);
+  const parentDashboardPath = hasAuth ? '/parent-dashboard' : '/login';
+  const parentDashboardFallback = hasAuth ? '/dashboard' : '/login';
+  const parentDashboardLabel = hasAuth ? 'Back to Parent Dashboard' : 'Go to Login';
+
+  const handleBackToParentDashboard = () => {
+    try {
+      navigate(parentDashboardPath);
+    } catch (navigationError) {
+      console.error('Failed to navigate to parent dashboard:', navigationError);
+      navigate(parentDashboardFallback);
+    }
+  };
+
+  const handleAddStudent = () => {
+    navigate('/create-student');
+  };
+
+  useEffect(() => {
+    const fetchStudentData = async () => {
+      const studentId = id?.trim();
+      setError('');
+      setNeedsSetup(false);
+
+      if (!studentId) {
+        setStudentData(null);
+        setNeedsSetup(true);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        logDebug('Dashboard load start', studentId);
+        const data = await fetchWithTimeout(getStudentProfile(studentId), 8000);
+        if (data) {
+          setStudentData({
+            ...data,
+            id: data.id || studentId,
+            recentActivities: [],
+            progress: []
+          } as StudentData);
+          logDebug('Dashboard load success', { data });
+        } else {
+          setStudentData(null);
+          setNeedsSetup(true);
+          logDebug('Dashboard load success', { data: null });
+        }
+      } catch (err) {
+        logDebug('Dashboard load error', err);
+        const message = err instanceof Error ? err.message : 'Failed to load student data';
+        if (message.toLowerCase().includes('not found')) {
+          setNeedsSetup(true);
+          setStudentData(null);
+        } else {
+          setError(message);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentData();
+  }, [id, reloadToken]);
+
+  if (loading) {
+    return (
+      <StyledLoadingContainer>
+        <LoadingSpinner />
+      </StyledLoadingContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <StyledErrorContainer>
+        <p>{error}</p>
+        <StyledActionGroup>
+          <StyledPrimaryButton type="button" onClick={handleBackToParentDashboard}>
+            {parentDashboardLabel}
+          </StyledPrimaryButton>
+          <StyledTertiaryButton type="button" onClick={handleRetry}>
+            Retry
+          </StyledTertiaryButton>
+        </StyledActionGroup>
+      </StyledErrorContainer>
+    );
+  }
+
+  if (needsSetup || !studentData) {
+    return (
+      <StyledSetupContainer>
+        <StyledSetupCard>
+          <h2>Student profile not found</h2>
+          <p>This dashboard needs a student profile before it can load.</p>
+          <StyledActionGroup>
+            <StyledPrimaryButton type="button" onClick={handleBackToParentDashboard}>
+              {parentDashboardLabel}
+            </StyledPrimaryButton>
+            {hasAuth && (
+              <StyledSecondaryButton type="button" onClick={handleAddStudent}>
+                Add Student
+              </StyledSecondaryButton>
+            )}
+            <StyledTertiaryButton type="button" onClick={handleRetry}>
+              Retry
+            </StyledTertiaryButton>
+          </StyledActionGroup>
+        </StyledSetupCard>
+      </StyledSetupContainer>
+    );
+  }
+
+  return (
+    <m.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <StyledHeader>
+        <StyledHeaderLeft>
+          <h1>Welcome, {studentData?.name}!</h1>
+          <p>Grade {studentData?.grade}</p>
+        </StyledHeaderLeft>
+      </StyledHeader>
+
+      <DashboardGrid>
+        <MainSection>
+          {!studentData?.hasTakenAssessment && (
+            <AssessmentSection>
+              <h2>Learning Style Assessment</h2>
+              <p>Take your learning style assessment to get personalized recommendations.</p>
+              <LearningStyleChat studentId={studentData.id ?? id} />
+            </AssessmentSection>
+          )}
+
+          {studentData?.hasTakenAssessment && studentData.learningStyle && (
+            <LearningStyleSection>
+              <h2>Your Learning Style: {studentData.learningStyle}</h2>
+              <p>Based on your assessment, we've customized your learning experience.</p>
+            </LearningStyleSection>
+          )}
+
+          <ProgressSection>
+            <h2>Recent Progress</h2>
+            {/* Add progress visualization here */}
+          </ProgressSection>
+        </MainSection>
+      </DashboardGrid>
+    </m.div>
+  );
+};
+
+const StyledLoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+`;
+
+const StyledErrorContainer = styled.div`
+  text-align: center;
+  color: red;
+  padding: 2rem;
+  display: grid;
+  gap: 1rem;
+`;
+
+const StyledSetupContainer = styled.div`
+  text-align: center;
+  padding: 2rem;
+  display: grid;
+  place-items: center;
+`;
+
+const StyledSetupCard = styled.div`
+  max-width: 480px;
+  width: 100%;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 16px;
+  padding: 2rem;
+  display: grid;
+  gap: 0.75rem;
+  color: #9a3412;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+`;
+
+const StyledActionGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+`;
+
+const StyledPrimaryButton = styled.button`
+  width: 100%;
+  max-width: 260px;
+  padding: 0.6rem 1.5rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--primary-color);
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+
+  &:hover {
+    background: var(--primary-dark);
+  }
+`;
+
+const StyledSecondaryButton = styled.button`
+  width: 100%;
+  max-width: 260px;
+  padding: 0.55rem 1.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--primary-color);
+  background: #fff;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-weight: 600;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.08);
+  }
+`;
+
+const StyledTertiaryButton = styled.button`
+  width: 100%;
+  max-width: 260px;
+  padding: 0.55rem 1.4rem;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 600;
+`;
+
+const StyledHeader = styled(m.header)`
+  margin-bottom: 2rem;
+`;
+
+const StyledHeaderLeft = styled.div`
+  h1 {
+    margin: 0;
+    color: var(--primary-color);
+  }
+  p {
+    margin: 0.5rem 0 0;
+    color: var(--text-secondary);
+  }
+`;
+
+const DashboardGrid = styled.div`
+  display: grid;
+  gap: 2rem;
+`;
+
+const MainSection = styled.div`
+  display: grid;
+  gap: 2rem;
+`;
+
+const AssessmentSection = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
+const LearningStyleSection = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
+const ProgressSection = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
+export default StudentDashboard;
+
+################################################################################
+# FILE: src/pages/profile/components/LearningStyleInsights.tsx
+# SIZE: 1130 bytes
+################################################################################
+
+import React from 'react';
+import styled from 'styled-components';
+import { Student } from '../../../types/student';
+
+interface LearningStyleInsightsProps {
+  studentData?: Student[];
+}
+
+const LearningStyleInsights: React.FC<LearningStyleInsightsProps> = ({ studentData }) => {
+  return (
+    <InsightsContainer>
+      <h3>Learning Style Analytics</h3>
+      {studentData?.map(student => (
+        <InsightCard key={student.id}>
+          <h4>{student.name}</h4>
+          <InsightContent>
+            <div>Learning Style: {student.learningStyle || 'Not assessed'}</div>
+            <div>Recommended Activities: {student.recommendedActivities?.length || 0}</div>
+          </InsightContent>
+        </InsightCard>
+      ))}
+    </InsightsContainer>
+  );
+};
+
+const InsightsContainer = styled.div`
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+`;
+
+const InsightCard = styled.div`
+  margin: 15px 0;
+  padding: 15px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+`;
+
+const InsightContent = styled.div`
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export default LearningStyleInsights;
+
+################################################################################
+# FILE: src/services/assessmentService.ts
+# SIZE: 1932 bytes
+################################################################################
+
+export interface AssessmentMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface AssessmentResult {
+  learningStyle: string;
+  confidence: number;
+  explanation: string;
+  nextSteps: string[];
+  model: string;
+  createdAt: string;
+  decision?: 'final' | 'needs_more_data';
+  missingEvidence?: string[];
+  questions?: string[];
+  evidenceCount?: number;
+}
+
+export interface AssessLearningStyleInput {
+  parentId: string;
+  studentId: string;
+  messages: AssessmentMessage[];
+  token: string;
+}
+
+const API_BASE = import.meta.env.VITE_ASSESSMENT_API_BASE ?? '';
+
+export const assessLearningStyle = async (
+  input: AssessLearningStyleInput
+): Promise<AssessmentResult> => {
+  const response = await fetch(`${API_BASE}/api/learning-style/assess`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${input.token}`
+    },
+    body: JSON.stringify({
+      parentId: input.parentId,
+      studentId: input.studentId,
+      messages: input.messages
+    })
+  });
+
+  if (!response.ok) {
+    const errorMessage = await readErrorMessage(response);
+    const error = new Error(errorMessage);
+    (error as { status?: number }).status = response.status;
+    throw error;
+  }
+
+  return response.json() as Promise<AssessmentResult>;
+};
+
+export const checkAssessmentHealth = async (): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_BASE}/healthz`);
+    if (!response.ok) return false;
+    const payload = (await response.json()) as { ok?: boolean };
+    return payload.ok === true;
+  } catch {
+    return false;
+  }
+};
+
+const readErrorMessage = async (response: Response): Promise<string> => {
+  try {
+    const data = (await response.json()) as { error?: string; message?: string };
+    return data.error ?? data.message ?? `Request failed (${response.status})`;
+  } catch {
+    return `Request failed (${response.status})`;
+  }
+};
+
+################################################################################
+# FILE: src/services/varkService.ts
+# SIZE: 2134 bytes
+################################################################################
+
+import { firestore as db } from '../config/firebase';
+import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+
+interface AssessmentResponse {
+  assessmentId: string;
+  initialMessage: string;
+}
+
+interface VARKResults {
+  visual: number;
+  auditory: number;
+  readWrite: number;
+  kinesthetic: number;
+  primaryStyle: string;
+}
+
+interface UserResponse {
+  message: string;
+  nextQuestionIndex: number;
+  currentQuestion: string;
+  isComplete: boolean;
+  results?: VARKResults;
+}
+
+export const startAssessment = async (userId: string): Promise<AssessmentResponse> => {
+  const response = await fetch('/api/vark/start', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ userId }),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to start assessment');
+  }
+  
+  return response.json();
+};
+
+export const sendUserResponse = async ({
+  userId,
+  assessmentId,
+  message,
+  questionIndex,
+}: {
+  userId: string;
+  assessmentId: string;
+  message: string;
+  questionIndex: number;
+}): Promise<UserResponse> => {
+  const response = await fetch('/api/vark/respond', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      userId,
+      assessmentId,
+      message,
+      questionIndex,
+    }),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to process response');
+  }
+  
+  return response.json();
+};
+
+export const saveAssessmentResults = async (
+  userId: string, 
+  results: VARKResults
+): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    const resultsRef = doc(db, 'varkResults', userId);
+    
+    // Update user document with primary learning style
+    await updateDoc(userRef, {
+      primaryLearningStyle: results.primaryStyle,
+      updatedAt: serverTimestamp()
+    });
+    
+    // Save detailed results
+    await setDoc(resultsRef, {
+      ...results,
+      userId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error saving results:', error);
+    throw error;
+  }
+};
+
+================================================================================
+SUMMARY: included=51, skipped=0, total=51

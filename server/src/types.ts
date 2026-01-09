@@ -11,6 +11,9 @@ export interface AssessmentRequestBody {
   parentId: string;
   studentId: string;
   messages: Message[];
+  sessionId?: string;
+  gradeBand?: 'K-2' | '3-5' | '6-8' | '9-12';
+  mode?: 'vark' | 'summary';
 }
 
 export type LearningStyle =
