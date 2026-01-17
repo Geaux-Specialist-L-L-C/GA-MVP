@@ -1,27 +1,22 @@
-import axios from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 import { auth } from '@/config/firebase';
 
 const envBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').trim();
-const fallbackDevBaseUrl = 'http://localhost:8080';
-const resolvedBaseUrl = envBaseUrl || (import.meta.env.DEV ? fallbackDevBaseUrl : '');
+const fallbackBaseUrl = 'http://localhost:8080';
+export const apiBaseUrl = envBaseUrl || fallbackBaseUrl;
 
 if (import.meta.env.PROD && !envBaseUrl) {
   console.warn('[api] VITE_API_BASE_URL is not set for production builds.');
 }
 
-export const apiBaseUrl = resolvedBaseUrl;
-
 export const buildApiUrl = (path: string): string => {
-  if (!resolvedBaseUrl) {
-    throw new Error('VITE_API_BASE_URL is not configured');
-  }
-  const base = resolvedBaseUrl.replace(/\/+$/, '');
+  const base = apiBaseUrl.replace(/\/+$/, '');
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${base}${normalizedPath}`;
 };
 
-const api = axios.create({
-  baseURL: resolvedBaseUrl || undefined,
+export const api: AxiosInstance = axios.create({
+  baseURL: apiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -32,9 +27,6 @@ const api = axios.create({
 
 api.interceptors.request.use(
   async (config) => {
-    if (!resolvedBaseUrl) {
-      throw new Error('VITE_API_BASE_URL is not configured');
-    }
     const user = auth.currentUser;
     if (user) {
       try {
@@ -105,5 +97,3 @@ api.interceptors.response.use(
     return Promise.reject(new Error(errorMessage));
   }
 );
-
-export default api;
