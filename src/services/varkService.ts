@@ -1,5 +1,6 @@
 import { firestore as db } from '../config/firebase';
 import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { buildApiUrl } from './api';
 
 export interface VarkQuestionOption {
   key: string;
@@ -45,8 +46,6 @@ export interface VarkChatResponse {
   };
 }
 
-const API_BASE = import.meta.env.VITE_ASSESSMENT_API_BASE ?? '';
-
 const readErrorMessage = async (response: Response): Promise<string> => {
   try {
     const data = (await response.json()) as {
@@ -67,7 +66,7 @@ export const startVarkAssessment = async (input: {
   gradeBand?: string;
   token: string;
 }): Promise<VarkChatResponse> => {
-  const response = await fetch(`${API_BASE}/api/assessment/chat`, {
+  const response = await fetch(buildApiUrl('/api/assessment/chat'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -107,7 +106,7 @@ export const sendVarkResponse = async (input: {
   gradeBand?: string;
   token: string;
 }): Promise<VarkChatResponse> => {
-  const response = await fetch(`${API_BASE}/api/assessment/chat`, {
+  const response = await fetch(buildApiUrl('/api/assessment/chat'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

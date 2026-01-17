@@ -1,3 +1,5 @@
+import { buildApiUrl } from './api';
+
 export interface AssessmentMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -23,12 +25,10 @@ export interface AssessLearningStyleInput {
   token: string;
 }
 
-const API_BASE = import.meta.env.VITE_ASSESSMENT_API_BASE ?? '';
-
 export const assessLearningStyle = async (
   input: AssessLearningStyleInput
 ): Promise<AssessmentResult> => {
-  const response = await fetch(`${API_BASE}/api/learning-style/assess`, {
+  const response = await fetch(buildApiUrl('/api/learning-style/assess'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -53,7 +53,7 @@ export const assessLearningStyle = async (
 
 export const checkAssessmentHealth = async (): Promise<boolean> => {
   try {
-    const response = await fetch(`${API_BASE}/healthz`);
+    const response = await fetch(buildApiUrl('/healthz'));
     if (!response.ok) return false;
     const payload = (await response.json()) as { ok?: boolean };
     return payload.ok === true;

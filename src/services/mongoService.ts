@@ -1,11 +1,10 @@
 import axios from 'axios';
 import { firebaseService } from './firebaseService';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+import { apiBaseUrl } from './api';
 
 // Create axios instance
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: apiBaseUrl || undefined,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -13,6 +12,9 @@ const apiClient = axios.create({
 
 // Add auth token to requests
 apiClient.interceptors.request.use(async (config) => {
+  if (!apiBaseUrl) {
+    throw new Error('VITE_API_BASE_URL is not configured');
+  }
   const token = await firebaseService.getIdToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

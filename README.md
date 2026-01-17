@@ -19,6 +19,7 @@ An interactive learning platform that adapts to individual learning styles throu
 2. Configure environment:
    - Copy `.env.example` to `.env`
    - Replace placeholder values with your Firebase configuration
+   - Set `VITE_API_BASE_URL` to your ga-assessment-service Cloud Run URL (example: `https://ga-assessment-service-<region>-<project>.a.run.app`)
    - IMPORTANT: Never commit `.env` file with real credentials
    - For production, use GitHub Secrets and CI/CD environment variables
 
@@ -28,6 +29,9 @@ An interactive learning platform that adapts to individual learning styles throu
    ```
 
 Visit `http://localhost:5173` for development.
+
+## Netlify Environment Variables
+- `VITE_API_BASE_URL=https://ga-assessment-service-<region>-<project>.a.run.app`
 
 ## Security Best Practices
 

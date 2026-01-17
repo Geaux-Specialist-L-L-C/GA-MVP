@@ -1,6 +1,7 @@
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc, arrayUnion } from 'firebase/firestore';
 import { firestore } from '../config/firebase';
 import { Parent, Student, LearningStyle } from "../types/profiles";
+import { buildApiUrl } from './api';
 
 // Cache for storing profiles
 const profileCache = new Map();
@@ -314,7 +315,7 @@ export class ProfileService {
   async getUserProfile(userId: string): Promise<any> {
     // ...existing API call logic...
     // Example:
-    const response = await fetch(`/api/profiles/${userId}`);
+    const response = await fetch(buildApiUrl(`/api/profiles/${userId}`));
     return response.json();
   }
 }
