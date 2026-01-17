@@ -1,0 +1,66 @@
+{
+  "name": "beeai-framework-starter",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": "^10.0.0"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "main": "./dist/server.js",
+  "homepage": "https://github.com/i-am-bee/beeai-framework-starter#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/i-am-bee/beeai-framework-starter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/i-am-bee/beeai-framework-starter/issues"
+  },
+  "scripts": {
+    "start": "node dist/server.js",
+    "ts:check": "tsc --noEmit --project tsconfig.json",
+    "build": "rimraf dist && tsc -p tsconfig.server.json",
+    "test": "node --test tests/vark.smoke.test.js",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "verify:beeai": "tsx scripts/verifyBeeaiFramework.ts",
+    "infra:pull": "docker compose --profile=${npm_config_profile:=all} pull",
+    "infra:start": "docker compose --profile=${npm_config_profile:=all} up --detach --wait",
+    "infra:stop": "docker compose --profile=${npm_config_profile:=all} down",
+    "infra:remove": "npm run infra:stop -- --volumes",
+    "_ensure_env": "cp -n .env.template .env || true",
+    "prepare": "node -e \"process.exit(process.env.CI||process.env.HUSKY==='0'?0:1)\" || (husky && npm run _ensure_env)"
+  },
+  "dependencies": {
+    "@ai-sdk/google-vertex": "^3.0.97",
+    "@google-cloud/firestore": "^7.11.6",
+    "@langchain/core": "^0.2.27",
+    "beeai-framework": "^0.1.23",
+    "zod": "^4.1.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^8.57.1",
+    "@types/eslint__js": "^8.42.3",
+    "@types/eslint-config-prettier": "^6.11.3",
+    "@types/node": "^18.15.3",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^8.10.2",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3",
+    "rimraf": "^5.0.10",
+    "tsx": "^4.19.1",
+    "typescript": "~5.5.4",
+    "typescript-eslint": "^8.6.0"
+  },
+  "packageManager": "npm@10.7.0",
+  "lint-staged": {
+    "*.{ts,js}": "eslint --fix",
+    "*": "prettier --ignore-unknown --write"
+  }
+}
